@@ -7,6 +7,7 @@ from typing import Any, Dict
 from orion import KGXGraphMetadata, KGXKnowledgeSource
 
 from translator_ingest import INGESTS_PARSER_PATH
+from translator_ingest.util.code_version import CodeVersion
 
 # Matches a semantic version of the form MAJOR.MINOR.PATCH (e.g. "1.0.0").
 SEMANTIC_VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
@@ -23,6 +24,7 @@ TRANSLATOR_VOCABULARY_URL = "https://github.com/NCATSTranslator/translator-inges
 TRANSLATOR_BUILD_VERSION = f"{TRANSLATOR_VOCABULARY}:buildVersion"
 TRANSLATOR_NODE_COUNT = f"{TRANSLATOR_VOCABULARY}:nodeCount"
 TRANSLATOR_EDGE_COUNT = f"{TRANSLATOR_VOCABULARY}:edgeCount"
+TRANSLATOR_CODE_VERSIONS = f"{TRANSLATOR_VOCABULARY}:codeVersions"
 
 
 @dataclass
@@ -57,6 +59,11 @@ class PipelineMetadata:
     build_version: str | None = None
     # build_date: the timestamp (ISO 8601) the build was generated
     build_date: str | None = None
+    # code_versions: the translator-ingests code versions that produced the build, by pipeline stage. 
+    # Stage outputs are reused across commits, so stages can differ. A stage's code version is None if 
+    # its output predates code version recording. This is provenance only and is deliberately not part 
+    # of the build version, so a new commit alone does not trigger a rebuild.
+    code_versions: Dict[str, CodeVersion | None] | None = None
     # release_version: a version assigned to a completed ingest when it is released
     # (moved to the releases directory, compressed, and distribution metadata generated)
     release_version: str | None = None

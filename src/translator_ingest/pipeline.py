@@ -23,8 +23,9 @@ from orion import (KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder,
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
+from translator_ingest.util.code_version import CODE_VERSION_KEY, get_code_version
 from translator_ingest.util.metadata import (PipelineMetadata, get_kgx_source_from_rig, current_iso_date,
-                                             to_translator_graph_metadata)
+                                             to_translator_graph_metadata, TRANSLATOR_CODE_VERSIONS)
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -252,7 +253,8 @@ def transform(pipeline_metadata: PipelineMetadata):
         "source_version": pipeline_metadata.source_version,
         "transform_version": pipeline_metadata.transform_version,
         "transform_duration": f"{elapsed_time:.1f}",
-        "transform_metadata": runner.transform_metadata
+        "transform_metadata": runner.transform_metadata,
+        CODE_VERSION_KEY: get_code_version(),
     }
     # we probably still want to do more here, maybe stuff like:
     # transform_metadata.update(runner.writer.duplicate_node_count)
@@ -559,47 +561,49 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         source_metadata.schema = generate_schema(nodes_file_path=graph_nodes_file_path,
                                                  edges_file_path=graph_edges_file_path,
                                                  biolink_version=pipeline_metadata.biolink_version)
+    # Collect the metadata each stage recorded about its run. Stage outputs can be reused across pipeline runs, 
+    # so use metadata recorded at the time, which may differ from the code running now. A stage's code version
+    # is None if its output predates code version recording.
+    ingest_metadata = {
+        "transform": read_stage_metadata(IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata),
+        "normalization": read_stage_metadata(IngestFileType.NORMALIZATION_METADATA_FILE, pipeline_metadata),
+        "merge": read_stage_metadata(IngestFileType.MERGE_METADATA_FILE, pipeline_metadata),
+    }
+    code_versions = {stage: stage_metadata.get(CODE_VERSION_KEY) if stage_metadata else None
+                     for stage, stage_metadata in ingest_metadata.items()}
+    # The build stage is this one, which generates the graph metadata and test data and finalizes the build
+    code_versions["build"] = get_code_version()
+
+    translator_graph_metadata = to_translator_graph_metadata(source_metadata)
+    translator_graph_metadata[TRANSLATOR_CODE_VERSIONS] = code_versions
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
-                      data=to_translator_graph_metadata(source_metadata))
+                      data=translator_graph_metadata)
     logger.info(f"Graph metadata complete for {pipeline_metadata.source}. Preparing ingest metadata...")
 
-    transform_metadata_file_path = get_versioned_file_paths(
-        file_type=IngestFileType.TRANSFORM_METADATA_FILE, pipeline_metadata=pipeline_metadata
-    )
-    if transform_metadata_file_path.exists():
-        with transform_metadata_file_path.open("r") as transform_metadata_file:
-            transform_metadata = json.load(transform_metadata_file)
-    else:
-        logger.error(f"Transform metadata not found for {pipeline_metadata.source}...")
-        transform_metadata = {"Transform metadata not found."}
-    normalization_metadata_path = get_versioned_file_paths(
-        file_type=IngestFileType.NORMALIZATION_METADATA_FILE, pipeline_metadata=pipeline_metadata
-    )
-    if normalization_metadata_path.exists():
-        with normalization_metadata_path.open("r") as normalization_metadata_file:
-            normalization_metadata = json.load(normalization_metadata_file)
-    else:
-        logger.error(f"Normalization metadata not found for {pipeline_metadata.source}...")
-        normalization_metadata = {"Normalization metadata not found."}
-    merge_metadata_path = get_versioned_file_paths(
-        file_type=IngestFileType.MERGE_METADATA_FILE, pipeline_metadata=pipeline_metadata
-    )
-    if merge_metadata_path.exists():
-        with merge_metadata_path.open("r") as merge_metadata_file:
-            merge_metadata = json.load(merge_metadata_file)
-    else:
-        logger.error(f"Merge metadata not found for {pipeline_metadata.source}...")
-        merge_metadata = {"Merge metadata not found."}
-    ingest_metadata = {
-        "transform": transform_metadata,
-        "normalization": normalization_metadata,
-        "merge": merge_metadata
-    }
     write_ingest_file(file_type=IngestFileType.INGEST_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
                       data=ingest_metadata)
     logger.info(f"Ingest metadata complete for {pipeline_metadata.source}.")
+
+
+def read_stage_metadata(file_type: IngestFileType, pipeline_metadata: PipelineMetadata) -> dict | None:
+    """Read the metadata a pipeline stage recorded about its run, or None if it is missing."""
+    stage_metadata_path = get_versioned_file_paths(file_type=file_type, pipeline_metadata=pipeline_metadata)
+    if not stage_metadata_path.exists():
+        logger.error(f"{file_type.name} not found for {pipeline_metadata.source} ({stage_metadata_path})")
+        return None
+    with stage_metadata_path.open("r") as stage_metadata_file:
+        return json.load(stage_metadata_file)
+
+
+def read_recorded_code_versions(pipeline_metadata: PipelineMetadata) -> dict | None:
+    """Read the code versions recorded in a build's graph metadata, or None if the graph metadata predates them."""
+    graph_metadata_path = get_versioned_file_paths(
+        file_type=IngestFileType.GRAPH_METADATA_FILE, pipeline_metadata=pipeline_metadata
+    )
+    with graph_metadata_path.open("r") as graph_metadata_file:
+        return json.load(graph_metadata_file).get(TRANSLATOR_CODE_VERSIONS)
 
 
 # Open the latest build metadata and compare build versions with the current pipeline run to see if the latest build
@@ -696,6 +700,7 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
         )
     else:
         generate_graph_metadata(pipeline_metadata)
+    pipeline_metadata.code_versions = read_recorded_code_versions(pipeline_metadata)
 
     if is_latest_build_metadata_current(pipeline_metadata) and not overwrite:
         logger.info(f"Latest build metadata already up to date for {pipeline_metadata.source}, "

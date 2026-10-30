@@ -11,8 +11,9 @@ from orion import (KGXFileMerger, KGXGraphMetadata, KGXKnowledgeSource, KGXKnowl
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.release import create_compressed_tar, extract_compressed_tar, atomic_copy_directory, \
     generate_release_summary, RELEASE_NODES_FILENAME, RELEASE_EDGES_FILENAME, RELEASE_GRAPH_METADATA_FILENAME
+from translator_ingest.util.code_version import CODE_VERSION_KEY, get_code_version
 from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, next_release_version, \
-    current_iso_date, to_translator_graph_metadata
+    current_iso_date, to_translator_graph_metadata, TRANSLATOR_CODE_VERSIONS
 from translator_ingest.util.storage.local import get_versioned_file_paths, IngestFileType, write_ingest_file
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
@@ -90,6 +91,8 @@ def merge_single(
         logger.error(f"Merging error occurred for {source_id}: {merge_metadata['merge_error']}")
         raise RuntimeError(f"Merge failed for {source_id}: {merge_metadata['merge_error']}")
 
+    # add the code version to the rest of the merge metadata from orion
+    merge_metadata[CODE_VERSION_KEY] = get_code_version()
     merge_metadata_path = file_merger.write_merge_metadata()
     logger.info(f"Merge metadata written to {merge_metadata_path}")
 
@@ -304,6 +307,10 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
         **shared_metadata,
         build_version=build_version,
         build_date=current_iso_date(),
+        # For single ingest graphs we record the code version for each stage of the pipeline,
+        # but with a multi-source graph the other stages don't apply, so we only record the merge 
+        # code version here.
+        code_versions={"merge": get_code_version()},
     )
 
     # Check if the latest release already has this build version
@@ -440,8 +447,10 @@ def merge_graph_metadata(pipeline_metadata: PipelineMetadata,
                                              edges_file_path=str(merged_graph_edges),
                                              biolink_version=biolink_version)
 
+    translator_graph_metadata = to_translator_graph_metadata(source_metadata)
+    translator_graph_metadata[TRANSLATOR_CODE_VERSIONS] = pipeline_metadata.code_versions
     with graph_metadata_file_path.open("w") as output_file:
-        json.dump(to_translator_graph_metadata(source_metadata), output_file, indent=2)
+        json.dump(translator_graph_metadata, output_file, indent=2)
     logger.info(f"Graph metadata complete for {graph_id} ({release_version}).")
 
 
