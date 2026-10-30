@@ -1,0 +1,8 @@
+- url: https://api.clinpgx.org/v1/download/file/data/relationships.zip
+  local_name: relationships.zip
+- url: https://api.clinpgx.org/v1/download/file/data/genes.zip
+  local_name: genes.zip
+- url: https://api.clinpgx.org/v1/download/file/data/chemicals.zip
+  local_name: chemicals.zip
+- url: https://api.clinpgx.org/v1/download/file/data/drugs.zip
+  local_name: drugs.zip
