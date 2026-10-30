@@ -1,0 +1,13 @@
+Target,Target ID,Target Subunit IDs,Target Gene Symbol,Target UniProt ID,Target Species,Ligand ID,Ligand,Type,Action,Endogenous,Ligand Context,PubMed ID
+A target,1,,GENE,P08588,Human,1,ligand,Agonist,Agonist,FALSE,,123|123
+A target,1,,GENE,P08588,Human,1,ligand,Agonist,Agonist,FALSE,,123|123
+A target,1,,GENE,P08588,Human,1,ligand,Agonist,Agonist,FALSE,other,456
+A target,1,,GENE,P08588,Human,1,ligand,Agonist,Agonist,FALSE,other,123|123
+B missing labels,2,,GENE,P08588,Human,1,ligand,,,,,
+C blank CID,3,,GENE,P08588,Human,2,ligand,Agonist,Agonist,FALSE,,123
+D missing CID,4,,GENE,P08588,Human,3,ligand,Agonist,Agonist,FALSE,,123
+E unmapped ligand,5,,GENE,P08588,Human,999,ligand,Agonist,Agonist,FALSE,,123
+F missing target,,,GENE,P08588,Human,1,ligand,Agonist,Agonist,FALSE,,123
+G isoform,6,,GENE,P56856|P56856-2,Human,4,ligand,Agonist,Agonist,FALSE,,123
+H missing ligand,7,,GENE,P08588,Human,,ligand,Agonist,Agonist,FALSE,,123
+I blank target, ,,GENE,P08588,Human,1,ligand,Agonist,Agonist,FALSE,,123
