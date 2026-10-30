@@ -7,7 +7,9 @@ properties([
     parameters([
         string(name: 'SOURCE', defaultValue: 'all',
                description: "Source to process ('all' = run every source in translator_kg; otherwise a single source name)"),
-        booleanParam(name: 'OVERWRITE', defaultValue: false, description: 'Overwrite existing files')
+        booleanParam(name: 'OVERWRITE', defaultValue: false, description: 'Overwrite existing files'),
+        string(name: 'RELEASE_TAG', defaultValue: '',
+               description: "Release tag (vX.Y.Z) of the code to build. Leave empty to build the latest release tag.")
     ])
 ])
 
@@ -27,10 +29,42 @@ node('transltr-ci-build-node-03-24.04') {
 
             stage('Checkout') {
                 checkout scm
+
+                // Enforce that we always checkout and run from a specific release tag.
+                // Either use the one supplied by the RELEASE_TAG param, verifying it exists,
+                // or find the tag for the most recent release from git and use that.
+                def releaseTag = params.RELEASE_TAG?.trim() ?: sh(
+                    returnStdout: true,
+                    script: "git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1"
+                ).trim()
+                if (!releaseTag) {
+                    error("No release tags (vX.Y.Z) were found to build from")
+                }
+                if (!(releaseTag ==~ /v\d+\.\d+\.\d+/)) {
+                    error("RELEASE_TAG ${releaseTag} is not a release tag of the form vX.Y.Z")
+                }
+                def tagExists = sh(returnStatus: true,
+                                   script: "git rev-parse --verify --quiet 'refs/tags/${releaseTag}^{commit}'") == 0
+                if (!tagExists) {
+                    error("Release tag ${releaseTag} does not exist")
+                }
+                sh "git checkout --detach 'refs/tags/${releaseTag}'"
+                echo "Building release ${releaseTag}"
             }
 
             stage('Install Dependencies') {
                 sh 'uv sync'
+            }
+
+            stage('Verify Clean Checkout') {
+                sh '''
+                    if ! git diff --quiet HEAD; then
+                        echo "ERROR: tracked files have uncommitted changes:"
+                        git status --short --untracked-files=no
+                        exit 1
+                    fi
+                    echo "Building code version: $(git describe --tags --match='v[0-9]*.[0-9]*.[0-9]*' --always)"
+                '''
             }
 
             stage('Run Pipeline') {
