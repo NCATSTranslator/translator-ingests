@@ -23,7 +23,7 @@ from orion import (KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder,
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
-from translator_ingest.util.code_version import CODE_VERSION_KEY, get_code_version
+from translator_ingest.util.code_version import CODE_VERSION_KEY, CODE_VERSION
 from translator_ingest.util.metadata import (PipelineMetadata, get_kgx_source_from_rig, current_iso_date,
                                              to_translator_graph_metadata, TRANSLATOR_CODE_VERSIONS)
 from translator_ingest.util.storage.local import (
@@ -254,7 +254,7 @@ def transform(pipeline_metadata: PipelineMetadata):
         "transform_version": pipeline_metadata.transform_version,
         "transform_duration": f"{elapsed_time:.1f}",
         "transform_metadata": runner.transform_metadata,
-        CODE_VERSION_KEY: get_code_version(),
+        CODE_VERSION_KEY: CODE_VERSION,
     }
     # we probably still want to do more here, maybe stuff like:
     # transform_metadata.update(runner.writer.duplicate_node_count)
@@ -572,7 +572,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     code_versions = {stage: stage_metadata.get(CODE_VERSION_KEY) if stage_metadata else None
                      for stage, stage_metadata in ingest_metadata.items()}
     # The build stage is this one, which generates the graph metadata and test data and finalizes the build
-    code_versions["build"] = get_code_version()
+    code_versions["build"] = CODE_VERSION
 
     translator_graph_metadata = to_translator_graph_metadata(source_metadata)
     translator_graph_metadata[TRANSLATOR_CODE_VERSIONS] = code_versions

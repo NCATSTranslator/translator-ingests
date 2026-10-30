@@ -5,7 +5,7 @@ from pathlib import Path
 
 from orion import KGXFileNormalizer, NormalizationScheme
 
-from translator_ingest.util.code_version import CODE_VERSION_KEY, get_code_version
+from translator_ingest.util.code_version import CODE_VERSION_KEY, CODE_VERSION
 from translator_ingest.util.metadata import PipelineMetadata
 from translator_ingest.util.logging_utils import get_logger
 
@@ -75,7 +75,7 @@ def normalize_kgx_files(
         # Create empty output edges file for consistency
         Path(edges_output_file_path).touch()
 
-    normalization_metadata[CODE_VERSION_KEY] = get_code_version()
+    normalization_metadata[CODE_VERSION_KEY] = CODE_VERSION
     with Path(normalization_metadata_file_path).open("w") as normalization_metadata_file:
         normalization_metadata_file.write(json.dumps(normalization_metadata, indent=4))
 

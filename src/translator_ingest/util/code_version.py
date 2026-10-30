@@ -1,7 +1,7 @@
 """The version of the translator-ingests code being run, read from git at run time.
 
 Code versions are provenance: each pipeline stage records the code version that ran it in the metadata it writes,
-so any output can be traced to the exact code that produced it. Individual pipeline stage outputs can be reused across 
+so any output can be traced to the exact code that produced it. Individual pipeline stage outputs can be reused across
 commits, so a single graph can be made by several code versions. Code versions are deliberately not part of any transform or
 build version: those decide whether work needs to be redone, and a new commit alone should not rebuild every source.
 """
@@ -44,3 +44,7 @@ def get_code_version(repo_dir: Path = TRANSLATOR_INGEST_DIR) -> CodeVersion:
         commit=git("rev-parse", "HEAD"),
         version=git("describe", "--tags", f"--match={RELEASE_TAG_PATTERN}", "--always", "--dirty"),
     )
+
+
+# The version of the code this process is running, read once on import so it matches the code that was loaded.
+CODE_VERSION = get_code_version()
