@@ -59,9 +59,9 @@ class PipelineMetadata:
     build_version: str | None = None
     # build_date: the timestamp (ISO 8601) the build was generated
     build_date: str | None = None
-    # code_versions: the translator-ingests code versions that produced the build, by pipeline stage. 
-    # Stage outputs are reused across commits, so stages can differ. A stage's code version is None if 
-    # its output predates code version recording. This is provenance only and is deliberately not part 
+    # code_versions: the translator-ingests code versions that produced the build, by pipeline stage.
+    # Stage outputs are reused across commits, so stages can differ. A stage's code version is None if
+    # its output predates code version recording. This is provenance only and is deliberately not part
     # of the build version, so a new commit alone does not trigger a rebuild.
     code_versions: Dict[str, CodeVersion | None] | None = None
     # release_version: a version assigned to a completed ingest when it is released

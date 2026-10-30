@@ -308,7 +308,7 @@ def merge(graph_id: str, sources: list[str], overwrite: bool = False) -> Pipelin
         build_version=build_version,
         build_date=current_iso_date(),
         # For single ingest graphs we record the code version for each stage of the pipeline,
-        # but with a multi-source graph the other stages don't apply, so we only record the merge 
+        # but with a multi-source graph the other stages don't apply, so we only record the merge
         # code version here.
         code_versions={"merge": CODE_VERSION},
     )

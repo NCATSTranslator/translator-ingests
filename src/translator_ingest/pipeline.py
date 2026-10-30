@@ -561,7 +561,7 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
         source_metadata.schema = generate_schema(nodes_file_path=graph_nodes_file_path,
                                                  edges_file_path=graph_edges_file_path,
                                                  biolink_version=pipeline_metadata.biolink_version)
-    # Collect the metadata each stage recorded about its run. Stage outputs can be reused across pipeline runs, 
+    # Collect the metadata each stage recorded about its run. Stage outputs can be reused across pipeline runs,
     # so use metadata recorded at the time, which may differ from the code running now. A stage's code version
     # is None if its output predates code version recording.
     ingest_metadata = {
