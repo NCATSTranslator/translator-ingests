@@ -99,6 +99,9 @@ skip = [
     "./releases",
     "./logs",
     "./output",
+    # Generated documentation (make docs-build)
+    "./site",
+    "./docs",
     # Third-party code, if a virtual environment is not in a hidden directory (hidden ones are skipped by default)
     "**/site-packages",
     "./src/translator_ingest/ingests/drug_rep_hub/indications_config.json",
