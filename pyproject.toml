@@ -57,6 +57,12 @@ line-length = 120
 target-version = "py312"
 extend-exclude = ["*.ipynb"]
 
+[tool.ruff.lint]
+extend-select = ["TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"src.translator_ingest".msg = "Import translator_ingest instead. Importing it as src.translator_ingest loads a second copy of every module, so module-level state like cached schemas or toolkits is created twice."
+
 [tool.black]
 line-length = 120
 target-version = ["py312"]
