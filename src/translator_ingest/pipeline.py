@@ -386,9 +386,10 @@ def merge(pipeline_metadata: PipelineMetadata):
         # make sure the merged directory exists because for nodes-only ingests it might not
         output_nodes_file.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(normalized_nodes_file, output_nodes_file)
-        # Write empty merge metadata
-        with open(output_metadata_file, 'w') as f:
-            json.dump({}, f, indent=2)
+        # There is no merge metadata from ORION without a merge, but record the code version that ran this stage
+        write_ingest_file(file_type=IngestFileType.MERGE_METADATA_FILE,
+                          pipeline_metadata=pipeline_metadata,
+                          data={CODE_VERSION_KEY: CODE_VERSION})
         logger.info(f"Merge complete for {pipeline_metadata.source} (nodes-only, copied without merging).")
         return
 

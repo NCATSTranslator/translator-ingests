@@ -112,6 +112,21 @@ def test_graph_metadata_records_the_code_version_each_stage_ran_with(
     }
 
 
+def test_graph_metadata_records_the_merge_code_version_of_a_nodes_only_build(data_root: Path, rig_root: Path):
+    """A nodes-only build copies its nodes instead of merging them, and still records the code version that ran it."""
+    pipeline_metadata = PipelineMetadata(**BUILD_METADATA, koza_config={"max_edge_count": 0})
+    nodes_file, _ = get_versioned_file_paths(
+        file_type=IngestFileType.NORMALIZED_KGX_FILES, pipeline_metadata=pipeline_metadata
+    )
+    nodes_file.parent.mkdir(parents=True)
+    nodes_file.write_text("".join(f"{json.dumps(node)}\n" for node in NODES))
+
+    pipeline.merge(pipeline_metadata)
+    pipeline.generate_graph_metadata(pipeline_metadata)
+
+    assert read_graph_metadata(pipeline_metadata)[TRANSLATOR_CODE_VERSIONS]["merge"] == CODE_VERSION
+
+
 def test_recorded_code_versions_are_read_from_the_graph_metadata(merged_build: PipelineMetadata):
     pipeline.generate_graph_metadata(merged_build)
 
