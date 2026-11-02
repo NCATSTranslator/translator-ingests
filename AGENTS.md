@@ -18,7 +18,6 @@ Best practice:
 * always write pytest functional style rather than unittest OO style
 * use modern pytest idioms, including `@pytest.mark.parametrize` to test for combinations of inputs
 * NEVER write mock tests unless requested. I need to rely on tests to know if something breaks
-* For tests that have external dependencies, you can do `@pytest.mark.integration`
 * Do not "fix" issues by changing or weakening test conditions. Try harder, or ask questions if a test fails.
 * Avoid try/except blocks, these can mask bugs
 * Failing fast is a good principle
