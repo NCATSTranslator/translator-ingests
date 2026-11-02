@@ -14,11 +14,19 @@ on:
           - synchronize
           - ready_for_review
 
+permissions:
+  contents: read
+
 jobs:
-  # Lint once, separately from the tests, so lint failures are reported even when tests fail.
+  # Lint separately from the tests, so lint failures are reported even when tests fail.
   # Both tools are configured in pyproject.toml.
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: ['codespell', 'ruff check']
+
     steps:
       - uses: actions/checkout@v7
         with:
@@ -31,11 +39,8 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: codespell
-        run: uv run codespell
-
-      - name: ruff
-        run: uv run ruff check
+      - name: ${{ matrix.tool }}
+        run: uv run ${{ matrix.tool }}
 
   test:
     runs-on: ubuntu-latest
