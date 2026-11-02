@@ -3,7 +3,7 @@ requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bridge"
+name = "translator-ingests"
 dynamic = ["version"]
 description = "Translator Phase 3 Data Ingest Pipeline"
 readme = "README.md"
