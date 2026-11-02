@@ -3,8 +3,8 @@ Tests for BiolinkValidationPlugin validation methods
 """
 
 import pytest
-from translator_ingest.util.biolink_validation_plugin import BiolinkValidationPlugin
-from translator_ingest.util.biolink import get_biolink_schema
+from src.translator_ingest.util.biolink_validation_plugin import BiolinkValidationPlugin
+from src.translator_ingest.util.biolink import get_biolink_schema
 from linkml.validator.validation_context import ValidationContext
 
 
