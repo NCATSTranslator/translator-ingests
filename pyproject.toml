@@ -69,11 +69,22 @@ target-version = ["py312"]
 
 [tool.uv]
 package = true
+# Rebuild the project (recompute its version from git) when the commit or tags change, not only when this
+# file does. Otherwise the installed version stays at whatever it was when the project was last built.
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
 
+# The package version comes from the latest vX.Y.Z git tag:
+# "1.2.3" when on a specific tag,
+# "1.2.4.devN+<commit>" if additional commits are present. N commits after the latest tag + current commit SHA.
 [tool.uv-dynamic-versioning]
 vcs = "git"
 style = "pep440"
-fallback-version = "0.0.0"
+# Only release tags count, e.g. v1.2.3, so a tag like v1.2.3-something is ignored instead of breaking every build.
+pattern = '^v(?P<base>\d+\.\d+\.\d+)$'
+# Versions after a release are pre-releases of the next one (1.2.4.devN), not post-releases of the last (1.2.3.postN)
+bump = true
+# Fail if no release tag is found, instead of quietly building version 0.0.0
+strict = true
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
