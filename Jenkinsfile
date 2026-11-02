@@ -30,6 +30,11 @@ node('transltr-ci-build-node-03-24.04') {
             stage('Checkout') {
                 checkout scm
 
+                // Sync tags with the remote before choosing one to build. checkout scm only fetches tags if the job's
+                // git settings say to, and the workspace persists between builds, so local tags can be missing or stale.
+                // --force updates tags that were moved on the remote, --prune --prune-tags drops ones deleted there.
+                sh 'git fetch origin --tags --force --prune --prune-tags'
+
                 // Enforce that we always checkout and run from a specific release tag.
                 // Either use the one supplied by the RELEASE_TAG param, verifying it exists,
                 // or find the tag for the most recent release from git and use that.
