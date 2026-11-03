@@ -1,0 +1,28 @@
+name: "uberon_lookup"
+
+metadata:
+  description: "Mapping file for lookup from HMDB anatomical or biospecimen location to UBERON terms"
+
+reader:
+  format: "csv"  # actually, 'tsv'
+
+  # This is generated from UBERON using the project
+  # script src/docs/scripts/koza_maps/uberon_map.py
+  files:
+    - './maps/uberon_lookup.csv'
+
+  header_mode: "infer"
+
+  columns:
+    - "source_term"
+    - "uberon_id"
+    - "uberon_label"
+    - "match_type"
+
+transform:
+  key: "source_term"
+
+  values:
+    - "uberon_id"
+    - "uberon_label"
+    - "match_type"
