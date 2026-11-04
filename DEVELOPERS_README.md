@@ -94,8 +94,9 @@ The project includes several code quality tools that can be run via make command
 
 ### Spell Checking
 
-The project uses `codespell` to check for common spelling errors. It's configured to:
-- Skip the `data/` directory 
+The project uses `codespell` to check for common spelling errors. It's configured by `[tool.codespell]` in
+`pyproject.toml`, so plain `uv run codespell` from the repository root uses the same settings as `make test` and CI:
+- Skip downloaded and generated data (`data/`, `releases/`, ...) and Jupyter notebooks
 - Ignore specific words listed in `.codespellignore` (e.g., HDA, ND)
 
 To check for spelling errors (run automatically as part of `make test`):

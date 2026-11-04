@@ -14,16 +14,33 @@ on:
           - synchronize
           - ready_for_review
 
+permissions:
+  contents: read
+
 jobs:
+  # Lint separately from the tests, so lint failures are reported even when tests fail.
+  # Both tools are configured in pyproject.toml.
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: ['codespell', 'ruff check']
+
     steps:
       - uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          # The package version is computed from git tags, so building it needs the full history with tags
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: ${{ matrix.tool }}
+        run: uv run ${{ matrix.tool }}
 
   test:
     runs-on: ubuntu-latest
@@ -33,12 +50,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The package version is computed from git tags, so building it needs the full history with tags
+          fetch-depth: 0
 
       - name: Install uv
         # setup-uv no longer publishes floating major tags (v8+); pin the full version.
         uses: astral-sh/setup-uv@v9.0.0
-
-      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -46,5 +64,4 @@ jobs:
         run: uv sync
 
       - name: run tests
-        run: make test
-
+        run: uv run pytest tests

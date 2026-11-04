@@ -4,7 +4,6 @@ from koza.runner import KozaRunner
 from tests.util import get_ingest_config_yaml_path
 
 
-@pytest.mark.integration
 def test_ubergraph_koza_runner_init(tmp_path):
     config_yaml_file_path = get_ingest_config_yaml_path("ubergraph")
     

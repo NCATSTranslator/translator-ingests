@@ -23,15 +23,6 @@ ifeq ($(OVERWRITE),False)
 OVERWRITE :=
 endif
 
-# Codespell: ./data/* and **/site-packages are large or third-party trees.
-# **/*.ipynb is skipped because notebook JSON embeds cell outputs: (1) base64-encoded
-# plot images contain random-looking letter runs that codespell treats as typos;
-# (2) pandas/HTML previews truncate long cell text and often split words mid-token
-# (truncation can leave a substring that looks like a misspelling of a longer word),
-# (3) acronyms and external vocabulary tokens in analysis cells add more noise.
-# Prefer spell-checking .py, .yaml, and prose docs instead.
-CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb
-
 # Include additional makefiles
 include rig.Makefile
 include doc.Makefile
@@ -148,7 +139,7 @@ install: python
 .PHONY: test
 test:
 	$(RUN) pytest tests
-	$(RUN) codespell --skip="$(CODESPELL_SKIP)" --ignore-words=.codespellignore
+	$(RUN) codespell
 	$(RUN) ruff check
 
 
@@ -283,9 +274,9 @@ format:
 
 .PHONY: lint-fix
 lint-fix:
-	$(RUN) codespell --skip="$(CODESPELL_SKIP)" --ignore-words=.codespellignore
+	$(RUN) codespell
 	$(RUN) ruff check --fix
 
 .PHONY: spell-fix
 spell-fix:
-	$(RUN) codespell --skip="$(CODESPELL_SKIP)" --ignore-words=.codespellignore --write-changes --interactive=3
+	$(RUN) codespell --write-changes --interactive=3
