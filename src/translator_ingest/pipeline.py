@@ -129,15 +129,14 @@ def get_latest_source_version(source: str) -> str:
         latest_version = latest_version.strip()
         logger.info(f"Latest version for {source} established: {latest_version}")
         return latest_version
-    except Exception as e:
-        logger.error(f'Failed to retrieve latest version for {source}, attempting fallback to current version. '
-                     f'Error: {e}.')
+    except Exception:
         last_version = get_last_successful_source_version(source)
-        if last_version is not None:
-            logger.info(f'Fallback version identified for {source}: {last_version}.')
-            return last_version
-        logger.error(f'Fallback version could not be identified for {source}.')
-        raise
+        if last_version is None:
+            logger.error(f"Version lookup failed for {source} and there is no previous build to fall back to.")
+            raise
+        logger.error(f"Version lookup failed for {source}; building last successful version {last_version} instead.",
+                     exc_info=True)
+        return last_version
 
 def get_transform_version(source: str) -> str:
     """Compute a content hash of the ingest's source files.
