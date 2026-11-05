@@ -14,6 +14,7 @@ from typing import Any
 
 import duckdb
 import koza
+import requests
 from koza.model.graphs import KnowledgeGraph
 from loguru import logger
 from pathlib import Path
@@ -176,27 +177,15 @@ def get_latest_version() -> str:
     which returns JSON with 'releaseVersion', 'releaseDate', and 'snapShotDate'.
 
     Returns:
-        str: The release version (e.g., "8.2.0") or "unknown" if unable to fetch.
+        str: The release version (e.g., "8.2.0").
     """
-    try:
-        import requests
-
-        response = requests.get("https://www.alliancegenome.org/api/releaseInfo", timeout=10)
-        response.raise_for_status()
-
-        data = response.json()
-        version = data.get('releaseVersion')
-
-        if version:
-            logger.info(f"Found Alliance version: {version}")
-            return version
-        else:
-            logger.warning("releaseVersion not found in API response")
-            return "unknown"
-
-    except Exception as e:
-        logger.warning(f"Error fetching Alliance version from API: {e}, using fallback")
-        return "unknown"
+    response = requests.get("https://www.alliancegenome.org/api/releaseInfo", timeout=10)
+    response.raise_for_status()
+    version = response.json().get('releaseVersion')
+    if not version:
+        raise RuntimeError("releaseVersion not found in Alliance releaseInfo API response.")
+    logger.info(f"Found Alliance version: {version}")
+    return version
 
 
 def get_data(data: dict, key: str):

@@ -95,7 +95,16 @@ def get_ingest_module(source: str) -> ModuleType:
         raise NotImplementedError(error_message)
 
 # Determine the latest available version for the source using the function from the ingest module
-def get_latest_source_version(source):
+def get_latest_source_version(source: str) -> str:
+    """Determine the latest source version, falling back to the last successful build's version.
+
+    A lookup fails if the ingest's get_latest_version() raises or returns anything other than a
+    non-empty string. On failure, the source_version from the source's latest build file is used
+    if one exists; otherwise the failure is raised.
+
+    :param source: Source name
+    :return: The source version to build
+    """
     ingest_module = get_ingest_module(source)
     try:
         # Get a reference to the get_latest_source_version function
@@ -113,17 +122,21 @@ def get_latest_source_version(source):
         # Call it and return the latest version
         logger.info(f"Determining latest version for {source}...")
         latest_version = latest_version_fn()
+        # Reject empty or non-string versions here, so they take the same fallback path as a raised error.
+        if not isinstance(latest_version, str) or not latest_version.strip():
+            raise ValueError(f"get_latest_version() for {source} returned {latest_version!r}, "
+                             f"expected a non-empty string.")
+        latest_version = latest_version.strip()
         logger.info(f"Latest version for {source} established: {latest_version}")
         return latest_version
-    except Exception as e:
-        logger.error(f'Failed to retrieve latest version for {source}, attempting fallback to current version. '
-                     f'Error: {e}.')
+    except Exception:
         last_version = get_last_successful_source_version(source)
-        if last_version is not None:
-            logger.info(f'Fallback version identified for {source}: {last_version}.')
-            return last_version
-        logger.error(f'Fallback version could not be identified for {source}.')
-        raise e
+        if last_version is None:
+            logger.error(f"Version lookup failed for {source} and there is no previous build to fall back to.")
+            raise
+        logger.error(f"Version lookup failed for {source}; building last successful version {last_version} instead.",
+                     exc_info=True)
+        return last_version
 
 def get_transform_version(source: str) -> str:
     """Compute a content hash of the ingest's source files.
