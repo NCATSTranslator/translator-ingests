@@ -1,5 +1,5 @@
 """
-Compare Jev's answers on a validation sample with the hand labels: precision and recall for unsupported sentences
+Compare Jev's answers on a validation sample with its labels: precision and recall for unsupported sentences
 at several thresholds, and a confusion table.
 
     python evaluate.py validation/sample_b.jsonl validation/labels_b.json validation/jev_v3_b.jsonl
@@ -34,7 +34,7 @@ def main() -> None:
     """Print precision/recall at several thresholds and a label-by-answer table."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("sample", type=Path, help="sample from sample_sentences.py")
-    parser.add_argument("labels", type=Path, help="hand labels, {n: label}")
+    parser.add_argument("labels", type=Path, help="labels, {n: label}")
     parser.add_argument("scores", type=Path, help="answers from score_sentences.py run on the sample")
     args = parser.parse_args()
 
@@ -51,7 +51,7 @@ def main() -> None:
         precision, recall = precision_recall(flagged, bad)
         print(f"  p_bad >= {threshold}: removes {len(flagged)}, precision {precision:.2f}, recall {recall:.2f}")
     table = Counter((labels[k], LABEL_OF_CHOICE[answers[k]["choice"]]) for k in labels)
-    print("rows: hand label; columns: Jev's top answer")
+    print("rows: label; columns: Jev's top answer")
     print("     " + "".join(f"{c:>5}" for c in "TSNLCO"))
     for label in "TSNLCO":
         print(f"  {label}  " + "".join(f"{table[(label, c)]:>5}" for c in "TSNLCO"))

@@ -16,8 +16,8 @@ is on it. This directory holds everything used to make that list and to check it
 | `score_sentences.py` | Step 2: ask Jev about each sentence; resumable |
 | `build_drop_list.py` | Step 3: roll sentence answers up to edges and write the drop list |
 | `sample_sentences.py` | Draw a stratified validation sample of sentences |
-| `evaluate.py` | Compare Jev's answers on a sample with hand labels |
-| `validation/` | The two validation samples, their hand labels, and Jev's answers on them |
+| `evaluate.py` | Compare Jev's answers on a sample with the labels |
+| `validation/` | The two validation samples, their labels, and Jev's answers on them |
 
 ## Method
 
@@ -85,7 +85,7 @@ python build_drop_list.py treats_sentences.jsonl tmkp_treats_jev_v3_scores.jsonl
 
 ## Validation
 
-The prompt went through three versions, checked against two hand-labeled samples. Each sample is 300 sentences, one
+The prompt went through three versions, checked against two labeled samples. Each sample is 300 sentences, one
 per edge, 100 from each evidence stratum (1, 2–4, 5+). Sample B leaves out sample A's edges.
 
 - Version 1 had a single "other" option for anything that wasn't treats or studied.
@@ -95,7 +95,11 @@ per edge, 100 from each evidence stratum (1, 2–4, 5+). Sample B leaves out sam
   policy.
 
 Sample B was drawn after version 1 and used to compare versions 2 and 3, so it is held out from version 1's
-development only. Labels are by one person.
+development only.
+
+The labels were made by Claude (Anthropic's model), reading each sentence against a written rubric before seeing
+Jev's answers. The same Claude session also wrote the prompt, and there was no second rater, so treat the precision
+and recall as estimates.
 
 ```bash
 python evaluate.py validation/sample_a.jsonl validation/labels_a.json validation/jev_v3_a.jsonl
@@ -140,8 +144,8 @@ What it wrongly flags: a few real treatments where the drug is an adjunct (G-CSF
 
 ## Other TMKP edge types
 
-The same approach could cover TMKP's other edges for about $140 in Jev calls. 300-sentence pilots, labeled
-independently, found:
+The same approach could cover TMKP's other edges for about $140 in Jev calls. 300-sentence pilots, labeled by
+separate Claude instances that worked from a written rubric and never saw the Jev prompts, found:
 
 | Edge type | Edges | Sentences | Unsupported sentences | Pilot precision / recall |
 |---|---|---|---|---|
