@@ -30,23 +30,19 @@ PANTHER_SOURCES = build_association_knowledge_sources(primary="infores:panther")
 
 
 def get_latest_version() -> str:
-    try:
-        response = requests.get(
-            "https://data.pantherdb.org/ftp/ortholog/current_release/README"
-        )
-        response.raise_for_status()
-        text = response.text
-        match = re.search(pattern=r"version:\s*v\.(\d+\.\d+)", string=text)
-        if match:
-            version = match.group(1)
-            print(f"Extracted version: {version}")
-            return version
-        else:
-            raise RuntimeError("Version match not found.")
+    """Get the current Panther release version from the ortholog README.
 
-    except (requests.RequestException, RuntimeError) as e:
-        print(f"Could not determine latest version for Panther: {e}")
-        return "unknown"
+    :return: The release version, e.g. '19.0'
+    """
+    response = requests.get(
+        "https://data.pantherdb.org/ftp/ortholog/current_release/README",
+        timeout=10,
+    )
+    response.raise_for_status()
+    match = re.search(pattern=r"version:\s*v\.(\d+\.\d+)", string=response.text)
+    if not match:
+        raise RuntimeError("Version match not found in Panther ortholog README.")
+    return match.group(1)
 
 
 @koza.prepare_data()
