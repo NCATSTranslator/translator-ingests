@@ -1,6 +1,7 @@
 """Tests for TMKP ingest validation functions and transforms."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -33,7 +34,11 @@ from translator_ingest.ingests.tmkp.tmkp import (
     get_skipped_edges_summary,
     _skipped_edges_by_prefix,
     parse_attributes,
+    load_dropped_edge_ids,
+    on_data_begin_edges,
+    on_data_end_edges,
     transform_tmkp_edge,
+    JEV_DROPPED_EDGES_FILE,
     TMKP_TO_BIOLINK_SLOT_MAP,
     INFORES_TEXT_MINING_KP,
     PREDICATE_REMAP,
@@ -537,16 +542,53 @@ class TestParseAttributes:
 # transform_tmkp_edge integration tests via KozaRunner
 # ---------------------------------------------------------------------------
 
+TEST_DATA_DIR = Path(__file__).parent
+
+
 def _run_edge_transform(record: dict) -> list:
-    """Helper: run transform_tmkp_edge through KozaRunner, return collected items."""
+    """
+    Helper: run the edge hooks and transform_tmkp_edge through KozaRunner, return collected items.
+    The dropped-edge list is the small fixture in this directory.
+    """
     writer = MockKozaWriter()
     runner = KozaRunner(
         data=[record],
         writer=writer,
-        hooks=KozaTransformHooks(transform_record=[transform_tmkp_edge]),
+        hooks=KozaTransformHooks(
+            on_data_begin=[on_data_begin_edges],
+            transform_record=[transform_tmkp_edge],
+            on_data_end=[on_data_end_edges],
+        ),
+        input_files_dir=TEST_DATA_DIR,
     )
     runner.run()
     return writer.items
+
+
+def test_load_dropped_edge_ids_skips_blank_lines():
+    assert load_dropped_edge_ids(TEST_DATA_DIR / JEV_DROPPED_EDGES_FILE) == frozenset(
+        {"tmkp-test-dropped-edge-1", "tmkp-test-dropped-edge-2"}
+    )
+
+
+@pytest.mark.parametrize(
+    "edge_id,kept",
+    [
+        ("tmkp-test-dropped-edge-1", False),
+        ("tmkp-test-dropped-edge-2", False),
+        ("tmkp-test-kept-edge", True),
+    ],
+)
+def test_edges_listed_in_jev_filter_are_dropped(edge_id: str, kept: bool):
+    record = {
+        "id": edge_id,
+        "subject": "DRUGBANK:DB00171",
+        "predicate": "biolink:treats_or_applied_or_studied_to_treat",
+        "object": "MONDO:0005301",
+        "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+    }
+    associations = [i for i in _run_edge_transform(record) if isinstance(i, Association)]
+    assert len(associations) == (1 if kept else 0)
 
 
 class TestTransformTmkpEdge:
