@@ -1,5 +1,4 @@
 import click
-import hashlib
 import json
 import time
 import shutil
@@ -35,6 +34,7 @@ from translator_ingest.util.storage.local import (
     IngestFileType,
     write_ingest_file,
 )
+from translator_ingest.util.transform_version import get_transform_version
 from translator_ingest.util.validate_biolink_kgx import ValidationStatus, get_validation_status, validate_kgx, validate_kgx_nodes_only
 from translator_ingest.util.download_utils import (
     get_recorded_download_date,
@@ -124,25 +124,6 @@ def get_latest_source_version(source):
             return last_version
         logger.error(f'Fallback version could not be identified for {source}.')
         raise e
-
-def get_transform_version(source: str) -> str:
-    """Compute a content hash of the ingest's source files.
-
-    Hashes all .py files, .json files, and the ingest YAML config in the ingest directory,
-    producing a short hash that changes whenever the ingest changes.
-    This automatically triggers a new build when the pipeline detects a new version.
-    """
-    ingest_dir = INGESTS_PARSER_PATH / source
-    source_yaml = ingest_dir / f"{source}.yaml"
-
-    files_to_hash: list[Path] = sorted(ingest_dir.glob("*.py")) + sorted(ingest_dir.glob("*.json"))
-    if source_yaml.exists():
-        files_to_hash.append(source_yaml)
-
-    hasher = hashlib.sha256()
-    for file_path in files_to_hash:
-        hasher.update(file_path.read_bytes())
-    return hasher.hexdigest()[:8]
 
 # Download the source data for a source from the original location
 def download(pipeline_metadata: PipelineMetadata):
@@ -623,7 +604,10 @@ def generate_latest_build_metadata(pipeline_metadata: PipelineMetadata):
 
 def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = False):
     source_version = get_latest_source_version(source)
-    pipeline_metadata: PipelineMetadata = PipelineMetadata(source, source_version=source_version)
+    transform_version = get_transform_version(source)
+    pipeline_metadata: PipelineMetadata = PipelineMetadata(
+        source, source_version=source_version, transform_version=transform_version
+    )
     Path.mkdir(get_output_directory(pipeline_metadata), parents=True, exist_ok=True)
 
     # Download the source data
@@ -633,10 +617,6 @@ def run_pipeline(source: str, transform_only: bool = False, overwrite: bool = Fa
     pipeline_metadata.source_download_date = get_recorded_download_date(pipeline_metadata)
 
     # Transform the source data into KGX files if needed
-    # Transform version is auto-computed as a content hash of the ingest's source files
-    # Set transform_version before load_koza_config since it uses get_transform_directory
-    pipeline_metadata.transform_version = get_transform_version(source)
-
     # Load koza config early to get max_edge_count for all pipeline stages
     load_koza_config(source, pipeline_metadata)
     if is_transform_complete(pipeline_metadata) and not overwrite:
