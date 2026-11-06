@@ -1,0 +1,118 @@
+
+################## TAXON 10116  (rows=13,752,916) ##################
+
+-- per-channel stats (nonzero / max / mean / median / p90 / p99) --
+channel                       %nonzero   max    mean   med   p90   p99
+neighborhood                     0.00%     0    0.00     0     0     0
+neighborhood_transferred         4.09%   385    2.65     0     0    70
+fusion                           0.15%   900    0.12     0     0     0
+cooccurence                      2.77%   542    5.54     0     0   228
+homology                         2.29%   988   17.12     0     0   777
+coexpression                    30.62%   737   27.05     0    92   207
+coexpression_transferred        47.43%   974   54.84     0   141   456
+experiments                      0.20%   994    1.12     0     0     0
+experiments_transferred         49.88%   999   74.84     0   196   535
+database                         2.82%   900   16.85     0     0   650
+database_transferred             2.35%   994    4.27     0     0   164
+textmining                      35.71%   998   74.02     0   233   562
+textmining_transferred          72.81%   902   91.17    75   189   436
+combined_score                 100.00%   999  264.60   206   464   900
+
+-- correlation matrix (channels x channels, x100) --
+        neighb neighb fusion cooccu homolo coexpr coexpr experi experi databa databa textmi textmi combin
+neighbo      0      0      0      0      0      0      0      0      0      0      0      0      0      0
+neighbo      0    100      1     -2     -3     -3     17      2      2     -0     13     -6     13     12
+fusion       0      1    100      1     -0     -0      0     -0     -0      0      1      0      0      2
+cooccur      0     -2      1    100     18     -3     -7     -0     -7     -0     -1     -7    -12      2
+homolog      0     -3     -0     18    100     16     -4      0     -3      7     -1     -3     -7      1
+coexpre      0     -3     -0     -3     16    100      1      5    -15     -0     -1     -2    -14      1
+coexpre      0     17      0     -7     -4      1    100     14     32      3      6    -14      2     41
+experim      0      2     -0     -0      0      5     14    100     11      8     -0      7      3     16
+experim      0      2     -0     -7     -3    -15     32     11    100     13      3    -15      4     47
+databas      0     -0      0     -0      7     -0      3      8     13    100      7      8      8     52
+databas      0     13      1     -1     -1     -1      6     -0      3      7    100     -2      5     12
+textmin      0     -6      0     -7     -3     -2    -14      7    -15      8     -2    100      0     40
+textmin      0     13      0    -12     -7    -14      2      3      4      8      5      0    100     34
+combine      0     12      2      2      1      1     41     16     47     52     12     40     34    100
+
+-- predicate-channel firing counts at thresholds --
+channel(predicate/family)                    150     300     400     500     600     700     750
+neighborhood(genetic_neighborho/gene)          0       0       0       0       0       0       0
+cooccurence(genetically_intera/gene)      275300   37842    7264     620       0       0       0
+fusion(gene_fusion_with/molecular)          4150    1296     728     456     314     244     198
+experiments(physically_interac/molecular)   25732   16330   15606   15370   15062   14958   14940
+textmining(interacts_with/molecular)     2879278  790046  402526  207160   98178   41446   25748
+coexpression(coexpressed_with/coexpression)  600012   27030    6318    3054    1988    1380       0
+
+-- co-firing (rows where BOTH channels > threshold) --
+  t=150:
+      cooccurence    & fusion        :      130  [GENE-vs-MOL]
+      cooccurence    & experiments   :       30  [GENE-vs-MOL]
+      cooccurence    & textmining    :     8116  [GENE-vs-MOL]
+      cooccurence    & coexpression  :     2328  [gene/coexpression]
+      fusion         & experiments   :        2  [molecular/molecular]
+      fusion         & textmining    :      500  [molecular/molecular]
+      fusion         & coexpression  :       60  [molecular/coexpression]
+      experiments    & textmining    :    15518  [molecular/molecular]
+      experiments    & coexpression  :     3706  [molecular/coexpression]
+      textmining     & coexpression  :    48536  [molecular/coexpression]
+  t=300:
+      cooccurence    & fusion        :       56  [GENE-vs-MOL]
+      cooccurence    & experiments   :        4  [GENE-vs-MOL]
+      cooccurence    & textmining    :      782  [GENE-vs-MOL]
+      cooccurence    & coexpression  :       44  [gene/coexpression]
+      fusion         & textmining    :      170  [molecular/molecular]
+      fusion         & coexpression  :       16  [molecular/coexpression]
+      experiments    & textmining    :     8826  [molecular/molecular]
+      experiments    & coexpression  :     1754  [molecular/coexpression]
+      textmining     & coexpression  :     4872  [molecular/coexpression]
+  t=400:
+      cooccurence    & fusion        :       40  [GENE-vs-MOL]
+      cooccurence    & experiments   :        2  [GENE-vs-MOL]
+      cooccurence    & textmining    :      246  [GENE-vs-MOL]
+      cooccurence    & coexpression  :       10  [gene/coexpression]
+      fusion         & textmining    :      116  [molecular/molecular]
+      fusion         & coexpression  :        6  [molecular/coexpression]
+      experiments    & textmining    :     5524  [molecular/molecular]
+      experiments    & coexpression  :     1158  [molecular/coexpression]
+      textmining     & coexpression  :     1198  [molecular/coexpression]
+  t=500:
+      cooccurence    & fusion        :       20  [GENE-vs-MOL]
+      cooccurence    & textmining    :       58  [GENE-vs-MOL]
+      cooccurence    & coexpression  :        6  [gene/coexpression]
+      fusion         & textmining    :       80  [molecular/molecular]
+      experiments    & textmining    :     2680  [molecular/molecular]
+      experiments    & coexpression  :     1032  [molecular/coexpression]
+      textmining     & coexpression  :      498  [molecular/coexpression]
+  t=600:
+      fusion         & textmining    :       48  [molecular/molecular]
+      experiments    & textmining    :     1060  [molecular/molecular]
+      experiments    & coexpression  :      888  [molecular/coexpression]
+      textmining     & coexpression  :      174  [molecular/coexpression]
+  t=700:
+      fusion         & textmining    :       28  [molecular/molecular]
+      experiments    & textmining    :      352  [molecular/molecular]
+      experiments    & coexpression  :      748  [molecular/coexpression]
+      textmining     & coexpression  :       62  [molecular/coexpression]
+  t=750:
+      fusion         & textmining    :       14  [molecular/molecular]
+      experiments    & textmining    :      208  [molecular/molecular]
+
+-- rows with >=2 predicate channels active (nonzero): 1,784,534 (12.98%) --
+
+-- dominant component of combined_score (argmax over channels) --
+   textmining                   dominant in    3663344 rows (26.64%)
+   textmining_transferred       dominant in    3606600 rows (26.22%)
+   experiments_transferred      dominant in    3044884 rows (22.14%)
+   coexpression_transferred     dominant in    1544396 rows (11.23%)
+   coexpression                 dominant in     790212 rows ( 5.75%)
+   database                     dominant in     311608 rows ( 2.27%)
+   homology                     dominant in     306304 rows ( 2.23%)
+   cooccurence                  dominant in     234892 rows ( 1.71%)
+   database_transferred         dominant in     212388 rows ( 1.54%)
+   experiments                  dominant in      19318 rows ( 0.14%)
+   neighborhood_transferred     dominant in      14816 rows ( 0.11%)
+   fusion                       dominant in       4154 rows ( 0.03%)
+   mean(combined - max_component) = 36.49
+
+-- combined_score > 500: 1,166,354 rows (8.48%) --
