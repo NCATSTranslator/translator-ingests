@@ -1,0 +1,109 @@
+name: CPIC Reference Ingest Guide (draft implementation)
+source_info:
+  infores_id: infores:cpic
+  name: Clinical Pharmacogenetics Implementation Consortium
+  description: >-
+    CPIC gene–drug pairs presented by ClinPGx, with CPIC levels, guideline references,
+    publications, ClinPGx evidence levels, and FDA pharmacogenomic label categories.
+  citations:
+    - https://www.clinpgx.org/cpic/pairs
+  terms_of_use_info:
+    terms_of_use_url: https://www.clinpgx.org/page/dataUsagePolicy
+    terms_of_use_description: >-
+      The upstream draft RIG claims CC BY 4.0 for CPIC. Confirm the applicable terms
+      for this ClinPGx-hosted API payload and its mixed-source annotations before
+      release. The ClinPGx entity ZIP files used for identifier mapping explicitly
+      contain CC BY-NC-SA 4.0 licenses; do not assume the combined output is CC BY.
+  data_access_locations:
+    - https://api.clinpgx.org/v1/cpic/pair
+    - https://www.clinpgx.org/cpic/pairs
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - json
+    - tsv
+  data_versioning_and_releases: >-
+    Rolling API and entity downloads, labeled by UTC retrieval date. The downloaded
+    source files are retained by the pipeline. No upstream release number is asserted.
+  source_status: maintained_regular_updates
+  additional_notes:
+    - The API is used by the ClinPGx published and provisional gene–drug tables.
+    - This is independent of the ClinPGx relationships.tsv ingest.
+    - Draft only; not enabled in graphs.yaml.
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: Gene–drug response associations with guideline and publication references.
+  scope: >-
+    Published, non-retired pairs passing the upstream RIG's FDA label filter and
+    having unambiguous NCBI Gene and PubChem Compound mappings. CPIC level C is
+    retained under the broad RIG scope; output is not a prescribing recommendation.
+  relevant_files:
+    - file_name: pairs.json
+      location: https://api.clinpgx.org/v1/cpic/pair
+      description: API data underlying the published cpic-genes-drugs.tsv table and provisional table.
+    - file_name: genes.zip
+      location: https://api.clinpgx.org/v1/download/file/data/genes.zip
+      description: Gene accession to NCBI Gene identifier mapping.
+    - file_name: chemicals.zip
+      location: https://api.clinpgx.org/v1/download/file/data/chemicals.zip
+      description: Chemical accession to PubChem Compound identifier mapping.
+    - file_name: drugs.zip
+      location: https://api.clinpgx.org/v1/download/file/data/drugs.zip
+      description: Overlapping drug accession mapping; disagreements fail the transform.
+  included_content:
+    - file_name: pairs.json
+      included_records: Published non-retired pairs with supported identifier mappings and no No Clinical PGx label.
+      fields_used: >-
+        pairid, cpgxgeneid, cpgxdrugid, clinpgxid, provisional, cpiclevel, pgxtesting,
+        pgkbcalevel, pmids, usedforrecommendation
+  filtered_content:
+    - file_name: pairs.json
+      filtered_records: Provisional or retired pairs.
+      rationale: Match the published table and omit assertions explicitly retired by the source.
+    - file_name: pairs.json
+      filtered_records: PGx on FDA Label equals No Clinical PGx.
+      rationale: Preserve the upstream RIG's filter, pending review of its conflicts with CPIC levels.
+    - file_name: pairs.json
+      filtered_records: Missing or ambiguous numeric identifier mappings.
+      rationale: Avoid name guessing, malformed CURIEs, and one-to-many mapping assumptions.
+    - file_name: pairs.json
+      filtered_records: Repeated mapped gene–drug pairs.
+      rationale: Merge into one edge with the union of publications and guideline references.
+  future_considerations:
+    - category: edge_content
+      consideration: >-
+        Review broad inclusion of level C, the FDA-label filter, agent type, and
+        appropriate Biolink slots for CPIC/ClinPGx levels and FDA label categories.
+        Raw levels and pair IDs are preserved by edge ID in transform metadata.
+target_info:
+  node_type_info:
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - NCBIGene
+    - node_category: biolink:Drug
+      source_identifier_types:
+        - PUBCHEM.COMPOUND
+  edge_type_info:
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:associated_with_response_to
+      object_categories:
+        - biolink:Drug
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - text_mining_agent
+      primary_knowledge_sources:
+        - infores:cpic
+      edge_properties:
+        - biolink:publications
+      ui_explanation: CPIC lists this gene–drug pair; the association follows the draft PGKG RIG mapping.
+provenance_info:
+  contributions:
+    - "Qi Wei: upstream CPIC parser and RIG"
+    - "Yue Zhang, Guangrong Qin, Sierra Moxon, Matthew Brush: upstream modeling and support"
+  artifacts:
+    - https://github.com/IlyaLab/TranslatorPharcogenomicsKG/blob/main/RIGs/CPIC_rig.yaml
+    - https://github.com/IlyaLab/TranslatorPharcogenomicsKG/blob/main/Pharmcoagenomics_KG_parsers/CPIC_parser.ipynb
