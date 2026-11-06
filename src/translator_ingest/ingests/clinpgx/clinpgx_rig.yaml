@@ -1,0 +1,104 @@
+name: ClinPGx Reference Ingest Guide (initial gene–chemical scope)
+source_info:
+  infores_id: infores:clinpgx
+  name: ClinPGx
+  description: >-
+    Clinical pharmacogenomics resource. This ingest reads relationship summaries
+    and entity identifier tables distributed by ClinPGx, formerly PharmGKB.
+  citations:
+    - https://www.clinpgx.org/page/citingClinpgx
+  terms_of_use_info:
+    license_name: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+    license_url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+    terms_of_use_url: https://www.clinpgx.org/page/dataUsagePolicy
+    terms_of_use_description: >-
+      Verified from LICENSE.txt bundled with all four archives retrieved on
+      2026-10-23 (CREATED_2026-10-05). This differs from the upstream draft RIG's
+      CC BY 4.0 claim. Review compatibility before inclusion in a released graph.
+  data_access_locations:
+    - https://www.clinpgx.org/downloads
+  data_provision_mechanisms:
+    - file_download
+  data_formats:
+    - tsv
+  data_versioning_and_releases: >-
+    Rolling ZIP downloads. The pipeline version is the UTC retrieval date;
+    archive CREATED dates are recorded separately in transform metadata.
+  source_status: maintained_regular_updates
+  additional_notes:
+    - Draft implementation; not enabled in graphs.yaml.
+    - CPIC's cpic-genes-drugs.tsv is a separate ingest and is not read here.
+ingest_info:
+  ingest_categories:
+    - primary_knowledge_provider
+  utility: Broad gene–chemical associations supported by ClinPGx annotation summaries.
+  scope: >-
+    Initial increment: positive Gene–Chemical relationships with one numeric
+    NCBI Gene ID and one numeric PubChem Compound ID. Does not assert causality,
+    a drug-response subtype, or variant-to-gene equivalence.
+  relevant_files:
+    - file_name: relationships.zip
+      location: https://api.clinpgx.org/v1/download/file/data/relationships.zip
+      description: relationships.tsv with association summaries and PMIDs.
+    - file_name: genes.zip
+      location: https://api.clinpgx.org/v1/download/file/data/genes.zip
+      description: genes.tsv mapping PharmGKB accessions to NCBI Gene identifiers.
+    - file_name: chemicals.zip
+      location: https://api.clinpgx.org/v1/download/file/data/chemicals.zip
+      description: chemicals.tsv mapping PharmGKB accessions to PubChem identifiers.
+    - file_name: drugs.zip
+      location: https://api.clinpgx.org/v1/download/file/data/drugs.zip
+      description: drugs.tsv, overlapping the chemical table; conflicting mappings fail.
+  included_content:
+    - file_name: relationships.tsv
+      included_records: >-
+        Association equals associated, and endpoint types are Gene and Chemical
+        in either order, with unambiguous supported identifier mappings.
+      fields_used: Entity1_id, Entity1_type, Entity2_id, Entity2_type, Association, Evidence, PMIDs
+  filtered_content:
+    - file_name: relationships.tsv
+      filtered_records: Not associated or ambiguous records.
+      rationale: These records must not become positive assertions.
+    - file_name: relationships.tsv
+      filtered_records: All pairs other than Gene–Chemical, or endpoints missing unambiguous IDs.
+      rationale: Bound the first implementation and avoid guessed mappings.
+    - file_name: relationships.tsv
+      filtered_records: Duplicate and reciprocal rows for the same mapped gene–chemical pair.
+      rationale: Emit one edge with the union of publications, oriented gene to chemical.
+  future_considerations:
+    - category: edge_content
+      consideration: >-
+        Review additional phenotype, gene–gene, chemical–chemical, and variant content.
+        Define per-edge modeling for Evidence and PK/PD fields; Evidence labels are
+        currently counted in transform metadata, not mapped to evidence ontology terms.
+target_info:
+  node_type_info:
+    - node_category: biolink:Gene
+      source_identifier_types:
+        - NCBIGene
+    - node_category: biolink:ChemicalEntity
+      source_identifier_types:
+        - PUBCHEM.COMPOUND
+  edge_type_info:
+    - subject_categories:
+        - biolink:Gene
+      predicates:
+        - biolink:associated_with
+      object_categories:
+        - biolink:ChemicalEntity
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - automated_agent
+      primary_knowledge_sources:
+        - infores:clinpgx
+      edge_properties:
+        - biolink:publications
+      ui_explanation: ClinPGx summarizes a positive association between this gene and chemical.
+provenance_info:
+  contributions:
+    - "Qi Wei: upstream PharmGKB parser and ClinPGx RIG"
+    - "Yue Zhang, Guangrong Qin, Sierra Moxon, Matthew Brush: upstream modeling and support"
+  artifacts:
+    - "Upstream RIG: TranslatorPharcogenomicsKG/RIGs/ClinPGX_rig.yaml"
+    - "Upstream parser: TranslatorPharcogenomicsKG/Pharmcoagenomics_KG_parsers/PharmGKB_parser.ipynb"

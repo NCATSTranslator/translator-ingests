@@ -1,0 +1,5 @@
+name: clinpgx
+
+# prepare_data reads the TSV members directly from the downloaded archives.
+reader:
+  format: csv
