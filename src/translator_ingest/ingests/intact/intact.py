@@ -51,6 +51,9 @@ PSI_MI_TYPE_TO_PREDICATE = {
 # Default predicate for unmapped interaction types
 DEFAULT_PREDICATE = "biolink:interacts_with"
 
+# PSI-MI producers use both compact and spaced spellings for this namespace.
+ENTREZ_GENE_DATABASES: frozenset[str] = frozenset({"entrezgene/locuslink", "entrez gene/locuslink"})
+
 
 def get_latest_version() -> str:
     """
@@ -135,11 +138,11 @@ def extract_curie(parsed_field: dict[str, str], preferred_prefix: str = None) ->
             'chebi': 'CHEBI',
             'pubmed': 'PMID',
             'ensembl': 'ENSEMBL',
-            'entrez gene/locuslink': 'NCBIGene',
             'refseq': 'RefSeq',
             'psi-mi': 'MI',
         }
-        prefix = db_to_prefix.get(parsed_field['db'].lower(), parsed_field['db'])
+        database = parsed_field['db'].lower()
+        prefix = 'NCBIGene' if database in ENTREZ_GENE_DATABASES else db_to_prefix.get(database, parsed_field['db'])
         return f"{prefix}:{parsed_field['id']}"
     else:
         return parsed_field['id']
@@ -185,7 +188,7 @@ def get_primary_identifier(id_field: str, alt_ids_field: str) -> tuple[str | Non
 
         if db in ['ensembl']:
             return extract_curie(parsed, 'ENSEMBL'), 'gene'
-        if db in ['entrez gene/locuslink']:
+        if db in ENTREZ_GENE_DATABASES:
             return extract_curie(parsed, 'NCBIGene'), 'gene'
         if db == 'refseq':
             return extract_curie(parsed, 'RefSeq'), 'gene'
