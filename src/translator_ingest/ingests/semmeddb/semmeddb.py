@@ -264,7 +264,7 @@ def load_verdicts(artifact_file: Path) -> VerdictIndex:
     support counts as covered without rejecting anything.
     """
     verdicts = pl.read_parquet(artifact_file, columns=VERDICT_ARTIFACT_COLUMNS).with_columns(
-        pl.col("support").cast(pl.Utf8).str.to_lowercase().str.strip_chars()
+        pl.col("support").cast(pl.String).str.to_lowercase().str.strip_chars()
     )
 
     # The artifact has one row per (edge, PMID), tens of millions of them, for an index of a

@@ -1,6 +1,9 @@
+import gzip
+from typing import Any
+
 import pytest
 from koza.runner import KozaRunner, KozaTransformHooks
-from tests.unit.ingests import MockKozaWriter
+from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 ## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
@@ -14,7 +17,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     RetrievalSource,
     ResourceRoleEnum,
 )
-from translator_ingest.ingests.pubtator.pubtator import transform_row
+from translator_ingest.ingests.pubtator.pubtator import EXCLUDED_ENTITIES, prepare, transform_row
 from translator_ingest.ingests.pubtator.mappings import RELATION_MODELING
 
 
@@ -211,3 +214,80 @@ def test_pydantic_roundtrip(fixture):
     dumped = obj.model_dump()
     restored = cls.model_validate(dumped)
     assert restored == obj
+
+
+## prepare(): the polars pipeline that reads the downloaded relation file directly.
+## The source shape is a headerless TSV of pmid, relation, entity1, entity2, where
+## each entity is "Type|ID".
+PREPARE_INPUT_ROWS = (
+    ## one triple reported by two papers: merges to a single row carrying both PMIDs
+    ("36706889", "treat", "Chemical|MESH:C514285", "Disease|MESH:D010146"),
+    ("33221983", "treat", "Chemical|MESH:C514285", "Disease|MESH:D010146"),
+    ## genes arrive as a bare NCBI id and pick up the NCBIGene prefix here
+    ("12345678", "associate", "Gene|1234", "Disease|MESH:D010146"),
+    ## dropped: variant entity types have no NodeNorm namespace
+    ("11111111", "treat", "ProteinMutation|p.G12D", "Disease|MESH:D010146"),
+    ## dropped: "compare" has no biolink-model mapping
+    ("22222222", "compare", "Chemical|MESH:C514285", "Disease|MESH:D010146"),
+    ## dropped: this chemical NodeNorms to the wrong category
+    ("33333333", "treat", f"Chemical|{EXCLUDED_ENTITIES[0]}", "Disease|MESH:D010146"),
+)
+
+
+@pytest.fixture
+def prepared(tmp_path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Run prepare() over a small gzipped stand-in for relation2pubtator3.gz."""
+    with gzip.open(tmp_path / "relation2pubtator3.gz", "wt") as relation_file:
+        relation_file.writelines("\t".join(row) + "\n" for row in PREPARE_INPUT_ROWS)
+    koza_transform = MockKozaTransform(
+        extra_fields={}, writer=MockKozaWriter(), mappings={}, input_files_dir=tmp_path
+    )
+    return list(prepare(koza_transform, data=[])), koza_transform.transform_metadata
+
+
+@pytest.mark.parametrize(
+    "triple,expected_pmids",
+    [
+        (("MESH:C514285", "treat", "MESH:D010146"), ["PMID:33221983", "PMID:36706889"]),
+        (("NCBIGene:1234", "associate", "MESH:D010146"), ["PMID:12345678"]),
+    ],
+    ids=["two_papers_one_triple", "gene_gets_ncbigene_prefix"],
+)
+def test_prepare_merges_publications_per_triple(
+    prepared: tuple[list[dict[str, Any]], dict[str, Any]],
+    triple: tuple[str, str, str],
+    expected_pmids: list[str],
+):
+    """Each unique subject/relation/object triple yields one row holding every PMID."""
+    rows, _ = prepared
+    matches = [
+        row for row in rows if (row["entity1_id"], row["relation"], row["entity2_id"]) == triple
+    ]
+    assert len(matches) == 1
+    ## unique() does not promise an order
+    assert sorted(matches[0]["pmid_set"]) == expected_pmids
+
+
+def test_prepare_keeps_only_the_supported_triples(
+    prepared: tuple[list[dict[str, Any]], dict[str, Any]],
+):
+    """Unsupported entity types, unmapped relations and excluded entities are all dropped."""
+    rows, _ = prepared
+    assert len(rows) == 2
+
+
+@pytest.mark.parametrize(
+    "metadata_key,expected",
+    [
+        ("dropped_entity_types", ["ProteinMutation"]),
+        ("dropped_relations", ["compare"]),
+    ],
+)
+def test_prepare_records_what_it_dropped(
+    prepared: tuple[list[dict[str, Any]], dict[str, Any]],
+    metadata_key: str,
+    expected: list[str],
+):
+    """What was filtered out is reported in the transform metadata."""
+    _, transform_metadata = prepared
+    assert transform_metadata[metadata_key] == expected

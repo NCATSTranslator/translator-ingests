@@ -163,7 +163,7 @@ def extract_panther_data_polars(
                 separator="\t",
                 has_header=False,
                 new_columns=RAW_COLUMNS,
-                schema_overrides={col: pl.Utf8 for col in RAW_COLUMNS},
+                schema_overrides={col: pl.String for col in RAW_COLUMNS},
             )
 
     # Extract species from Gene and Ortholog columns (first part before "|")
