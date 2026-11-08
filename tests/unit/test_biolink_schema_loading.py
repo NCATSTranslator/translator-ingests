@@ -54,6 +54,13 @@ def test_get_biolink_model_toolkit():
     assert bmt.get_model_version() == get_current_biolink_version()
 
 
+@pytest.mark.xfail(
+    condition=version("bmt") == "1.5.0",
+    reason="bmt 1.5.0, the latest release, defaults to the biolink-model 4.4.4 schema, behind the pinned 4.4.6. "
+           "Repo code builds its Toolkit with get_biolink_model_toolkit(), so is unaffected. "
+           "Remove this mark once a bmt release defaults to the pinned schema.",
+    strict=True,
+)
 def test_bmt_default_schema_matches_installed_biolink_model():
     """
     bmt's default schema must agree with the pinned biolink_model package.
