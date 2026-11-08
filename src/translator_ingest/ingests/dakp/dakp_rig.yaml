@@ -149,14 +149,14 @@ target_info:
         - "infores:faers"
       edge_properties:
         - "biolink:clinical_approval_status"
-        - "biolink:FDA_regulatory_approvals"
+        - "biolink:regulatory_approvals"
         - "biolink:publications"
       ui_explanation: >-
         This edge asserts that a drug is an FDA-approved treatment for a disease or phenotype.
         DAKP derives these assertions by processing FDA Structured Product Labeling documents
         (via DailyMed) and FAERS, with manual validation of an automated pipeline. The edge
         carries the FDA approval status (clinical_approval_status), the FDA approval/application
-        number(s) (FDA_regulatory_approvals), and DailyMed SPL evidence identifiers (recorded as
+        number(s) (regulatory_approvals), and DailyMed SPL evidence identifiers (recorded as
         publications). The strength of an FDA approval is best represented with the Biolink
         'treats' predicate.
       source_files:
@@ -164,7 +164,7 @@ target_info:
       additional_notes:
         - >-
           In the source data all instances have clinical_approval_status = approved_for_condition.
-          FDA_regulatory_approvals is populated from the source 'approvals' field; publications is
+          regulatory_approvals is populated from the source 'approvals' field; publications is
           populated from the source 'has_evidence' (DailyMed SPL) identifiers.
     # 2. Usage edges (biolink:applied_to_treat)
     - subject_categories:
@@ -226,7 +226,7 @@ target_info:
         - "infores:dailymed"
       edge_properties:
         - "biolink:clinical_approval_status"
-        - "biolink:FDA_regulatory_approvals"
+        - "biolink:regulatory_approvals"
         - "biolink:publications"
       ui_explanation: >-
         This edge reports that a drug is contraindicated in the presence of a disease or
@@ -238,7 +238,7 @@ target_info:
         - "drug_approvals_kg_edges.jsonl.gz"
       additional_notes:
         - >-
-          FDA_regulatory_approvals is populated from the source 'approvals' field; publications is
+          regulatory_approvals is populated from the source 'approvals' field; publications is
           populated from the source 'has_evidence' (DailyMed SPL) identifiers.
 
   node_type_info:
@@ -294,7 +294,8 @@ target_info:
         present in the current release. Revisit if/when the source begins providing them.
     - category: edge_properties
       consideration: >-
-        Confirm whether FDA_regulatory_approvals is the preferred Biolink property for FDA
+        Biolink Model 4.4.6 replaced FDA_regulatory_approvals with the agency-neutral
+        regulatory_approvals. Confirm whether it remains the preferred Biolink property for FDA
         application numbers, or whether a more specific/standard representation should be used.
     - category: spoq_pattern
       consideration: >-
