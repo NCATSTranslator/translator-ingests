@@ -88,6 +88,7 @@ def print_upload_summary(results: dict):
     print("=" * 80)
     print(f"Sources processed:    {results['sources_processed']}")
     print(f"Files uploaded:       {results['total_uploaded']}")
+    print(f"Files unchanged:      {results['total_skipped']}")
     print(f"Files failed:         {results['total_failed']}")
     print(f"Data transferred:     {results['total_bytes_transferred'] / (1024 * 1024 * 1024):.2f} GB")
     print(f"EBS space freed:      {results['total_bytes_freed'] / (1024 * 1024 * 1024):.2f} GB")
@@ -105,6 +106,7 @@ def print_upload_summary(results: dict):
             print(f"  Data upload:     ERROR - {data_upload['error']}")
         else:
             print(f"  Data upload:     {data_upload.get('uploaded', 0)} files, "
+                  f"{data_upload.get('skipped', 0)} unchanged, "
                   f"{data_upload.get('bytes_transferred', 0) / (1024 * 1024):.2f} MB")
 
         # Releases upload
@@ -113,6 +115,7 @@ def print_upload_summary(results: dict):
             print(f"  Releases upload: ERROR - {releases_upload['error']}")
         else:
             print(f"  Releases upload: {releases_upload.get('uploaded', 0)} files, "
+                  f"{releases_upload.get('skipped', 0)} unchanged, "
                   f"{releases_upload.get('bytes_transferred', 0) / (1024 * 1024):.2f} MB")
 
         # Cleanup stats
