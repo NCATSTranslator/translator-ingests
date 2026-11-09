@@ -1,0 +1,15 @@
+channel,type,predicate,9606_nonzero_pct,9606_max,10090_nonzero_pct,10090_max,10116_nonzero_pct,10116_max
+neighborhood,native,genetic_neighborhood_of,0.0000,0,0.0000,0,0.0000,0
+neighborhood_transferred,transferred,,4.1656,357,4.2089,366,4.0943,385
+fusion,native,gene_fusion_with,0.4429,900,0.4230,900,0.1521,900
+cooccurence,native,genetically_interacts_with,1.5777,537,2.1031,537,2.7662,542
+homology,native,,1.7663,988,2.1880,988,2.2914,988
+coexpression,native,coexpressed_with,52.0421,999,46.5291,999,30.6231,737
+coexpression_transferred,transferred,,41.5928,964,43.5221,941,47.4307,974
+experiments,native,physically_interacts_with,8.2876,999,1.0281,999,0.1975,994
+experiments_transferred,transferred,,37.1883,967,40.9248,979,49.8789,999
+database,native,,3.2458,900,3.2540,900,2.8237,900
+database_transferred,transferred,,2.4233,846,0.0000,0,2.3492,994
+textmining,native,interacts_with,59.6711,999,55.5045,999,35.7052,998
+textmining_transferred,transferred,,67.9269,353,70.0446,538,72.8123,902
+combined_score,aggregate,,100.0000,999,100.0000,999,100.0000,999
