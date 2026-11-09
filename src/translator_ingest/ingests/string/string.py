@@ -38,6 +38,7 @@ from translator_ingest.ingests.string.string_utils import (
     parse_string_protein_id,
     edges_for_row,
     sorted_pair_key,
+    string_source_record_url,
     make_string_ppi_edge,
     EDGE_KL_AT,
     COMBINED_SCORE_THRESHOLD
@@ -152,10 +153,12 @@ def transform_string_ppi(
         equivalent_identifiers=object_equivalents,
     )
 
+    source_record_url = string_source_record_url(record["protein1"], record["protein2"])
     edges = [
         make_string_ppi_edge(
             subject_id, pred, score, object_id,
             *EDGE_KL_AT[pred],
+            source_record_url=source_record_url,
         )
         for pred, score in new_edges
     ]

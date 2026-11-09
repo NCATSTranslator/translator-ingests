@@ -77,6 +77,16 @@ ingest_info:
             coexpression threshold (cutoff TBD, pending Vlado's recommendation),
             carrying the coexpression score as "stringdb_coexpression_score".
       (B) attributes.yaml PR for the three stringdb_* edge properties; (C) Vlado's threshold recommendations.
+
+      Each emitted edge carries a pair-focused URL in the infores:string RetrievalSource.source_record_urls.
+      The URL uses both raw taxon-prefixed protein identifiers in canonical order, separated by encoded
+      carriage return (%0D), and pins the hostname to version-12-0.string-db.org to match the source files.
+      species selects the source taxon; network_flavor=evidence displays evidence channels;
+      network_type=functional matches the input network; add_color_nodes=0 and add_white_nodes=0 prevent
+      extra neighbors. required_score=0 avoids an additional display cutoff on combined confidence and
+      does not change the ingest's combined-score or per-channel thresholds. All predicates for the pair
+      share this evidence page; it does not automatically select the channel responsible for a predicate.
+      Store the original query URL, never a redirected pollingId/sessionId URL.
     relevant_files:
       - file_name: 9606.protein.links.full.v12.0.txt.gz
         location: https://stringdb-downloads.org/download/protein.links.full.v12.0/
