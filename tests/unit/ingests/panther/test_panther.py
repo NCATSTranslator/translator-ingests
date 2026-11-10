@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 from typing import Optional
+from urllib.parse import parse_qs, urlsplit
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
@@ -27,12 +28,14 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
     NCBITAXON_A_COL,
     NCBITAXON_B_COL,
     GENE_FAMILY_ID_COL,
+    panther_sources
 )
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
 TEST_DATA_DIR = Path(__file__).resolve().parent
 TEST_ARCHIVE = TEST_DATA_DIR / "sample_panther_data.tar.gz"
+
 
 # Test normally works 99.9% of the time, except when
 # the Panther website is inaccessible, thus, breaking CI
@@ -50,6 +53,31 @@ def mock_koza_transform() -> koza.KozaTransform:
         writer=writer,
         mappings=mappings,
         input_files_dir=TEST_DATA_DIR
+    )
+
+
+# def panther_sources(gene_family_id: str, orthology_edge: bool) -> list[RetrievalSource]:
+def test_panther_source():
+    gene_family_id="PANTHER.FAMILY:PTHR12434"
+    def _check_source(sources: list[RetrievalSource], query_field: str):
+        assert len(sources) == 1
+        for source in sources:
+            assert source.source_record_urls is not None
+            assert len(source.source_record_urls) == 1
+            parsed = urlsplit(source.source_record_urls[0])
+            qs = parse_qs(parsed.query)
+            query_gene_family_id = qs[query_field]
+            assert query_gene_family_id[0] == gene_family_id.removeprefix("PANTHER.FAMILY:")
+
+    # orthology sources
+    _check_source(
+        sources=panther_sources(gene_family_id=gene_family_id, orthology_edge=True),
+        query_field="fieldValue"
+    )
+    # gene_family sources
+    _check_source(
+        sources=panther_sources(gene_family_id=gene_family_id, orthology_edge=False),
+        query_field="clsAccession"
     )
 
 
@@ -126,6 +154,26 @@ def test_prepare_panther_data_filters_excluded_species():
 
 # --- Tests for transform_record (using pre-processed dict format) ---
 
+ORTHO_SRL_TEMPLATE = ("https://pantherdb.org/genes/geneList.do?searchType=basic&loggedPrivilege=false&"
+                               "fieldName=all&fieldValue={gf_id}&listType=1&organism=Homo%20sapiens")
+
+GFAM_SRL_TEMPLATE = "https://pantherdb.org/panther/family.do?clsAccession={gf_id}"
+
+HOMO_GFAM_ID = "PTHR12434"
+HOMO_GFAM_CURIE = f"PANTHER.FAMILY:{HOMO_GFAM_ID}"
+HOMO_ORTHO_SRL = ORTHO_SRL_TEMPLATE.format(gf_id=HOMO_GFAM_ID)
+HOMO_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=HOMO_GFAM_ID)
+
+MUS_GFAM_ID = "PTHR11711"
+MUS_GFAM_CURIE = f"PANTHER.FAMILY:{MUS_GFAM_ID}"
+MUS_ORTHO_SRL = ORTHO_SRL_TEMPLATE.format(gf_id=MUS_GFAM_ID)
+MUS_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=MUS_GFAM_ID)
+
+RAT_GFAM_ID = "PTHR15566"
+RAT_GFAM_CURIE = f"PANTHER.FAMILY:{RAT_GFAM_ID}"
+RAT_ORTHO_SRL = ORTHO_SRL_TEMPLATE.format(gf_id=RAT_GFAM_ID)
+RAT_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=RAT_GFAM_ID)
+
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
@@ -135,7 +183,7 @@ def test_prepare_panther_data_filters_excluded_species():
                 GENE_B_ID_COL: "RGD:1564893",
                 NCBITAXON_A_COL: "NCBITaxon:9606",
                 NCBITAXON_B_COL: "NCBITaxon:10116",
-                GENE_FAMILY_ID_COL: "PANTHER.FAMILY:PTHR12434",
+                GENE_FAMILY_ID_COL: HOMO_GFAM_CURIE,
             },
 
             # Captured node contents
@@ -149,7 +197,7 @@ def test_prepare_panther_data_filters_excluded_species():
                     "category": ["biolink:Gene"]
                 },
                 {
-                    "id": "PANTHER.FAMILY:PTHR12434",
+                    "id": HOMO_GFAM_CURIE,
                     "category": ["biolink:GeneFamily"]
                 }
             ],
@@ -161,11 +209,12 @@ def test_prepare_panther_data_filters_excluded_species():
                     "subject": "HGNC:11477",
                     "object": "RGD:1564893",
                     "predicate": "biolink:orthologous_to",
-                    "has_evidence": ["PANTHER.FAMILY:PTHR12434"],
+                    "has_evidence": [HOMO_GFAM_CURIE],
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [HOMO_ORTHO_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -174,12 +223,13 @@ def test_prepare_panther_data_filters_excluded_species():
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "HGNC:11477",
-                    "object": "PANTHER.FAMILY:PTHR12434",
+                    "object": HOMO_GFAM_CURIE,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [HOMO_GFAM_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -188,12 +238,13 @@ def test_prepare_panther_data_filters_excluded_species():
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "RGD:1564893",
-                    "object": "PANTHER.FAMILY:PTHR12434",
+                    "object": HOMO_GFAM_CURIE,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [HOMO_GFAM_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -207,7 +258,7 @@ def test_prepare_panther_data_filters_excluded_species():
                 GENE_B_ID_COL: "MGI:99431",
                 NCBITAXON_A_COL: "NCBITaxon:9606",
                 NCBITAXON_B_COL: "NCBITaxon:10090",
-                GENE_FAMILY_ID_COL: "PANTHER.FAMILY:PTHR11711",
+                GENE_FAMILY_ID_COL: MUS_GFAM_CURIE,
             },
 
             # Captured node contents
@@ -221,7 +272,7 @@ def test_prepare_panther_data_filters_excluded_species():
                     "category": ["biolink:Gene"]
                 },
                 {
-                    "id": "PANTHER.FAMILY:PTHR11711",
+                    "id": MUS_GFAM_CURIE,
                     "category": ["biolink:GeneFamily"]
                 }
             ],
@@ -233,11 +284,12 @@ def test_prepare_panther_data_filters_excluded_species():
                     "subject": "ENSEMBL:ENSG00000275949",
                     "object": "MGI:99431",
                     "predicate": "biolink:orthologous_to",
-                    "has_evidence": ["PANTHER.FAMILY:PTHR11711"],
+                    "has_evidence": [MUS_GFAM_CURIE],
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [MUS_ORTHO_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -246,12 +298,13 @@ def test_prepare_panther_data_filters_excluded_species():
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "ENSEMBL:ENSG00000275949",
-                    "object": "PANTHER.FAMILY:PTHR11711",
+                    "object": MUS_GFAM_CURIE,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [MUS_GFAM_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -260,12 +313,13 @@ def test_prepare_panther_data_filters_excluded_species():
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "MGI:99431",
-                    "object": "PANTHER.FAMILY:PTHR11711",
+                    "object": MUS_GFAM_CURIE,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [MUS_GFAM_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -279,7 +333,7 @@ def test_prepare_panther_data_filters_excluded_species():
                 GENE_B_ID_COL: "RGD:7561849",
                 NCBITAXON_A_COL: "NCBITaxon:9606",
                 NCBITAXON_B_COL: "NCBITaxon:10116",
-                GENE_FAMILY_ID_COL: "PANTHER.FAMILY:PTHR15566",
+                GENE_FAMILY_ID_COL: RAT_GFAM_CURIE
             },
 
             # Captured node contents
@@ -293,7 +347,7 @@ def test_prepare_panther_data_filters_excluded_species():
                     "category": ["biolink:Gene"]
                 },
                 {
-                    "id": "PANTHER.FAMILY:PTHR15566",
+                    "id": RAT_GFAM_CURIE,
                     "category": ["biolink:GeneFamily"]
                 }
             ],
@@ -305,11 +359,12 @@ def test_prepare_panther_data_filters_excluded_species():
                     "subject": "UniProtKB:A6NNC1",
                     "object": "RGD:7561849",
                     "predicate": "biolink:orthologous_to",
-                    "has_evidence": ["PANTHER.FAMILY:PTHR15566"],
+                    "has_evidence": [RAT_GFAM_CURIE],
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [RAT_ORTHO_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -318,12 +373,13 @@ def test_prepare_panther_data_filters_excluded_species():
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "UniProtKB:A6NNC1",
-                    "object": "PANTHER.FAMILY:PTHR15566",
+                    "object": RAT_GFAM_CURIE,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [RAT_GFAM_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -332,12 +388,13 @@ def test_prepare_panther_data_filters_excluded_species():
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "RGD:7561849",
-                    "object": "PANTHER.FAMILY:PTHR15566",
+                    "object": RAT_GFAM_CURIE,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
-                            "resource_id": "infores:panther"
+                            "resource_id": "infores:panther",
+                            "source_record_urls": [RAT_GFAM_SRL]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,

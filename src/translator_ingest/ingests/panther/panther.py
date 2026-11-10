@@ -13,7 +13,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum, GeneFamily
 )
-from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 
 import koza
@@ -24,9 +23,8 @@ from translator_ingest.ingests.panther.panther_orthologs_utils import (
     GENE_A_ID_COL,
     GENE_B_ID_COL,
     GENE_FAMILY_ID_COL,
+    panther_sources
 )
-
-PANTHER_SOURCES = build_association_knowledge_sources(primary="infores:panther")
 
 
 def get_latest_version() -> str:
@@ -66,6 +64,7 @@ def prepare_panther_data(
     :return: Iterable[dict[str, Any]], pre-processed records with resolved gene CURIEs
              and taxon IDs ready for record-by-record transform_record processing.
     """
+    assert koza_transform.input_files_dir is not None
     data_archive_path: Path = koza_transform.input_files_dir / "RefGenomeOrthologs.tar.gz"
     df = extract_panther_data_polars(data_archive_path)
     return df.to_dicts()
@@ -104,16 +103,17 @@ def transform_gene_to_gene_orthology(
         object=gene_b.id,
         predicate="biolink:orthologous_to",
         has_evidence=orthology_evidence,
-        sources=PANTHER_SOURCES,
+        sources=panther_sources(gene_family_id, orthology_edge=True),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_validation_of_automated_agent
     )
+
     gene_a_family_relationship = GeneToGeneFamilyAssociation(
         id=entity_id(),
         subject=gene_a.id,
         object=gene_family.id,
         predicate="biolink:member_of",
-        sources=PANTHER_SOURCES,
+        sources=panther_sources(gene_family_id, orthology_edge=False),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent
     )
@@ -122,7 +122,7 @@ def transform_gene_to_gene_orthology(
         subject=gene_b.id,
         object=gene_family.id,
         predicate="biolink:member_of",
-        sources=PANTHER_SOURCES,
+        sources=panther_sources(gene_family_id, orthology_edge=False),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent
     )
