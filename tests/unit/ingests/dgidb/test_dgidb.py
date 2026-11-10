@@ -25,14 +25,25 @@ def plain_interacts():
     writer = MockKozaWriter()
     ## example of df row after parsing with prepare, from notebook
     record = {
-        "drug_concept_id": "RXCUI:9997",
-        "gene_concept_id": "HGNC:7979",
+        "translator_drug_id": "RXCUI:9997",
+        "translator_gene_id": "HGNC:7979",
         "mod_type": "~PLAIN_INTERACTS",
         "interaction_types": {"~NULL"},
         ## remember the parser overwrites sources column during sources special logic (vs notebook creates new column)
-        "interaction_source_db_name": {"TdgClinicalTrial", "GuideToPharmacology", "ChEMBL", "TTD", "TEND"},
-        "interaction_score": 0.429308,
-        "evidence_score": 5.0,
+        "interaction_source_db_name": {
+            "ChEMBL",
+            "Drug Repurposing Hub",
+            "GuideToPharmacology",
+            "TEND",
+            "TTD",
+            "TdgClinicalTrial",
+        },
+        "interaction_score": 0.1489588585541495,
+        "evidence_score": 6.0,
+        "drug_concept_id": "rxcui:9997",
+        "drug_name": "SPIRONOLACTONE",
+        "gene_concept_id": "hgnc:7979",
+        "gene_name": "NR3C2",
     }
     runner = KozaRunner(
         data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[transform_row])
@@ -59,32 +70,33 @@ def test_plain_output(plain_interacts):
 
     ## sources/publications
     assert association.sources
-    ## primary dgidb + 3 of the interaction_source_db_name are keys in supporting_data_sources
-    assert len(association.sources) == 4
+    ## primary dgidb + 4 of the interaction_source_db_name are keys in supporting_data_sources
+    assert len(association.sources) == 5
     ## primary
     primary_source = [i for i in association.sources if i.resource_role == "primary_knowledge_source"][0]
     assert primary_source.resource_id == util.INFORES_DGIDB
+    assert primary_source.source_record_urls
     ## supporting
     supporting_sources = [i for i in association.sources if i.resource_role == "supporting_data_source"]
-    assert len(supporting_sources) == 3
+    assert len(supporting_sources) == 4
     supporting_infores = [i.resource_id for i in supporting_sources]
-
     assert set(supporting_infores) == {
-        supporting_data_sources["GuideToPharmacology"],
         supporting_data_sources["ChEMBL"],
+        supporting_data_sources["Drug Repurposing Hub"],
+        supporting_data_sources["GuideToPharmacology"],
         supporting_data_sources["TTD"],
     }
     ## has 2 publications from other interaction_source_db_name elements
     assert association.publications
     assert len(association.publications) == 2
     assert set(association.publications) == {
-        publications["TdgClinicalTrial"],
         publications["TEND"],
+        publications["TdgClinicalTrial"],
     }
 
     ## scores
-    assert association.dgidb_interaction_score == 0.429308
-    assert association.dgidb_evidence_score == 5
+    assert association.dgidb_interaction_score == 0.1489588585541495
+    assert association.dgidb_evidence_score == 6
 
 
 ## BIOLINK_DP_INTERACTS main edge
@@ -93,16 +105,18 @@ def dp_interacts():
     writer = MockKozaWriter()
     ## example of df row after parsing with prepare, from notebook
     record = {
-        "drug_concept_id": "CHEMBL.COMPOUND:CHEMBL2109293",
-        "gene_concept_id": "HGNC:4445",
+        "translator_drug_id": "CHEMBL.COMPOUND:CHEMBL2109293",
+        "translator_gene_id": "HGNC:4445",
         "mod_type": "binder",
         "interaction_types": {"binder"},
         ## remember the parser overwrites sources column (vs notebook creates new column)
         "interaction_source_db_name": {"ChEMBL"},
-        ## in this test, I remove the scores fields to mimic the lack of scores (from scores special logic)
-        ## in practice these scores seem to come in as nan
-        ##     regular pipeline running seems to handle these without errors (added conversion to None)
-        ##     but pytest's pydantic seems to error on them and I don't know why
+        "interaction_score": 9.364546907770864,
+        "evidence_score": 1.0,
+        "drug_concept_id": "chembl:CHEMBL2109293",
+        "drug_name": "KRN-330",
+        "gene_concept_id": "hgnc:4445",
+        "gene_name": "GPA33",
     }
     runner = KozaRunner(
         data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[transform_row])
@@ -132,6 +146,7 @@ def test_dp_interacts(dp_interacts):
     ## primary
     primary_source = [i for i in association.sources if i.resource_role == "primary_knowledge_source"][0]
     assert primary_source.resource_id == util.INFORES_DGIDB
+    assert primary_source.source_record_urls
     ## supporting
     supporting_sources = [i for i in association.sources if i.resource_role == "supporting_data_source"]
     assert len(supporting_sources) == 1
@@ -140,8 +155,8 @@ def test_dp_interacts(dp_interacts):
     assert association.publications is None
 
     ## scores
-    assert association.dgidb_interaction_score is None
-    assert association.dgidb_evidence_score is None
+    assert association.dgidb_interaction_score == 9.364546907770864
+    assert association.dgidb_evidence_score == 1
 
 
 ## affects edge WITHOUT extra edge made
@@ -150,14 +165,20 @@ def affects_only():
     writer = MockKozaWriter()
     ## example of df row after parsing with prepare, from notebook
     record = {
-        "drug_concept_id": "RXCUI:8351",
-        "gene_concept_id": "HGNC:4573",
+        "translator_drug_id": "RXCUI:8351",
+        "translator_gene_id": "HGNC:4573",
         "mod_type": "modulator",
         "interaction_types": {"modulator"},
         ## remember the parser overwrites sources column during sources special logic (vs notebook creates new column)
         "interaction_source_db_name": {"GuideToPharmacology"},
-        "interaction_score": 0.248590,
-        "evidence_score": 1.0,
+        ## in this test, I remove the scores fields to mimic the lack of scores (from scores special logic)
+        ## in practice these scores seem to come in as nan
+        ##     regular pipeline running seems to handle these without errors (added conversion to None)
+        ##     but pytest's pydantic seems to error on them and I don't know why
+        "drug_concept_id": "rxcui:8351",
+        "drug_name": "PIRACETAM",
+        "gene_concept_id": "hgnc:4573",
+        "gene_name": "GRIA3",
     }
     runner = KozaRunner(
         data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[transform_row])
@@ -188,6 +209,7 @@ def test_affects_only(affects_only):
     ## primary
     primary_source = [i for i in association.sources if i.resource_role == "primary_knowledge_source"][0]
     assert primary_source.resource_id == util.INFORES_DGIDB
+    assert primary_source.source_record_urls
     ## supporting
     supporting_sources = [i for i in association.sources if i.resource_role == "supporting_data_source"]
     assert len(supporting_sources) == 1
@@ -196,8 +218,8 @@ def test_affects_only(affects_only):
     assert association.publications is None
 
     ## scores
-    assert association.dgidb_interaction_score == 0.248590
-    assert association.dgidb_evidence_score == 1
+    assert association.dgidb_interaction_score is None
+    assert association.dgidb_evidence_score is None
 
 
 ## affects edge WITH extra edge
@@ -206,14 +228,18 @@ def affects_extra():
     writer = MockKozaWriter()
     ## example of df row after parsing with prepare, from notebook
     record = {
-        "drug_concept_id": "DRUGBANK:DB05169",
-        "gene_concept_id": "HGNC:6192",
+        "translator_drug_id": "DRUGBANK:DB05169",
+        "translator_gene_id": "HGNC:6192",
         "mod_type": "inhibitor",
         "interaction_types": {"inhibitor"},
         ## remember the parser overwrites sources column during sources special logic (vs notebook creates new column)
-        "interaction_source_db_name": {"TALC", "MyCancerGenome"},
-        "interaction_score": 0.096853,
+        "interaction_source_db_name": {"MyCancerGenome", "TALC"},
+        "interaction_score": 0.0500777909506463,
         "evidence_score": 2.0,
+        "drug_concept_id": "drugbank:DB05169",
+        "drug_name": "AT9283",
+        "gene_concept_id": "hgnc:6192",
+        "gene_name": "JAK2",
     }
     runner = KozaRunner(
         data=iter([record]), writer=writer, hooks=KozaTransformHooks(transform_record=[transform_row])
@@ -248,6 +274,7 @@ def test_affects_extra(affects_extra):
     ## primary
     primary_source = [i for i in association_affects.sources if i.resource_role == "primary_knowledge_source"][0]
     assert primary_source.resource_id == util.INFORES_DGIDB
+    assert primary_source.source_record_urls
     ## supporting
     supporting_sources = [i for i in association_affects.sources if i.resource_role == "supporting_data_source"]
     assert len(supporting_sources) == 1
@@ -258,7 +285,7 @@ def test_affects_extra(affects_extra):
     assert association_affects.publications[0] == publications["TALC"]
 
     ## scores
-    assert association_affects.dgidb_interaction_score == 0.096853
+    assert association_affects.dgidb_interaction_score == 0.0500777909506463
     assert association_affects.dgidb_evidence_score == 2
 
 
@@ -279,6 +306,7 @@ def test_affects_extra(affects_extra):
     ## primary
     primary_source = [i for i in association_extra.sources if i.resource_role == "primary_knowledge_source"][0]
     assert primary_source.resource_id == util.INFORES_DGIDB
+    assert primary_source.source_record_urls
     ## supporting
     supporting_sources = [i for i in association_extra.sources if i.resource_role == "supporting_data_source"]
     assert len(supporting_sources) == 1
