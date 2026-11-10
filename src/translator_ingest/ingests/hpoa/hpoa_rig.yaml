@@ -116,7 +116,10 @@ ingest_info:
   - file_name: genes_to_phenotype.txt
     included_records: >-
       Records where we determine that the reported G-P association was
-      inferred over a G-D associated type with the value "MENDELIAN"
+      inferred over a G-D associated type with the value "MENDELIAN".
+      Where genes_to_disease.txt reports more than one association type for the
+      same gene-disease pair, the presence of a "MENDELIAN" assertion is
+      sufficient for the record to be included.
     fields_used: ncbi_gene_id, gene_symbol, hpo_id, hpo_name, frequency, disease_id
   filtered_content:
     - file_name: phenotype.hpoa
@@ -134,7 +137,10 @@ ingest_info:
     - file_name: genes_to_phenotype.txt
       filtered_records: >-
         Records where we determine that the reported G-P association was inferred
-        over a G-D associated type with the value "POLYGENIC" or "UNKNOWN"
+        over a G-D associated type with the value "POLYGENIC" or "UNKNOWN", and no
+        "MENDELIAN" association type is reported for that gene-disease pair. Since
+        every Orphanet gene-disease record is "UNKNOWN", no Orphanet-derived
+        gene-phenotype records are included.
       rationale: >-
         HPO will infer a Gene-Phenotype association G1-P1 in cases where G1 causes,
         contributes_to, or is associated with D1, and D1 is associated with a Phenotype P1.

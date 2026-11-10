@@ -3,3 +3,5 @@ ncbi_gene_id	gene_symbol	hpo_id	hpo_name	frequency	disease_id
 22	ABCB7	HP:0002470	Nonprogressive cerebellar ataxia	11/11	OMIM:301310
 24	ABCA4	HP:0001133	Constriction of peripheral visual field	-	OMIM:601718
 24	ABCA4	HP:0001105	Retinal atrophy	HP:0040282	ORPHA:791
+24	ABCA4	HP:0000510	Rod-cone dystrophy	-	OMIM:153800
+24	ABCA4	HP:0000548	Cone/cone-rod dystrophy	-	OMIM:248200
