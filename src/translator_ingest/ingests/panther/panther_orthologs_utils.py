@@ -6,6 +6,9 @@ from pathlib import Path
 
 import polars as pl
 
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
+from translator_ingest.util.biolink import build_association_knowledge_sources
+
 # These names should match pantherdb shorthand names for each species
 # Example... https://www.pantherdb.org/genomes/genome.jsp?taxonId=9606 --> Short Name: HUMAN
 panther_taxon_map = {
@@ -215,3 +218,21 @@ def extract_panther_data_polars(
     df = df.select([GENE_A_ID_COL, GENE_B_ID_COL, NCBITAXON_A_COL, NCBITAXON_B_COL, GENE_FAMILY_ID_COL])
 
     return df
+
+
+
+def panther_sources(gene_family_id: str, orthology_edge: bool) -> list[RetrievalSource]:
+    # Remove CURIE prefix we added during the ingest task
+    gf_object_id = gene_family_id.removeprefix("PANTHER.FAMILY:")
+    if orthology_edge:
+        url_template = "https://pantherdb.org/genes/geneList.do?searchType=basic&loggedPrivilege=false&fieldName=all&fieldValue={gene_family_id}&listType=1&organism=Homo%20sapiens"
+    else:
+        url_template = "https://pantherdb.org/panther/family.do?clsAccession={gene_family_id}"
+    source_record_url = url_template.format(gene_family_id=gf_object_id)
+    return build_association_knowledge_sources(
+        primary=(
+            "infores:panther",
+            [source_record_url]
+        )
+    )
+
