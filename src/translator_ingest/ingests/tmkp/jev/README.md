@@ -57,9 +57,18 @@ repo doesn't depend on it.
 curl -O https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/edges.tsv.gz
 curl -O https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/nodes.tsv.gz
 python extract_sentences.py edges.tsv.gz nodes.tsv.gz treats_sentences.jsonl
-TYPESAFE_API_KEY=... uv run score_sentences.py treats_sentences.jsonl scores.jsonl errors.jsonl --concurrency 32
+TYPESAFE_API_KEY="$(security find-generic-password -s typesafe -w)" \
+    uv run score_sentences.py treats_sentences.jsonl scores.jsonl errors.jsonl --concurrency 32
 python build_drop_list.py treats_sentences.jsonl scores.jsonl treats_edges.jsonl tmkp_treats_jev_v3_dropped_edges.txt.gz
 ```
+
+**The API key.** `score_sentences.py` reads the key from `TYPESAFE_API_KEY` and stops if it isn't set. Don't type the
+key on the command line or put it in a file in the repo: it would end up in shell history or git. Keep it in a secret
+store and fill the variable from there for the one command, as above, so the key exists only in that process's
+environment. The example reads it from the macOS Keychain, where it was stored once with
+`security add-generic-password -a "$USER" -s typesafe -w` (which prompts for the key rather than taking it as an
+argument). Elsewhere, use your own secret store the same way (for example `"$(op read 'op://<vault>/TypeSafe/credential')"`
+with 1Password), or a secret the job runner mounts as an environment variable.
 
 - Step 1 writes 873,268 sentences.
 - Step 2 took about an hour at 32 concurrent calls, used about 1,050 input tokens per sentence, and cost $38 (Jev

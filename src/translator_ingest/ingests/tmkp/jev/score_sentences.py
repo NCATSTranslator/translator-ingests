@@ -5,9 +5,11 @@
 """
 Step 2: ask Jev about every sentence and write its answer (choice and per-option probabilities) as JSON lines.
 
-Needs a TypeSafe API key in TYPESAFE_API_KEY. Run with uv so the SDK is installed in a throwaway environment:
+Needs a TypeSafe API key in TYPESAFE_API_KEY, filled from a secret store for this one command rather than typed or
+saved in a file (see README.md). Run with uv so the SDK is installed in a throwaway environment:
 
-    uv run score_sentences.py treats_sentences.jsonl scores.jsonl errors.jsonl --concurrency 32
+    TYPESAFE_API_KEY="$(security find-generic-password -s typesafe -w)" \
+        uv run score_sentences.py treats_sentences.jsonl scores.jsonl errors.jsonl --concurrency 32
 
 Resumable: sentences already in the scores file are skipped. A failed call goes to the errors file (rewritten each
 run) and is not scored, so rerunning retries it. A chunk in which most calls fail stops the run, since that means
