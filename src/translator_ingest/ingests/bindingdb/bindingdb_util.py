@@ -83,25 +83,6 @@ LINK_TO_LIGAND_TARGET_PAIR: str = (
     "&column=ki&startPg=0&Increment=50&submit=Search"
 )
 
-_WEB_MAPPINGS: dict[str, str] = {
-    " ": "+",
-    ",": "%2C",
-    "{": "%7B",
-    "}": "%7D",
-    "[": "%5B",
-    "]": "%5D",
-    "|": "%7C"
-}
-def web_string(s: str) -> str:
-    """
-    :param s: The input string to be encoded
-    :return: The input string encoded with web-encoded characters
-    """
-    # Web string sanitization
-    for a,b in _WEB_MAPPINGS.items():
-        s = s.replace(a, b)
-    return s
-
 SCHEMA_OVERRIDES = {
     MONOMER_ID: pl.Utf8,
     PUBCHEM_CID: pl.Utf8,

@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote_plus
 
 import koza
 import polars as pl
@@ -16,7 +17,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.bindingdb.bindingdb_util import (
-    web_string,
     extract_bindingdb_columns_polars,
     process_publications,
     filter_affinity_values,
@@ -240,7 +240,7 @@ def transform_bindingdb_by_record(
     bindingdb_assay_study: dict[str, Study] | None = get_bindingdb_assay_study(publication, edge_id, record)
 
     # Sources
-    target_label = web_string(target_name)
+    target_label = quote_plus(target_name)
     supporting_data_id = record[SUPPORTING_DATA_ID]
     supporting_data: list[str] | None = [supporting_data_id] if supporting_data_id else None
     source_record_url: str = LINK_TO_LIGAND_TARGET_PAIR.format(monomerid=record[MONOMER_ID], enzyme=target_label)
