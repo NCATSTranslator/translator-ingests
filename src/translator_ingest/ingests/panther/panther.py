@@ -20,6 +20,7 @@ from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
     extract_panther_data_polars,
+    GENE_COL,
     GENE_A_ID_COL,
     GENE_B_ID_COL,
     GENE_FAMILY_ID_COL,
@@ -86,6 +87,7 @@ def transform_gene_to_gene_orthology(
     :param record: Dict contents of a single pre-processed input data record
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
+    gene_col = record[GENE_COL]
     gene_a_id = record[GENE_A_ID_COL]
     gene_b_id = record[GENE_B_ID_COL]
     gene_family_id = record[GENE_FAMILY_ID_COL]
@@ -103,7 +105,7 @@ def transform_gene_to_gene_orthology(
         object=gene_b.id,
         predicate="biolink:orthologous_to",
         has_evidence=orthology_evidence,
-        sources=panther_sources(gene_family_id, orthology_edge=True),
+        sources=panther_sources(gene_col, orthology_edge=True),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_validation_of_automated_agent
     )
