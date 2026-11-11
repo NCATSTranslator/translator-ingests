@@ -139,27 +139,27 @@ def test_prepare_panther_data():
 
     records = df.to_dicts()
 
-    # Query 3 equivalent: HUMAN HGNC to RAT RGD
+    # Query 3 equivalent: HUMAN HGNC ortholog to RAT RGD
     r0 = records[0]
-    assert r0[GENE_COL] == "PANTHER.FAMILY:PTHR12434"
+    assert r0[GENE_COL] == "HUMAN|HGNC=11477|UniProtKB=Q6GZX4"
     assert r0[GENE_A_ID_COL] == "HGNC:11477"
     assert r0[GENE_B_ID_COL] == "RGD:1564893"
     assert r0[NCBITAXON_A_COL] == "NCBITaxon:9606"
     assert r0[NCBITAXON_B_COL] == "NCBITaxon:10116"
     assert r0[GENE_FAMILY_ID_COL] == "PANTHER.FAMILY:PTHR12434"
 
-    # Query 4 equivalent: HUMAN Ensembl (version stripped) to MOUSE MGI
+    # Query 4 equivalent: HUMAN Ensembl (version stripped) ortholog to MOUSE MGI
     r1 = records[1]
-    assert r0[GENE_COL] == "PANTHER.FAMILY:PTHR12434"
+    assert r1[GENE_COL] == "HUMAN|Ensembl=ENSG00000275949.5|UniProtKB=A0A0G2JMH3"
     assert r1[GENE_A_ID_COL] == "ENSEMBL:ENSG00000275949"
     assert r1[GENE_B_ID_COL] == "MGI:99431"
     assert r1[NCBITAXON_A_COL] == "NCBITaxon:9606"
     assert r1[NCBITAXON_B_COL] == "NCBITaxon:10090"
     assert r1[GENE_FAMILY_ID_COL] == "PANTHER.FAMILY:PTHR11711"
 
-    # Query 5 equivalent: HUMAN non-canonical (UniProtKB fallback) to RAT RGD
+    # Query 5 equivalent: HUMAN non-canonical (artificial UniProtKB fallback) ortholog to RAT RGD
     r2 = records[2]
-    assert r0[GENE_COL] == "PANTHER.FAMILY:PTHR12434"
+    assert r2[GENE_COL] == "HUMAN|Gene=P12LL_HUMAN|UniProtKB=A6NNC1"
     assert r2[GENE_A_ID_COL] == "UniProtKB:A6NNC1"
     assert r2[GENE_B_ID_COL] == "RGD:7561849"
     assert r2[NCBITAXON_A_COL] == "NCBITaxon:9606"
@@ -181,31 +181,34 @@ def test_prepare_panther_data_filters_excluded_species():
 
 ORTHO_SRL_TEMPLATE = "https://pantherdb.org/genes/gene.do?acc={gene_col}#orthologs"
 
-HOMO_GENE_COL_ID = "HUMAN|HGNC=11477|UniProtKB=Q15528"
-HOMO_ORTHO_SRL = ORTHO_SRL_TEMPLATE.format(gene_col=urlencode(HOMO_GENE_COL_ID))
+HOMO_GENE_COL_ID_1 = "HUMAN|HGNC=11477|UniProtKB=Q15528"
+HOMO_ORTHO_SRL_1 = ORTHO_SRL_TEMPLATE.format(gene_col=urlencode(HOMO_GENE_COL_ID_1))
 
-MUS_GENE_COL_ID = "MOUSE|MGI=MGI=98446|UniProtKB=Q62276"
-MUS_ORTHO_SRL = ORTHO_SRL_TEMPLATE.format(gene_col=urlencode(MUS_GENE_COL_ID))
-
-RAT_GENE_COL_ID = "RAT|RGD=1564893|UniProtKB=A0JPN6"
-RAT_ORTHO_SRL = ORTHO_SRL_TEMPLATE.format(gene_col=urlencode(RAT_GENE_COL_ID))
+HOMO_GENE_COL_ID_2 = "HUMAN|Ensembl=ENSG00000268861|UniProtKB=A0A590UK10"
+HOMO_ORTHO_SRL_2 = ORTHO_SRL_TEMPLATE.format(gene_col=urlencode(HOMO_GENE_COL_ID_2))
 
 GFAM_SRL_TEMPLATE = "https://pantherdb.org/panther/family.do?clsAccession={gf_id}"
-SAMPLE_GFAM_ID = "PTHR12434"
-SAMPLE_GFAM_CURIE = f"PANTHER.FAMILY:{SAMPLE_GFAM_ID}"
-SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
+
+SAMPLE_GFAM_ID_1 = "PTHR12434"
+SAMPLE_GFAM_CURIE_1 = f"PANTHER.FAMILY:{SAMPLE_GFAM_ID_1}"
+SAMPLE_GFAM_SRL_1 = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID_1)
+
+SAMPLE_GFAM_ID_2 = "PTHR13944"
+SAMPLE_GFAM_CURIE_2 = f"PANTHER.FAMILY:{SAMPLE_GFAM_ID_2}"
+SAMPLE_GFAM_SRL_2 = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID_2)
+
 
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
         (   # Query 0 - Regular record, HUMAN (HGNC identified gene) to RAT ortholog
             {
-                GENE_COL: "HUMAN|HGNC=11477|UniProtKB=Q15528",
+                GENE_COL: HOMO_GENE_COL_ID_1,
                 GENE_A_ID_COL: "HGNC:11477",
                 GENE_B_ID_COL: "RGD:1564893",
                 NCBITAXON_A_COL: "NCBITaxon:9606",
                 NCBITAXON_B_COL: "NCBITaxon:10116",
-                GENE_FAMILY_ID_COL: SAMPLE_GFAM_CURIE,
+                GENE_FAMILY_ID_COL: SAMPLE_GFAM_CURIE_1,
             },
 
             # Captured node contents
@@ -219,7 +222,7 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                     "category": ["biolink:Gene"]
                 },
                 {
-                    "id": SAMPLE_GFAM_CURIE,
+                    "id": SAMPLE_GFAM_CURIE_1,
                     "category": ["biolink:GeneFamily"]
                 }
             ],
@@ -231,12 +234,12 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                     "subject": "HGNC:11477",
                     "object": "RGD:1564893",
                     "predicate": "biolink:orthologous_to",
-                    "has_evidence": [SAMPLE_GFAM_CURIE],
+                    "has_evidence": [SAMPLE_GFAM_CURIE_1],
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [HOMO_ORTHO_SRL]
+                            "source_record_urls": [HOMO_ORTHO_SRL_1]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -245,13 +248,13 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "HGNC:11477",
-                    "object": SAMPLE_GFAM_CURIE,
+                    "object": SAMPLE_GFAM_CURIE_1,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [SAMPLE_GFAM_SRL]
+                            "source_record_urls": [SAMPLE_GFAM_SRL_1]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -260,13 +263,13 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "RGD:1564893",
-                    "object": SAMPLE_GFAM_CURIE,
+                    "object": SAMPLE_GFAM_CURIE_1,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [SAMPLE_GFAM_SRL]
+                            "source_record_urls": [SAMPLE_GFAM_SRL_1]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -274,28 +277,28 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                 }
             ]
         ),
-        (   # Query 1 - Chicken Ensembl (version-stripped) to MOUSE MGI
+        (   # Query 1 - HUMAN Ensembl (version-stripped) orthology to MOUSE MGI
             {
-                GENE_COL: "CHICK|Ensembl=ENSGALG00010028857.1|UniProtKB=A0A8V1AFQ2",
-                GENE_A_ID_COL: "ENSEMBL:ENSGALG00010028857",
-                GENE_B_ID_COL: "MGI:99431",
-                NCBITAXON_A_COL: "NCBITaxon:9031",
+                GENE_COL: HOMO_GENE_COL_ID_2,
+                GENE_A_ID_COL: "ENSEMBL:ENSG00000268861",
+                GENE_B_ID_COL: "MGI:2142567",
+                NCBITAXON_A_COL: "NCBITaxon:9606",
                 NCBITAXON_B_COL: "NCBITaxon:10090",
-                GENE_FAMILY_ID_COL: SAMPLE_GFAM_CURIE,
+                GENE_FAMILY_ID_COL: SAMPLE_GFAM_CURIE_2,
             },
 
             # Captured node contents
             [
                 {
-                    "id": "ENSEMBL:ENSGALG00010028857",
+                    "id": "ENSEMBL:ENSG00000268861",
                     "category": ["biolink:Gene"]
                 },
                 {
-                    "id": "MGI:99431",
+                    "id": "MGI:2142567",
                     "category": ["biolink:Gene"]
                 },
                 {
-                    "id": SAMPLE_GFAM_CURIE,
+                    "id": SAMPLE_GFAM_CURIE_2,
                     "category": ["biolink:GeneFamily"]
                 }
             ],
@@ -304,15 +307,15 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
             [
                 {
                     "category": ["biolink:GeneToGeneHomologyAssociation"],
-                    "subject": "ENSEMBL:ENSGALG00010028857",
-                    "object": "MGI:99431",
+                    "subject": "ENSEMBL:ENSG00000268861",
+                    "object": "MGI:2142567",
                     "predicate": "biolink:orthologous_to",
-                    "has_evidence": [SAMPLE_GFAM_CURIE],
+                    "has_evidence": [SAMPLE_GFAM_CURIE_2],
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [MUS_ORTHO_SRL]
+                            "source_record_urls": [HOMO_ORTHO_SRL_2]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -320,14 +323,14 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                 },
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
-                    "subject": "ENSEMBL:ENSGALG00010028857",
-                    "object": SAMPLE_GFAM_CURIE,
+                    "subject": "ENSEMBL:ENSG00000268861",
+                    "object": SAMPLE_GFAM_CURIE_2,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [SAMPLE_GFAM_SRL]
+                            "source_record_urls": [SAMPLE_GFAM_SRL_2]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -335,14 +338,14 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                 },
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
-                    "subject": "MGI:99431",
-                    "object": SAMPLE_GFAM_CURIE,
+                    "subject": "MGI:2142567",
+                    "object": SAMPLE_GFAM_CURIE_2,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [SAMPLE_GFAM_SRL]
+                            "source_record_urls": [SAMPLE_GFAM_SRL_2]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -350,14 +353,14 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                 }
             ]
         ),
-        (   # Query 2 - HUMAN non-canonical (UniProtKB fallback) to RAT RGD
+        (   # Query 2 - HUMAN non-canonical (artificial stated UniProtKB fallback) orthology to RAT RGD
             {
-                GENE_COL: "HUMAN|HGNC=11477|UniProtKB=Q15528",
+                GENE_COL: HOMO_GENE_COL_ID_1,
                 GENE_A_ID_COL: "UniProtKB:Q15528",
                 GENE_B_ID_COL: "RGD:7561849",
                 NCBITAXON_A_COL: "NCBITaxon:9606",
                 NCBITAXON_B_COL: "NCBITaxon:10116",
-                GENE_FAMILY_ID_COL: SAMPLE_GFAM_CURIE
+                GENE_FAMILY_ID_COL: SAMPLE_GFAM_CURIE_1
             },
 
             # Captured node contents
@@ -371,7 +374,7 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                     "category": ["biolink:Gene"]
                 },
                 {
-                    "id": SAMPLE_GFAM_CURIE,
+                    "id": SAMPLE_GFAM_CURIE_1,
                     "category": ["biolink:GeneFamily"]
                 }
             ],
@@ -383,12 +386,12 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                     "subject": "UniProtKB:Q15528",
                     "object": "RGD:7561849",
                     "predicate": "biolink:orthologous_to",
-                    "has_evidence": [SAMPLE_GFAM_CURIE],
+                    "has_evidence": [SAMPLE_GFAM_CURIE_1],
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [RAT_ORTHO_SRL]
+                            "source_record_urls": [HOMO_ORTHO_SRL_1]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -397,13 +400,13 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "UniProtKB:Q15528",
-                    "object": SAMPLE_GFAM_CURIE,
+                    "object": SAMPLE_GFAM_CURIE_1,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [SAMPLE_GFAM_SRL]
+                            "source_record_urls": [SAMPLE_GFAM_SRL_1]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -412,13 +415,13 @@ SAMPLE_GFAM_SRL = GFAM_SRL_TEMPLATE.format(gf_id=SAMPLE_GFAM_ID)
                 {
                     "category": ["biolink:GeneToGeneFamilyAssociation"],
                     "subject": "RGD:7561849",
-                    "object": SAMPLE_GFAM_CURIE,
+                    "object": SAMPLE_GFAM_CURIE_1,
                     "predicate": "biolink:member_of",
                     "sources": [
                         {
                             "resource_role": "primary_knowledge_source",
                             "resource_id": "infores:panther",
-                            "source_record_urls": [SAMPLE_GFAM_SRL]
+                            "source_record_urls": [SAMPLE_GFAM_SRL_1]
                         }
                     ],
                     "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
