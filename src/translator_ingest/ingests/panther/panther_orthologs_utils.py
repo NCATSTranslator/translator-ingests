@@ -3,6 +3,7 @@ Utility functions for Panther Orthology data processing
 """
 import tarfile
 from pathlib import Path
+from urllib.parse import quote as urlencode
 
 import polars as pl
 
@@ -150,7 +151,8 @@ def extract_panther_data_polars(
 
     :param data_archive_path: Path to the RefGenomeOrthologs.tar.gz archive
     :param target_species: Set of species short names to include (default: TARGET_SPECIES)
-    :return: A polars DataFrame with columns: gene_a_id, gene_b_id, ncbitaxon_a, ncbitaxon_b, gene_family_id
+    :return: A polars DataFrame with columns: Gene (original raw value),
+             gene_a_id, gene_b_id, ncbitaxon_a, ncbitaxon_b, gene_family_id
     """
     if target_species is None:
         target_species = TARGET_SPECIES
@@ -214,21 +216,23 @@ def extract_panther_data_polars(
         how="left"
     )
 
-    # Select only the derived columns needed downstream
-    df = df.select([GENE_A_ID_COL, GENE_B_ID_COL, NCBITAXON_A_COL, NCBITAXON_B_COL, GENE_FAMILY_ID_COL])
+    # Select the original Gene column plus the derived columns needed downstream
+    df = df.select([GENE_COL, GENE_A_ID_COL, GENE_B_ID_COL, NCBITAXON_A_COL, NCBITAXON_B_COL, GENE_FAMILY_ID_COL])
 
     return df
 
 
-
-def panther_sources(gene_family_id: str, orthology_edge: bool) -> list[RetrievalSource]:
-    # Remove CURIE prefix we added during the ingest task
-    gf_object_id = gene_family_id.removeprefix("PANTHER.FAMILY:")
+def panther_sources(identifier: str, orthology_edge: bool) -> list[RetrievalSource]:
     if orthology_edge:
-        url_template = "https://pantherdb.org/genes/geneList.do?searchType=basic&loggedPrivilege=false&fieldName=all&fieldValue={gene_family_id}&listType=1&organism=Homo%20sapiens"
+        # Orthology edge 'source_record_url' resolved from the Gene Column string value
+        identifier = urlencode(identifier)
+        url_template = "https://pantherdb.org/genes/gene.do?acc={identifier}#orthologs"
     else:
-        url_template = "https://pantherdb.org/panther/family.do?clsAccession={gene_family_id}"
-    source_record_url = url_template.format(gene_family_id=gf_object_id)
+        # Gene Family 'source_record_url' resolved from the Panther Gene Family CURIE
+        # Remove CURIE prefix we added the Panther gene family identifier during the ingest task
+        identifier = identifier.removeprefix("PANTHER.FAMILY:")
+        url_template = "https://pantherdb.org/panther/family.do?clsAccession={identifier}"
+    source_record_url = url_template.format(identifier=identifier)
     return build_association_knowledge_sources(
         primary=(
             "infores:panther",
