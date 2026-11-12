@@ -28,9 +28,10 @@ source_info:
   data_versioning_and_releases: >-
     Based on the FAQ section: content expansion and feature enhancements are announced on the front page.
     Releases are approximately quarterly, designated as increments (e.g. 2024.4 in December 2024, 2024.3 in
-    October 2024). The ingest derives the source version by scraping the download page
-    (https://www.guidetopharmacology.org/download.jsp), which reports text of the form
-    "Downloads are from the 2025.4 version." Release history is documented at
+    October 2024). The ingest derives the source version from the metadata comment on the first line of
+    https://www.guidetopharmacology.org/DATA/interactions.csv, which reports text of the form
+    "# GtoPdb Version: 2026.2 - published: 2026-06-15". This public data file is also the ingest's interaction
+    source, so version detection does not depend on the login-gated download page. Release history is documented at
     https://www.guidetopharmacology.org/databaseContent.jsp
   source_status: maintained_regular_updates
 
@@ -45,9 +46,23 @@ ingest_info:
     use cases, including drug mechanism-of-action and chemical-target regulation predictions.
   scope: >-
     This ingest covers curated ligand-target interaction records from GtoPdb's interactions.csv file, producing
-    chemical-to-protein edges. No species or record-level filtering is applied. Records with the same ligand,
-    target, and Type + Action are aggregated into a single edge, with publications from the merged records
-    combined into a list. Only the interactions.csv and ligands.csv files are used in this phase.
+    chemical-to-target edges. A target is represented as a biolink:Protein when its source descriptor identifies
+    one canonical UniProt accession, or as a source-defined biolink:MacromolecularComplex when its descriptor
+    identifies multiple GtoPdb subunits. No species or record-level filtering is applied. Records with the same
+    ligand, target, species, and Type + Action are aggregated into a single edge, with publications from the
+    merged records combined into a list. Only the interactions.csv and ligands.csv files are used in this phase.
+
+    Each interaction edge carries a ligand biology page in the infores:gtopdb RetrievalSource.source_record_urls:
+    https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?tab=biology&ligandId=<Ligand ID>.
+    The original Ligand ID is retained through preparation and is distinct from the normalized PubChem CID.
+    Complex has_part edges instead link to their source target page using
+    https://www.guidetopharmacology.org/GRAC/ObjectDisplayForward?objectId=<Target ID>.
+    These are source entity pages, not unique interaction or species-specific assertion URLs. Users must
+    inspect the matching target and species; the website currently requires registration and login.
+    The links are not release-pinned snapshots.
+    Species-qualified composition for a Target ID observed in more than one species is planned under
+    https://github.com/NCATSTranslator/translator-ingests/issues/510; until then, such targets keep their
+    species-qualified ligand-target edges but omit has_part edges and component nodes.
 
   relevant_files:
     - file_name: "interactions.csv"
@@ -61,12 +76,14 @@ ingest_info:
     - file_name: "interactions.csv"
       included_records: >-
         No filtering. Records for all species are included. Note that records in the source data describe
-        results of a single published experiment. In our ingest, records with the same ligand, target, and
-        Type + Action are merged into a single edge, and metadata from each merged record (publications) is
-        combined into a list and attached to the edge. Records lacking a Target UniProt ID or Ligand ID, and
-        records whose Ligand ID has no PubChem CID mapping in ligands.csv, are dropped because they cannot be
-        turned into a well-identified edge.
-      fields_used: "Ligand, Target, Ligand ID, Target UniProt ID, Type, Action, PubMed ID, Endogenous"
+        results of a single published experiment. Target descriptors are keyed by Target ID and Target Species.
+        Multiple values in Target UniProt ID alone do not establish a complex: multiple Target Subunit IDs do.
+        A multi-species target may therefore also be a macromolecular complex, with a separate descriptor for
+        each species. Multiple canonical UniProt accessions without multiple source subunit IDs are retained as
+        unresolved multi-protein groups rather than inferred to be complexes. Records lacking a Target ID or
+        Ligand ID, and records whose Ligand ID has no PubChem CID mapping in ligands.csv, are dropped because
+        they cannot be turned into a well-identified edge.
+      fields_used: "Ligand, Target, Target ID, Target Subunit IDs, Target Gene Symbol, Target UniProt ID, Target Species, Ligand ID, Type, Action, PubMed ID, Endogenous"
     - file_name: "ligands.csv"
       included_records: "Used only for identifier mapping (Ligand ID to PubChem CID); no edges are created directly from this file."
       fields_used: "Ligand ID, PubChem CID"
@@ -75,7 +92,14 @@ ingest_info:
 
   future_considerations:
     - category: edge_content
-      consideration: "Leverage the value of the ENDOGENOUS column to inform when to use the regulates predicate and upregulates/downregulates direction qualifier values."
+      consideration: >-
+        Implemented for single-species targets and completed by #510 for multi-species targets: use Target ID, Target Subunit IDs, Target UniProt ID, and Target Species from
+        interactions.csv to identify source-defined complexes and their species-specific components.
+        Multiple source subunit IDs provide complex evidence; multiple UniProt accessions alone must not
+        turn a target family or unresolved group into a complex. Preserve individual component identifiers
+        rather than constructing a pipe-delimited UniProt CURIE. If species or component identity is missing
+        or ambiguous, omit the unsupported composition assertions and report the omission rather than
+        assigning a default species or inferring unsupported components.
     - category: edge_content
       consideration: "Consider ingesting the file 'approved_drug_primary_target_interactions.csv', which contains a detailed interactions list for approved drugs."
     - category: edge_content
@@ -94,6 +118,7 @@ target_info:
         - biolink:affects
       object_categories:
         - biolink:Protein
+        - biolink:MacromolecularComplex
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumeration:
@@ -116,9 +141,10 @@ target_info:
         - infores:gtopdb
       edge_properties:
         - biolink:publications
+        - biolink:species_context_qualifier
       ui_explanation: >-
         Source GtoPdb data provides expert-curated assertions about how a ligand affects the activity of a
-        protein target, based on pharmacological and medicinal chemistry literature. The record used to create
+        target, based on pharmacological and medicinal chemistry literature. The record used to create
         this Translator edge reports a ligand-target interaction whose GtoPdb Type + Action values indicate an
         effect on target activity, with a direction (increased or decreased). This is represented using the
         Biolink 'affects'/'causes' predicate with an object_aspect_qualifier of 'activity', an
@@ -132,6 +158,10 @@ target_info:
       additional_notes:
         - "The choice between increased/decreased direction is based on the combination of the Type and Action columns in GtoPdb. The choice between the 'affects' and 'regulates' predicate is based on whether ENDOGENOUS = FALSE (affects) or TRUE (regulates). Records in the source data describe interactions demonstrated in specific experiments; records with the same ligand, target, and Type + Action are aggregated into a single edge, and publications from each merged record are combined into a list and attached to the edge. Examples of record sets that should get merged are documented at https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
         - "The causal_mechanism_qualifier value depends on the Type + Action combination and is drawn from the Biolink CausalMechanismQualifierEnum (e.g. agonism, partial_agonism, inverse_agonism, antagonism, inhibition, competitive_inhibition, irreversible_inhibition, activation, potentiation, positive/negative/mixed_allosteric_modulation, molecular_channel_blockage, gating_inhibition, antibody_agonism, antibody_inhibition)."
+        - "For both affects and regulates edges, Full agonist actions under Activator, Agonist, and Allosteric modulator intentionally use agonism. Gating inhibitor + Voltage-dependent inhibition intentionally uses gating_inhibition. Physical edges retain their independently specified mechanisms."
+        - "Agonist + Irreversible agonist deliberately retains agonism to preserve the original ingest behavior. Biolink has no irreversible_agonism value; the emitted mechanism does not assert irreversibility. The physical edge is retained."
+        - "Inhibitor + Non-competitive uses the Biolink mechanism noncompetitive_inhibition (the reviewed sheet spells it non_competitive_inhibition). Antagonist + Non-competitive retains non_competitive_antagonism."
+        - "Antibody + Agonist follows the reviewed mapping: mechanism antibody_agonism with decreased direction for affects and downregulated direction for regulates."
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
@@ -140,6 +170,7 @@ target_info:
         - biolink:regulates
       object_categories:
         - biolink:Protein
+        - biolink:MacromolecularComplex
       qualifiers:
         - property: biolink:qualified_predicate
           value_enumeration:
@@ -162,9 +193,10 @@ target_info:
         - infores:gtopdb
       edge_properties:
         - biolink:publications
+        - biolink:species_context_qualifier
       ui_explanation: >-
         Source GtoPdb data provides expert-curated assertions about how an endogenous ligand regulates the
-        activity of a protein target. This edge type is emitted when GtoPdb's ENDOGENOUS flag is TRUE, indicating
+        activity of a target. This edge type is emitted when GtoPdb's ENDOGENOUS flag is TRUE, indicating
         the ligand is an endogenous regulator of the target. It is otherwise identical in structure to the
         'affects' edge type above: the interaction's Type + Action values are represented using the Biolink
         'regulates'/'causes' predicate with an object_aspect_qualifier of 'activity', an
@@ -183,30 +215,35 @@ target_info:
         - biolink:directly_physically_interacts_with
       object_categories:
         - biolink:Protein
+        - biolink:MacromolecularComplex
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_enumeration:
+            - binding
+            - allosteric_modulation
       knowledge_level:
         - knowledge_assertion
-      primary_knowledge_sources:
-        - infores:gtopdb
       agent_type:
         - manual_agent
       primary_knowledge_sources:
         - infores:gtopdb
       edge_properties:
         - biolink:publications
+        - biolink:species_context_qualifier
       ui_explanation: >-
         Source GtoPdb data provides expert-curated assertions about ligand-target interactions. This edge
-        reports that a ligand physically binds to a protein target, without asserting a direction of effect. It
-        is created (in addition to the corresponding 'affects'/'regulates' edge) when the GtoPdb Type + Action
+        reports that a ligand physically binds to a target, without asserting a direction of effect. It
+        is created independently of any 'affects'/'regulates' edge when the GtoPdb Type + Action
         values imply that a direct physical interaction is occurring (e.g. agonist, antagonist, binding,
         inhibitor mechanisms). This relationship is represented using the symmetric Biolink
-        'directly_physically_interacts_with' predicate, and carries no aspect, direction, or mechanism
-        qualifier.
+        'directly_physically_interacts_with' predicate, and carries no aspect or direction qualifier.
+        When specified by the mapping, its own causal mechanism is binding or allosteric_modulation.
       source_files:
         - interactions.csv
         - ligands.csv
       additional_notes:
-        - "This separate directly_physically_interacts_with edge is created when the Type + Action values in the source data report a mechanism that implies a direct physical interaction is occurring. The mapping table indicating when an additional physically-interacts-with edge is created is here: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
-        - "This edge type is modeled as a Biolink PairwiseMolecularInteraction, which does not accept a causal_mechanism_qualifier; the mechanism detail is carried only on the paired 'affects'/'regulates' edge."
+        - "The mapping independently specifies the primary and physical edges and their causal mechanisms: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
+        - "This edge type is modeled as a Biolink PairwiseMolecularInteraction and accepts its own causal_mechanism_qualifier. Physical-only mappings emit this edge without an 'affects'/'regulates' edge."
 
     - subject_categories:
         - biolink:ChemicalEntity
@@ -216,6 +253,7 @@ target_info:
         - biolink:related_to
       object_categories:
         - biolink:Protein
+        - biolink:MacromolecularComplex
       knowledge_level:
         - knowledge_assertion
       agent_type:
@@ -235,6 +273,26 @@ target_info:
         - ligands.csv
       additional_notes:
         - "Emitted as a generic biolink:Association when GtoPdb Type = 'None' and Action = 'None'. Consider revisiting whether these low-information edges should be retained or filtered in a future iteration."
+    - subject_categories:
+        - biolink:MacromolecularComplex
+      predicates:
+        - biolink:has_part
+      object_categories:
+        - biolink:Protein
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      primary_knowledge_sources:
+        - infores:gtopdb
+      ui_explanation: >-
+        A source-defined GtoPdb macromolecular complex has one or more protein components. The components are
+        taken from the source Target UniProt ID list only when the corresponding target descriptor has multiple
+        Target Subunit IDs.
+      source_files:
+        - interactions.csv
+      additional_notes:
+        - "The Target ID and Target Species together identify the source descriptor. A Target ID observed in multiple known species omits has_part edges and component nodes conservatively, because the current Biolink Association class does not permit species_context_qualifier on has_part. This avoids merging organism-specific compositions under one IUPHARobj CURIE; see https://github.com/biolink/biolink-model/pull/1797 and https://github.com/NCATSTranslator/translator-ingests/issues/510. For a single-species Target ID, the complex and its components carry in_taxon instead."
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
@@ -252,9 +310,48 @@ target_info:
       source_identifier_types:
         - "UniProtKB"
       additional_notes:
-        - "Target nodes are identified by UniProt accession (UniProtKB prefix), taken from the Target UniProt ID column of interactions.csv."
+        - "A target descriptor with one canonical UniProt accession is represented as biolink:Protein. Isoform-only values, such as P56856|P56856-2, resolve to one canonical protein rather than a complex."
+    - node_category: biolink:MacromolecularComplex
+      source_identifier_types:
+        - "IUPHARobj"
+      additional_notes:
+        - "A target descriptor with more than one Target Subunit IDs is represented as a source-defined macromolecular complex using its GtoPdb target identifier (IUPHARobj prefix). The target and its UniProtKB protein components carry the source species as biolink:in_taxon and are connected by biolink:has_part edges. The IUPHARobj prefix is distinct from GTOPDB, which identifies GtoPdb ligands."
+        - "Multiple canonical UniProt accessions without multiple source subunit IDs are not represented as complexes; they are an unresolved multi-protein group and are retained for audit pending a source-supported model."
 
   future_considerations:
+    - category: spoq_pattern
+      consideration: >-
+        Planned complex model for #510: identify each source-defined biolink:MacromolecularComplex by
+        the IUPHARobj prefix and Target ID, with biolink:Protein component nodes identified by individual UniProtKB
+        accessions. IUPHARobj identifies GtoPdb targets; GTOPDB remains the ligand namespace. Emit each
+        composition assertion as a biolink:Association from the complex to a component using
+        biolink:has_part, species_context_qualifier set to the source species' NCBITaxon CURIE,
+        knowledge_level knowledge_assertion, agent_type manual_agent, and primary_knowledge_source
+        infores:gtopdb. A shared IUPHARobj identifier can have different compositions in different species;
+        node-level in_taxon alone does not identify the species of an individual composition assertion.
+        Ligand-target assertions must retain the complex as their target and the applicable species context;
+        do not copy complex-level pharmacological activity to every component protein.
+    - category: spoq_pattern
+      consideration: >-
+        Required #510 example: IUPHARobj:378 (5-HT3AB) has four separate biolink:has_part assertions:
+        UniProtKB:P46098 and UniProtKB:O95264 each with species_context_qualifier NCBITaxon:9606 (human),
+        and UniProtKB:P23979 and UniProtKB:Q9JHJ5 each with species_context_qualifier NCBITaxon:10090 (mouse).
+        Preserve these edge qualifiers through serialization, normalization, and graph merging so the
+        organism-specific component sets remain distinguishable. Deduplication must preserve species context.
+    - category: spoq_pattern
+      consideration: >-
+        Completion of #510 requires adoption of a compatible Biolink schema and runtime model containing
+        https://github.com/biolink/biolink-model/pull/1797, which merged on 2026-09-02. The currently pinned
+        Biolink 4.4.4 predates that change; Biolink 4.4.6 (published 2026-10-09) contains it, and its adoption is
+        tracked in https://github.com/NCATSTranslator/translator-ingests/pull/556. The schema change alone does not
+        complete the ingest work: this ingest emits source-defined complexes and their has_part edges only for
+        Target IDs observed in a single known species, and still excludes unresolved multi-protein groups.
+        Verify the human/mouse example with source-derived fixtures, qualifier preservation through the
+        pipeline, duplicate-row handling, the missing/ambiguous-species policy, and unchanged single-protein
+        behavior. Before closing #510, merge the implementation, demonstrate a successful pipeline run with
+        the compatible dependency, and update this RIG's scope, fields_used, filtering rules, node_type_info,
+        and edge_type_info (including complex targets, has_part, and species qualifiers) to describe the
+        implemented output. Move the completed specification out of future considerations at that point.
     - category: node_properties
       consideration: "Consider future new Biolink node types (e.g. stimulus and fusion protein) for more accurate mapping of GtoPdb target/ligand types into the Biolink Model."
     - category: spoq_pattern
@@ -269,6 +366,8 @@ provenance_info:
     - "Sierra Moxon: code support"
     - "Matthew Brush: data modeling, domain expertise"
   artifacts:
+    - "Species-qualified complex composition: https://github.com/NCATSTranslator/translator-ingests/issues/510"
+    - "Biolink support for IUPHARobj and species-qualified composition: https://github.com/biolink/biolink-model/pull/1797"
     - "Ingest Survey: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=583858205#gid=583858205"
     - "Data Examples: https://docs.google.com/spreadsheets/d/1c6M71yrPNGTvH-LeKR75nf5iFOfz0IOOJLpGMy62t4Y/edit?gid=377376877#gid=377376877"
     - "Predicate/qualifier mapping: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
