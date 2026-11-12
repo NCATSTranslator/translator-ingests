@@ -1,9 +1,14 @@
 import json
+from collections.abc import Iterator
 from dataclasses import FrozenInstanceError
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Thread
 
 import pytest
 import pandas as pd
+from requests import HTTPError
 
 from translator_ingest.ingests.gtopdb.gtopdb import (
     GTOPDB_VERSION_PATTERN,
@@ -14,6 +19,7 @@ from translator_ingest.ingests.gtopdb.gtopdb import (
     get_latest_version,
     multi_species_source_target_ids,
     prepare,
+    source_target_species_descriptors,
     transform_ingest_all,
 )
 from translator_ingest.ingests.gtopdb.rules import (
@@ -21,11 +27,11 @@ from translator_ingest.ingests.gtopdb.rules import (
     AGONISM,
     ANTAGONISM,
     INHIBITION,
+    InteractionRule,
     NEUTRAL_PHYSICAL,
+    PHYSICAL_ONLY,
     RELATED,
     RULES,
-    InteractionRule,
-    PHYSICAL_ONLY,
     TYPE_FALLBACKS,
     resolve_rule,
 )
@@ -168,6 +174,9 @@ def test_multi_species_target_detection_is_independent_of_complex_classification
     assert human_complex.classification is TargetClassification.MACROMOLECULAR_COMPLEX
     assert mouse_complex.classification is TargetClassification.MACROMOLECULAR_COMPLEX
     assert multi_species_source_target_ids((human_complex, mouse_complex, unknown_species)) == frozenset({"378"})
+    assert source_target_species_descriptors((human_complex, mouse_complex, unknown_species)) == {
+        "378": {"human": human_complex, "mouse": mouse_complex}
+    }
 
 
 @pytest.mark.parametrize(
@@ -331,6 +340,53 @@ def test_load_ligand_mapping_and_publication_list(tmp_path):
     assert _load_ligand_mapping(tmp_path) == {"1": "2244"}
     assert _publication_list("123|456") == ["PMID:123", "PMID:456"]
     assert _publication_list("") is None
+
+
+@pytest.fixture
+def interactions_url(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
+    """Serve a local interactions file through real HTTP, overriding only its URL."""
+    handler = partial(SimpleHTTPRequestHandler, directory=str(tmp_path))
+    with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = f"http://127.0.0.1:{server.server_port}/interactions.csv"
+        monkeypatch.setattr("translator_ingest.ingests.gtopdb.gtopdb.GTOPDB_INTERACTIONS_URL", url)
+        try:
+            yield url
+        finally:
+            server.shutdown()
+            thread.join()
+
+
+@pytest.mark.parametrize(
+    "content,expected",
+    [
+        ('"# GtoPdb Version: 2026.2 - published: 2026-06-15"\nTarget,Target ID\n', "2026.2"),
+        ("# GtoPdb Version:2026.10 - published: 2026-11-02\n", "2026.10"),
+    ],
+)
+def test_get_latest_version_reads_interactions_header(
+    tmp_path: Path, interactions_url: str, content: str, expected: str
+) -> None:
+    """Read the metadata from the first line using the actual requests client."""
+    (tmp_path / "interactions.csv").write_text(content)
+    assert get_latest_version() == expected
+
+
+@pytest.mark.parametrize(
+    "content", ["", "Target,Target ID\n# GtoPdb Version: 2026.2\n", "<b>Downloads are from the 2026.2 version.</b>"]
+)
+def test_get_latest_version_rejects_missing_header(tmp_path: Path, interactions_url: str, content: str) -> None:
+    """A missing first-line version cannot fall back to old HTML or later lines."""
+    (tmp_path / "interactions.csv").write_text(content)
+    with pytest.raises(RuntimeError, match="Could not parse the GtoPdb version from the first line"):
+        get_latest_version()
+
+
+def test_get_latest_version_rejects_http_error(interactions_url: str) -> None:
+    """An unsuccessful download retains the upstream HTTP error behavior."""
+    with pytest.raises(HTTPError, match="404"):
+        get_latest_version()
 
 
 class RecordingContext:

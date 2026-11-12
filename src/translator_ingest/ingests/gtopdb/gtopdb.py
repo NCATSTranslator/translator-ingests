@@ -1,5 +1,6 @@
 """GtoPdb ingest preparation and graph emission."""
 
+from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -21,9 +22,14 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     NamedThing,
     PairwiseMolecularInteraction,
     Protein,
+    RetrievalSource,
 )
 
-from translator_ingest.ingests.gtopdb.rules import InteractionRule, PrimaryAssociationRule, resolve_rule
+from translator_ingest.ingests.gtopdb.rules import (
+    InteractionRule,
+    PrimaryAssociationRule,
+    resolve_rule,
+)
 from translator_ingest.util.biolink import INFORES_GTOPDB, build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 
@@ -33,6 +39,11 @@ BIOLINK_CAUSES = "biolink:causes"
 BIOLINK_AFFECTS = "biolink:affects"
 BIOLINK_REGULATES = "biolink:regulates"
 BIOLINK_RELATED = "biolink:related_to"
+
+# The interactions file's first metadata line carries its release version.
+GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
+GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
+
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
 PUBLICATIONS_COLUMN = "PubMed ID"
@@ -50,14 +61,7 @@ GROUP_COLUMNS = (
     "Action",
     "Endogenous",
 )
-
 SOURCE_COLUMNS = (*GROUP_COLUMNS, "Ligand Context", PUBLICATIONS_COLUMN)
-
-# The interactions file that this ingest downloads; its first line carries the release version.
-GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
-
-# e.g. '"# GtoPdb Version: 2026.2 - published: 2026-06-15"'
-GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
 
 PREPARED_COLUMN_RENAMES = {
     "Ligand": "subject_name",
@@ -142,6 +146,11 @@ def gtopdb_target_record_url(target_id: str) -> str:
     return f"{GTOPDB_RECORD_BASE_URL}/ObjectDisplayForward?objectId={identifier}"
 
 
+def _gtopdb_sources(record_url: str) -> list[RetrievalSource]:
+    """Attribute one edge to GtoPdb together with the source page that supports it."""
+    return build_association_knowledge_sources(primary=(INFORES_GTOPDB, [record_url]))
+
+
 class TargetClassification(str, Enum):
     """The source-supported representation of a GtoPdb target descriptor."""
 
@@ -149,6 +158,14 @@ class TargetClassification(str, Enum):
     MACROMOLECULAR_COMPLEX = "macromolecular_complex"
     UNRESOLVED_MULTI_PROTEIN_GROUP = "unresolved_multi_protein_group"
     UNMAPPED = "unmapped"
+
+
+UNSUPPORTED_TARGET_CLASSES = frozenset(
+    {
+        TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP,
+        TargetClassification.UNMAPPED,
+    }
+)
 
 
 def _canonical_uniprot_accession(accession: str) -> str:
@@ -229,10 +246,11 @@ class TargetDescriptor:
         if len(self.subunit_ids) > 1:
             # Source subunits, not UniProt cardinality, establish a complex.
             return TargetClassification.MACROMOLECULAR_COMPLEX
-        if len(self.canonical_uniprot_ids) == 1:
+        canonical_uniprot_ids = self.canonical_uniprot_ids
+        if len(canonical_uniprot_ids) == 1:
             # A pipe-delimited list can contain canonical and isoform accessions.
             return TargetClassification.SINGLE_PROTEIN
-        if len(self.canonical_uniprot_ids) > 1:
+        if len(canonical_uniprot_ids) > 1:
             # Do not turn source groups or paralog alternatives into complexes.
             return TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP
         return TargetClassification.UNMAPPED
@@ -258,8 +276,10 @@ class TargetDescriptor:
         return SPECIES_TO_TAXON.get(species) if species else None
 
 
-def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> frozenset[str]:
-    """Return source target IDs represented for more than one known species.
+def source_target_species_descriptors(
+    targets: Iterable[TargetDescriptor],
+) -> dict[str, dict[str, TargetDescriptor]]:
+    """Index source target descriptors by ID and known species.
 
     Complex membership and multi-species coverage are independent properties:
     a GtoPdb target can be a complex in several species.
@@ -271,15 +291,21 @@ def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> froz
 
     >>> human = TargetDescriptor("378", "5-HT3AB", "Human", (), (), ("P46098",))
     >>> mouse = TargetDescriptor("378", "5-HT3AB", "Mouse", (), (), ("P23979",))
-    >>> multi_species_source_target_ids((human, mouse))
-    frozenset({'378'})
+    >>> sorted(source_target_species_descriptors((human, mouse))["378"])
+    ['human', 'mouse']
     """
-    species_by_source_id: dict[str, set[str]] = {}
+    descriptors: dict[str, dict[str, TargetDescriptor]] = {}
     for target in targets:
         species = _known_species(target.species)
         if target.source_id and species:
-            species_by_source_id.setdefault(target.source_id, set()).add(species)
-    return frozenset(source_id for source_id, species in species_by_source_id.items() if len(species) > 1)
+            descriptors.setdefault(target.source_id, {})[species] = target
+    return descriptors
+
+
+def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> frozenset[str]:
+    """Return source target IDs represented for more than one known species."""
+    descriptors = source_target_species_descriptors(targets)
+    return frozenset(source_id for source_id, species in descriptors.items() if len(species) > 1)
 
 
 def get_latest_version() -> str:
@@ -334,9 +360,8 @@ def _prepare_interactions(
     source = source.dropna(subset=["Target ID", LIGAND_ID_COLUMN])
     source = source[source["Target ID"].str.strip().ne("") & source[LIGAND_ID_COLUMN].str.strip().ne("")]
 
-    prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(
-        {PUBLICATIONS_COLUMN: _join_publications}
-    )
+    aggregations: dict[str, Any] = {PUBLICATIONS_COLUMN: _join_publications}
+    prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(aggregations)
     prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
     prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
     prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
@@ -401,13 +426,6 @@ def _component_nodes(target: TargetDescriptor) -> list[Protein]:
     ]
 
 
-def _attach_publications(edges: list[Association], publications: list[str] | None) -> None:
-    """Attach shared publications to every edge emitted for one source record."""
-    if publications:
-        for edge in edges:
-            edge.publications = publications
-
-
 def _interaction_edges(
     subject: ChemicalEntity,
     object: NamedThing,
@@ -420,7 +438,7 @@ def _interaction_edges(
 
     Endogenous projection applies only to an affects/regulates primary edge.
     Related-to edges remain unqualified; physical edges carry their own mechanism
-    without asserting an effect on activity.
+    and species context without asserting an effect on activity.
     """
     common_fields: dict[str, Any] = {
         "subject": subject.id,
@@ -436,7 +454,7 @@ def _interaction_edges(
                 Association(
                     id=entity_id(),
                     predicate=BIOLINK_RELATED,
-                    sources=build_association_knowledge_sources(primary=(INFORES_GTOPDB, [source_record_url])),
+                    sources=_gtopdb_sources(source_record_url),
                     **common_fields,
                 )
             )
@@ -451,7 +469,7 @@ def _interaction_edges(
                     object_direction_qualifier=direction,
                     causal_mechanism_qualifier=primary.mechanism,
                     species_context_qualifier=species_context_qualifier,
-                    sources=build_association_knowledge_sources(primary=(INFORES_GTOPDB, [source_record_url])),
+                    sources=_gtopdb_sources(source_record_url),
                     **common_fields,
                 )
             )
@@ -462,7 +480,7 @@ def _interaction_edges(
                 predicate="biolink:directly_physically_interacts_with",
                 causal_mechanism_qualifier=rule.physical.mechanism,
                 species_context_qualifier=species_context_qualifier,
-                sources=build_association_knowledge_sources(primary=(INFORES_GTOPDB, [source_record_url])),
+                sources=_gtopdb_sources(source_record_url),
                 **common_fields,
             )
         )
@@ -502,89 +520,82 @@ def _endogenous_projection(
     return predicate, direction
 
 
-def _edges_for_record(
-    subject: ChemicalEntity,
-    object: NamedThing,
+def _transform_record(
+    record: dict[str, Any],
     target: TargetDescriptor,
-    endogenous: Any,
-    rule: InteractionRule,
-    publications: list[str] | None,
+    *,
     emit_component_edges: bool,
-    source_record_url: str,
-) -> list[Association]:
-    """Build every graph edge emitted for one supported source record.
+) -> KnowledgeGraph | None:
+    """Skip unsupported records, then assemble nodes, interaction edges, and evidence.
 
-    ``IUPHARobj:<Target ID>`` is shared by GtoPdb species descriptors. Until
-    Biolink permits a taxon-qualified ``has_part`` assertion, component edges
-    would merge the human and mouse compositions for target 378 (5-HT3AB).
-    Therefore multi-species source IDs omit those edges conservatively; see
-    https://github.com/biolink/biolink-model/pull/1797 and translator-ingests#510.
+    All descriptors are resolved before any records are emitted. Passing that
+    context preserves validation order and accounts for other species even when
+    their interaction records are later skipped.
+
+    ``IUPHARobj:<Target ID>`` is shared by species descriptors. Component edges
+    are omitted for multi-species targets until Biolink supports taxon-qualified
+    ``has_part`` assertions; see biolink/biolink-model#1797 and translator-ingests#510.
     """
-    edges = _interaction_edges(subject, object, endogenous, rule, target.species_context_qualifier, source_record_url)
-    if target.complex_curie and emit_component_edges:
-        edges.extend(
-            Association(
-                id=entity_id(),
-                subject=target.complex_curie,
-                predicate="biolink:has_part",
-                object=f"UniProtKB:{accession}",
-                sources=build_association_knowledge_sources(
-                    primary=(INFORES_GTOPDB, [gtopdb_target_record_url(target.source_id)])
-                ),
-                knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-                agent_type=AgentTypeEnum.manual_agent,
-            )
-            for accession in target.canonical_uniprot_ids
+    if target.classification in UNSUPPORTED_TARGET_CLASSES:
+        return None
+
+    rule = resolve_rule(record["Type"], record["Action"])
+    if rule is None:
+        return None
+
+    subject, object = _nodes_for_record(record, target)
+    endogenous = record["Endogenous"]
+    publications = _publication_list(record[PUBLICATIONS_COLUMN])
+    edges = _interaction_edges(
+        subject,
+        object,
+        endogenous,
+        rule,
+        target.species_context_qualifier,
+        source_record_url=gtopdb_ligand_record_url(record[LIGAND_ID_COLUMN]),
+    )
+
+    component_nodes = _component_nodes(target) if emit_component_edges else []
+    edges.extend(
+        Association(
+            id=entity_id(),
+            subject=object.id,
+            predicate="biolink:has_part",
+            object=component.id,
+            sources=_gtopdb_sources(gtopdb_target_record_url(target.source_id)),
+            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+            agent_type=AgentTypeEnum.manual_agent,
         )
-    _attach_publications(edges, publications)
-    return edges
+        for component in component_nodes
+    )
+    if publications:
+        for edge in edges:
+            edge.publications = publications
+    return KnowledgeGraph(nodes=[subject, object, *component_nodes], edges=edges)
 
 
 @koza.transform(tag="gtopdb_interaction_parsing")
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    """Transform prepared GtoPdb records through declarative Type/Action rules."""
+    """Resolve batch species context, aggregate record graphs, and report exclusions."""
     records = list(data)
-    multi_species_target_ids = multi_species_source_target_ids(
-        TargetDescriptor.from_record(record) for record in records
-    )
+    targets = tuple(TargetDescriptor.from_record(record) for record in records)
+    multi_species_target_ids = multi_species_source_target_ids(targets)
     nodes: list[NamedThing] = []
     edges: list[Association] = []
-    unsupported_target_counts: dict[TargetClassification, int] = {}
 
-    for record in records:
-        target = TargetDescriptor.from_record(record)
-        if target.classification in {
-            TargetClassification.UNRESOLVED_MULTI_PROTEIN_GROUP,
-            TargetClassification.UNMAPPED,
-        }:
-            unsupported_target_counts[target.classification] = (
-                unsupported_target_counts.get(target.classification, 0) + 1
-            )
-            continue
-
-        rule = resolve_rule(record["Type"], record["Action"])
-        if rule is None:
-            continue
-
-        subject, object = _nodes_for_record(record, target)
-        emitted_edges = _edges_for_record(
-            subject,
-            object,
+    for record, target in zip(records, targets, strict=True):
+        graph = _transform_record(
+            record,
             target,
-            record["Endogenous"],
-            rule,
-            _publication_list(record[PUBLICATIONS_COLUMN]),
             emit_component_edges=target.source_id not in multi_species_target_ids,
-            source_record_url=gtopdb_ligand_record_url(record[LIGAND_ID_COLUMN]),
         )
-        # Keep the species-qualified ligand-target assertion, but do not emit
-        # unqualified components for shared source IDs. See the RIG's
-        # multi-species composition note, biolink-model#1797, and
-        # translator-ingests#510.
-        component_nodes = _component_nodes(target) if target.source_id not in multi_species_target_ids else []
-        nodes.extend((subject, object, *component_nodes))
-        edges.extend(emitted_edges)
+        if graph is not None:
+            nodes.extend(graph.nodes)
+            edges.extend(graph.edges)
 
+    unsupported_target_counts = Counter(
+        target.classification for target in targets if target.classification in UNSUPPORTED_TARGET_CLASSES
+    )
     for classification, count in unsupported_target_counts.items():
         record_word = "record" if count == 1 else "records"
         koza.log(
