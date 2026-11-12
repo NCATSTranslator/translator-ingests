@@ -15,14 +15,17 @@ source_info:
     license_url: "https://creativecommons.org/licenses/by/4.0/legalcode"
   data_access_locations:
     - "Signor 3.0 Downloads: https://signor.uniroma2.it/downloads.php (this page includes file sizes and simple data dictionaries for each download)"
+    - "Complete dataset export used by the ingest (organism Homo sapiens, tsv format): https://signor.uniroma2.it/download_entity.php?organism=human&format=csv&submit=Download"
+    - "Stable release files: https://signor.uniroma2.it/releases/getLatestRelease.php (latest release) and https://signor.uniroma2.it/releases/<Mon><YYYY>_release.txt (archived releases, e.g. Oct2026_release.txt)"
   data_provision_mechanisms:
     - file_download
   data_formats:
     - csv
-  data_versioning_and_releases: "No consistent cadence for releases, but on average there are 1-2 releases each month. Versioning is based on the month and year of the release. Releases page / change log: https://signor.uniroma2.it/downloads.php"
+  data_versioning_and_releases: "Stable releases are published roughly quarterly (January, April, July and October) and are named by month and year, e.g. Oct2026_release.txt; older releases remain downloadable from the archive on the downloads page. The live database, and therefore the complete dataset export used by the ingest, also changes between releases. The ingest versions its data by the UTC date of download (YYYY_MM_DD), not by release name."
   source_status: maintained_regular_updates
   additional_notes:
-    - "SIGNOR does not currently offer a reliable way to download the latest release or determine the current version programmatically, so the ingest downloads a static snapshot from a RENCI-hosted copy and reports a static version (see get_latest_version() in signor.py). Version detection should be revisited if SIGNOR's programmatic access is fixed."
+    - "The ingest downloads the complete dataset export directly from SIGNOR instead of a stable release file, because release files omit the SCORE column and encode DIRECT as t/f rather than YES/NO. The ingest uses both: SCORE populates has_confidence_score, and DIRECT = YES adds a directly_physically_interacts_with edge. The downloads page submits the export as a POST form, but the same parameters work over GET, so kghub-downloader fetches it without the RENCI-hosted copy used before (issue #303)."
+    - "Selecting Homo sapiens for the export does not restrict TAX_ID: the column still contains other organisms (mainly mouse and rat), -1, and blank values."
 
 # Information about Ingested Content
 ingest_info:
