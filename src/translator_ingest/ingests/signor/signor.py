@@ -172,14 +172,20 @@ def _map_effect_qualifiers(
 
 
 def _species_context(taxon: str | None) -> str | None:
-    """Return a taxon CURIE, treating only "-1" and None as unknown.
+    """Return a taxon CURIE, treating "-1", None, and blank values as unknown.
+
+    Koza reads blank TAX_ID cells as "", which would otherwise become the invalid CURIE "NCBITaxon:".
 
     >>> _species_context("9606")
     'NCBITaxon:9606'
     >>> _species_context("-1") is None
     True
+    >>> _species_context("") is None
+    True
+    >>> _species_context("  ") is None
+    True
     """
-    if taxon == "-1" or taxon is None:
+    if taxon is None or taxon == "-1" or not taxon.strip():
         return None
     return "NCBITaxon:" + taxon
 

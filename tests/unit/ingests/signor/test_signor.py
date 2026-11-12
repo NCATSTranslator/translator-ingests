@@ -275,12 +275,13 @@ def test_map_effect_qualifiers_rejects_unknown_value() -> None:
         ("9606", "NCBITaxon:9606"),
         ("-1", None),
         (None, None),
-        ("", "NCBITaxon:"),
+        ("", None),
+        ("  ", None),
         (" 9606 ", "NCBITaxon: 9606 "),
     ],
 )
 def test_species_context(taxon: str | None, expected: str | None) -> None:
-    """Suppress only unknown taxa, preserving other source strings exactly."""
+    """Suppress unknown and blank taxa, preserving other source strings exactly."""
     assert signor._species_context(taxon) == expected
 
 
@@ -416,7 +417,7 @@ def test_release_version_matches_current_main() -> None:
         ("-1", None, "UBERON:1;UBERON:2", None, ["UBERON:1", "UBERON:2"]),
         (None, None, None, None, None),
         ("9606", "", "UBERON:1", "NCBITaxon:9606", [""]),
-        ("", None, "", "NCBITaxon:", [""]),
+        ("", None, "", None, [""]),
     ],
 )
 def test_transform_preserves_context_values_and_placement(
@@ -828,6 +829,36 @@ def test_prepare_and_transform_preserve_aggregation(
         assert edge.publications == ["PMID:123", "PMID:456"]
         assert edge.supporting_text == ["First sentence.", "Second sentence."]
         assert edge.has_confidence_score == 0.75
+
+
+@pytest.mark.parametrize(
+    ("subject_category", "object_category"),
+    [("protein", "protein"), ("protein", "chemical"), ("chemical", "protein"), ("smallmolecule", "chemical")],
+)
+def test_prepare_and_transform_omit_blank_species(
+    signor_context: koza.KozaTransform,
+    signor_source_record: dict[str, Any],
+    subject_category: str,
+    object_category: str,
+) -> None:
+    """Emit no species qualifier, rather than "NCBITaxon:", for a blank TAX_ID cell (read by Koza as "")."""
+    source_record = {
+        **signor_source_record,
+        "TYPEA": subject_category,
+        "TYPEB": object_category,
+        "IDA": "P12345" if subject_category == "protein" else "CHEBI:17368",
+        "IDB": "Q12345" if object_category == "protein" else "CHEBI:28997",
+        "TAX_ID": "",
+    }
+
+    prepared = list(signor.prepare(signor_context, iter([source_record])))
+    assert [record["TAX_ID"] for record in prepared] == [""]
+    (graph,) = signor.transform_ingest_all(signor_context, iter(prepared))
+
+    edges = list(graph.edges)
+    assert len(edges) == 2
+    for edge in edges:
+        assert edge.model_dump().get("species_context_qualifier") is None
 
 
 @pytest.mark.parametrize("field", ["TYPEA", "TYPEB"])
