@@ -35,7 +35,7 @@ CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb
 # Include additional makefiles
 include rig.Makefile
 include doc.Makefile
-
+include kgx.Makefile
 
 ### Help ###
 
