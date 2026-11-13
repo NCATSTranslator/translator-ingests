@@ -88,6 +88,9 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
     ## convert the input dataframe into pandas df format
     source_df = pd.DataFrame(data)
 
+    ## debugging
+    # print("raw:", source_df["Endogenous"].value_counts(dropna=False).to_dict())
+
     ## Only select needed columns
     sele_cols = ['Target', 'Target UniProt ID', 'Ligand ID', 'Ligand', 'Type', 'Action',
     'Endogenous', 'Ligand Context', 'PubMed ID']
@@ -117,6 +120,9 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
             })
     )
 
+    # ...after the groupby/agg:
+    # print("agg:", source_agg_df["Endogenous"].value_counts(dropna=False).to_dict())
+
     ## rename those columns into desired format, note we need to obtain "pubchem CID" as subject id from "Ligand ID"
     source_agg_df.rename(
         columns={
@@ -137,6 +143,9 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
 
     ## drop NA of those dont find a mapping
     source_agg_df = source_agg_df.dropna(subset=["subject_id"])
+
+    # ...after the subject_id mapping and dropna:
+    # print("final:", source_agg_df["Endogenous"].value_counts(dropna=False).to_dict())
 
     return source_agg_df.drop_duplicates().to_dict(orient="records")
 
@@ -193,7 +202,15 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         current_predicate_mapping = BIOLINK_AFFECTS
         ## will be assigned as a tuple later, since we need to store two values
         current_direction_mapping = None
-        if record["Endogenous"] == "TRUE":
+
+        ## sanity check only
+        ## Note: either Koza or pandas changed the TRUE bool value into lowercase true string for some reason?
+        # print(repr(record["Endogenous"]), type(record["Endogenous"]))
+
+        ## Create a bool var to match on any form of "true" strings
+        is_endogenous = str(record["Endogenous"]).strip().lower() == "true"
+
+        if is_endogenous:
             current_predicate_mapping = BIOLINK_REGULATES
             current_direction_mapping = (DirectionQualifierEnum.upregulated, DirectionQualifierEnum.downregulated)
         else:
