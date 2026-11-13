@@ -60,6 +60,9 @@ MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 # Source edge ids of text-mined treats edges that none of their supporting sentences support, as judged by a
 # typed-decision model (Jev) over every supporting sentence. See jev/README.md for how the list was made.
 JEV_DROPPED_EDGES_FILE = "tmkp_treats_jev_v3_dropped_edges.txt.gz"
+# TMKP edge ids aren't unique: a treats edge and a contributes_to edge for the same chemical and condition share an
+# id. The list only judges treats edges, so it applies only to these predicates.
+JEV_FILTERED_PREDICATES = frozenset({"biolink:treats_or_applied_or_studied_to_treat", "biolink:treats"})
 
 # Map TMKP attribute names to Biolink slot names.
 TMKP_TO_BIOLINK_SLOT_MAP = {
@@ -464,7 +467,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         return None
 
     # Drop treats edges that none of their supporting sentences support (see jev/README.md)
-    if record.get("id") in koza_transform.state["jev_dropped_edge_ids"]:
+    if predicate in JEV_FILTERED_PREDICATES and record.get("id") in koza_transform.state["jev_dropped_edge_ids"]:
         koza_transform.state["jev_dropped_edge_count"] += 1
         return None
 

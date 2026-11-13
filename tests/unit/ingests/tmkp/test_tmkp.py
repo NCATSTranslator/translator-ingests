@@ -591,6 +591,19 @@ def test_edges_listed_in_jev_filter_are_dropped(edge_id: str, kept: bool):
     assert len(associations) == (1 if kept else 0)
 
 
+def test_jev_filter_keeps_contributes_to_edge_sharing_a_dropped_treats_id():
+    """TMKP gives a treats edge and a contributes_to edge for the same pair one id; only the treats edge is judged."""
+    record = {
+        "id": "tmkp-test-dropped-edge-1",
+        "subject": "DRUGBANK:DB00171",
+        "predicate": "biolink:contributes_to",
+        "object": "MONDO:0005301",
+        "relation": "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation",
+    }
+    associations = [i for i in _run_edge_transform(record) if isinstance(i, Association)]
+    assert len(associations) == 1
+
+
 class TestTransformTmkpEdge:
     """Integration tests for transform_tmkp_edge via KozaRunner."""
 
