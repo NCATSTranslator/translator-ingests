@@ -88,4 +88,6 @@ skip = [
     # Jupyter notebooks: JSON cell outputs embed base64 plot data (spurious "word" matches),
     # and truncated pandas/HTML previews often break words mid-token (false typos). Same skip as Makefile CODESPELL_SKIP.
     "**/*.ipynb",
+    # TMKP Jev validation samples quote source sentences verbatim, including biomedical terms codespell flags.
+    "./src/translator_ingest/ingests/tmkp/jev/validation/*",
 ]
