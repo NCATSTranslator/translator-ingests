@@ -8,3 +8,4 @@ NCBIGene:24	ABCA4	MENDELIAN	OMIM:601718	ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim
 NCBIGene:24	ABCA4	UNKNOWN	ORPHA:1872	http://www.orphadata.org/data/xml/en_product6.xml
 NCBIGene:24	ABCA4	UNKNOWN	ORPHA:791	http://www.orphadata.org/data/xml/en_product6.xml
 NCBIGene:24	ABCA4	UNKNOWN	ORPHA:827	http://www.orphadata.org/data/xml/en_product6.xml
+NCBIGene:24	ABCA4	POLYGENIC	OMIM:248200	ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/mim2gene_medgen
