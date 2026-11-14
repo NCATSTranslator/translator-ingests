@@ -29,7 +29,7 @@ from translator_ingest import INGESTS_PARSER_PATH
 
 QUALIFIER_CONFIG_PATH = INGESTS_PARSER_PATH / "chembl" / "chembl_qualifiers.json"
 
-LATEST_VERSION = "36"
+LATEST_VERSION = "37"
 
 INFORES_CHEMBL = "infores:chembl"
 CHEMBL_SOURCES = build_association_knowledge_sources(primary=INFORES_CHEMBL)
@@ -204,7 +204,6 @@ ACTIVITY_QUERY = """
         assays.assay_tissue,
         assays.relationship_type,
         assays.confidence_score,
-        assays.curated_by,
         assays.src_id AS assay_source_id,
         assay_type.assay_desc AS assay_type,
         bioassay_ontology.label AS BAO_label,
@@ -224,7 +223,6 @@ ACTIVITY_QUERY = """
         relationship_type.relationship_desc AS relationship_description,
         confidence_score_lookup.description AS confidence_score_description,
         confidence_score_lookup.target_mapping,
-        curation_lookup.description AS curation_description,
         drug_mechanism.mec_id
     FROM activities
     JOIN assays ON activities.assay_id=assays.assay_id
@@ -233,7 +231,6 @@ ACTIVITY_QUERY = """
     LEFT JOIN bioassay_ontology on bioassay_ontology.bao_id = assays.bao_format
     LEFT JOIN relationship_type ON relationship_type.relationship_type = assays.relationship_type
     LEFT JOIN confidence_score_lookup ON confidence_score_lookup.confidence_score = assays.confidence_score
-    LEFT JOIN curation_lookup ON curation_lookup.curated_by = assays.curated_by
     JOIN target_components ON (target_components.tid = target_dictionary.tid AND target_dictionary.target_type IN ('SINGLE PROTEIN'))
     JOIN component_sequences ON component_sequences.component_id = target_components.component_id
     LEFT JOIN drug_mechanism ON (drug_mechanism.molregno = activities.molregno AND drug_mechanism.tid = assays.tid AND activities.action_type = drug_mechanism.action_type)
@@ -709,7 +706,7 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
         anatomical_context_qualifier = [anatomical_context_qualifier] if anatomical_context_qualifier else None,
         sources=CHEMBL_SOURCES,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.automated_agent if record["curated_by"] == "Autocuration" else AgentTypeEnum.manual_agent,
+        agent_type=AgentTypeEnum.manual_agent,
         publications=publications,
         has_confidence_score = record["confidence_score"],
         # TODO: assay_description = record["assay_description"],

@@ -27,7 +27,7 @@
       - sqlite
     data_versioning_and_releases: >-
       ChEMBL is released roughly twice per year (approximately semiannual). Releases are versioned with an
-      incrementing integer (e.g. ChEMBL 36). This ingest targets ChEMBL 36. Release notes and the latest
+      incrementing integer (e.g. ChEMBL 37). This ingest targets ChEMBL 37. Release notes and the latest
       distribution are available at https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/
     source_status: maintained_regular_updates
 
@@ -38,45 +38,45 @@
     scope: "Drugs and probes mechanisms, metabolism, bioactivity, gene targets"
 
     relevant_files:
-      - file_name: chembl_36_sqlite.tar.gz
+      - file_name: chembl_37_sqlite.tar.gz
         location: https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/
         description: "ChEMBL SQLite database"
 
     included_content:
-      - file_name: chembl_36_sqlite.tar.gz
+      - file_name: chembl_37_sqlite.tar.gz
         included_records: "Drug mechanisms from the following tables: drug_mechanism, molecule_dictionary, target_dictionary, binding_sites, compound_records, docs, source, target_components, component_sequences, variant_sequences."
         fields_used: "drug_mechanism: mec_id, molregno, mechanism_of_action, action_type, direct_interaction, mechanism_comment, selectivity_comment, binding_site_comment, variant_id; molecule_dictionary: molregno, chembl_id; target_dictionary: tid, chembl_id (AS target_chembl_id), pref_name (AS target_name), target_type, organism (AS target_organism); binding_sites: site_id, site_name; compound_records: record_id, doc_id, src_id; docs: doc_id, chembl_id (AS document_chembl_id); source: src_id, src_description (AS source_description); target_components: tid, component_id; component_sequences: component_id, component_type, accession, description, tax_id, organism; variant_sequences: variant_id, mutation, accession (AS mutation_accession)"
-      - file_name: chembl_36_sqlite.tar.gz
+      - file_name: chembl_37_sqlite.tar.gz
         included_records: "Gene targets - same as drug mechanisms with targets mapped to genes"
         fields_used: "drug_mechanism: mec_id, molregno, mechanism_of_action, action_type, direct_interaction, mechanism_comment, selectivity_comment, binding_site_comment, variant_id; molecule_dictionary: molregno, chembl_id; target_dictionary: tid, chembl_id (AS target_chembl_id), pref_name (AS target_name), target_type, organism (AS target_organism); binding_sites: site_id, site_name; compound_records: record_id, doc_id, src_id; docs: doc_id, chembl_id (AS document_chembl_id); source: src_id, src_description (AS source_description); target_components: tid, component_id; component_sequences: component_id, component_type, accession, description, tax_id, organism; variant_sequences: variant_id, mutation, accession (AS mutation_accession)"
-      - file_name: chembl_36_sqlite.tar.gz
+      - file_name: chembl_37_sqlite.tar.gz
         included_records: "Metabolism information from the following tables: metabolism, molecule_dictionary, compound_records, compound_structures, target_dictionary, metabolism_refs"
         fields_used: "metabolism: drug_record_id, substrate_record_id, metabolite_record_id, met_id, enzyme_name, met_conversion, met_comment, organism, tax_id, enzyme_tid; molecule_dictionary: molregno, chembl_id, pref_name; compound_records: molregno, record_id, compound_name; target_dictionary: tid, target_type, chembl_id; compound_structures: molregno, standard_inchi, standard_inchi_key, canonical_smiles; metabolism_refs: met_id, ref_type, ref_id, ref_url"
-      - file_name: chembl_36_sqlite.tar.gz
+      - file_name: chembl_37_sqlite.tar.gz
         included_records: "Bioactivity and assay information from the following tables: activities, molecule_dictionary, assays, bioassay_ontology, target_dictionary, target_components, component_sequences, cell_dictionary, assay_type, tissue_dictionary, docs, source, ligand_eff, relationship_type, confidence_score_lookup, confidence_score_lookup"
-        fields_used: "activities: activity_id, standard_type, standard_relation, standard_value, standard_units, pchembl_value, activity_comment, data_validity_comment, standard_text_value, standard_upper_value, uo_units, potential_duplicate, action_type, src_id, doc_id; molecule_dictionary: molregno, chembl_id; assays: assay_id, chembl_id, description, assay_organism, assay_cell_type, assay_subcellular_fraction, bao_format, assay_category, assay_tax_id, assay_tissue, relationship_type, confidence_score, curated_by, src_id, assay_type, cell_id, tissue_id, tid; bioassay_ontology: bao_id, label; target_dictionary: tid, chembl_id, pref_name, organism, target_type; target_components: tid, component_id; component_sequences: component_id, component_type, accession; cell_dictionary: cell_id, chembl_id, cell_name, cell_description, cell_source_tissue, cell_source_organism, cell_source_tax_id, clo_id, efo_id, cellosaurus_id, cl_lincs_id, cell_ontology_id; assay_type: assay_type, assay_desc; tissue_dictionary: tissue_id, chembl_id, pref_name; docs: doc_id, chembl_id, journal, title, year, authors, pubmed_id, doi; source: src_id, src_description; ligand_eff: activity_id, bei, le, lle, sei; relationship_type: relationship_type, relationship_desc; confidence_score_lookup: confidence_score, description, target_mapping; curation_lookup: curated_by, description"
+        fields_used: "activities: activity_id, standard_type, standard_relation, standard_value, standard_units, pchembl_value, activity_comment, data_validity_comment, standard_text_value, standard_upper_value, uo_units, potential_duplicate, action_type, src_id, doc_id; molecule_dictionary: molregno, chembl_id; assays: assay_id, chembl_id, description, assay_organism, assay_cell_type, assay_subcellular_fraction, bao_format, assay_category, assay_tax_id, assay_tissue, relationship_type, confidence_score, src_id, assay_type, cell_id, tissue_id, tid; bioassay_ontology: bao_id, label; target_dictionary: tid, chembl_id, pref_name, organism, target_type; target_components: tid, component_id; component_sequences: component_id, component_type, accession; cell_dictionary: cell_id, chembl_id, cell_name, cell_description, cell_source_tissue, cell_source_organism, cell_source_tax_id, clo_id, efo_id, cellosaurus_id, cl_lincs_id, cell_ontology_id; assay_type: assay_type, assay_desc; tissue_dictionary: tissue_id, chembl_id, pref_name; docs: doc_id, chembl_id, journal, title, year, authors, pubmed_id, doi; source: src_id, src_description; ligand_eff: activity_id, bei, le, lle, sei; relationship_type: relationship_type, relationship_desc; confidence_score_lookup: confidence_score, description, target_mapping"
 
     filtered_content:
-      - file_name: chembl_36_sqlite.tar.gz
+      - file_name: chembl_37_sqlite.tar.gz
         filtered_records: "Gene targets - removed targets that cannot be mapped to genes (like cell-lines)"
         rationale: "targets that cannot be mapped to genes"
-      - file_name: chembl_36_sqlite.tar.gz
+      - file_name: chembl_37_sqlite.tar.gz
         filtered_records: "Bioactivity records that are not flagged as 'Active' and lack an action_type, and any activity record whose (molecule, target, action) already corresponds to a curated drug_mechanism record (mec_id is not null) or has already been emitted, are excluded."
         rationale: "Only bioactivities with a clear activity outcome are retained; records already represented by a curated drug mechanism edge are dropped to avoid duplicate edges, and repeated (chemical, target, action) combinations are deduplicated."
 
     future_considerations:
       - category: edge_property_content
         consideration: "ChEMBL drug mechanism and bioactivity records carry descriptive detail - binding site name/comment, mechanism-of-action description and comment, selectivity comment, mutation and mutation accession, and assay description - that is currently held as TODOs in the transform code and not yet emitted as edge properties, pending suitable Biolink Model slots."
-        relevant_files: chembl_36_sqlite.tar.gz
+        relevant_files: chembl_37_sqlite.tar.gz
       - category: edge_property_content
         consideration: "Quantitative bioactivity values from the activities table (standard_type, standard_value, standard_units, pchembl_value) are used to select and characterize edges but are not yet represented as edge properties. Consider capturing them to support potency-aware queries."
-        relevant_files: chembl_36_sqlite.tar.gz
+        relevant_files: chembl_37_sqlite.tar.gz
       - category: node_property_content
         consideration: "Molecule routes of delivery (derived from the oral/parenteral/topical flags) and additional molecule_dictionary properties (e.g. max_phase, therapeutic_flag, first_approval, withdrawn_flag) are computed or available but not yet emitted as node properties, pending suitable Biolink slots."
-        relevant_files: chembl_36_sqlite.tar.gz
+        relevant_files: chembl_37_sqlite.tar.gz
       - category: edge_content
         consideration: "An enzyme/context qualifier linking metabolism edges to the mediating enzyme is computed in code but not yet attached, pending Biolink support for the relevant statement-level qualifier."
-        relevant_files: chembl_36_sqlite.tar.gz
+        relevant_files: chembl_37_sqlite.tar.gz
 
   target_info:
     edge_type_info:
@@ -129,9 +129,9 @@
         edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
-        ui_explanation: "This edge asserts that a chemical affects a gene or protein target, based on ChEMBL's manually curated drug mechanisms of action and, in some cases, curated bioactivity measurements. The specific ChEMBL 'mechanism of action' (e.g. 'agonist', 'inhibitor', 'stabiliser') determines the qualified predicate and the aspect, direction, and causal-mechanism qualifiers applied to the edge (e.g. an inhibitor causes decreased activity via inhibition). Edges from curated drug mechanisms are manually curated by ChEMBL; edges derived from autocurated bioactivity assays are marked as automated."
+        ui_explanation: "This edge asserts that a chemical affects a gene or protein target, based on ChEMBL's manually curated drug mechanisms of action and, in some cases, curated bioactivity measurements. The specific ChEMBL 'mechanism of action' (e.g. 'agonist', 'inhibitor', 'stabiliser') determines the qualified predicate and the aspect, direction, and causal-mechanism qualifiers applied to the edge (e.g. an inhibitor causes decreased activity via inhibition). All edges are marked as manual agent."
         source_files:
-          - "chembl_36_sqlite.tar.gz (drug_mechanism and activities tables)"
+          - "chembl_37_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "The 'mechanism' reported by ChEMBL determines the type of edge created. For mechanisms that imply an effect of the chemical on the target (e.g. 'agonist', 'inhibitor', 'stabiliser'), an 'affects' edge with appropriate qualifiers is created. A full mapping of ChEMBL mechanisms to Biolink predicate and qualifier combinations can be found in chembl_qualifiers.json."
 
@@ -174,7 +174,7 @@
           - biolink:has_confidence_score
         ui_explanation: "This edge asserts that a gene or protein (for example an enzyme) acts on and chemically transforms a chemical, based on ChEMBL's curated drug mechanisms and bioactivities. It is created for ChEMBL mechanisms where the protein acts on the chemical (e.g. 'hydrolytic enzyme', 'oxidative enzyme', 'proteolytic enzyme', 'reducing agent', 'methylating agent'). The gene/protein is the subject and the chemical the object; object aspect and direction qualifiers describe what happens to the chemical (e.g. increased hydrolysis or oxidation)."
         source_files:
-          - "chembl_36_sqlite.tar.gz (drug_mechanism and activities tables)"
+          - "chembl_37_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "For mechanisms where the gene/protein acts on the chemical (e.g. 'hydrolytic enzyme', 'oxidative enzyme', 'reducing agent'), the gene is the subject and the chemical is the object. The object_aspect_qualifier and object_direction_qualifier describe what happens to the chemical."
 
@@ -220,7 +220,7 @@
           - biolink:has_confidence_score
         ui_explanation: "This edge asserts a direct physical interaction between a chemical and a gene/protein target, based on ChEMBL's curated drug mechanisms and bioactivities. It is created for ChEMBL mechanisms that imply a physical interaction without a specified functional effect (e.g. 'binding agent', 'chelating agent', 'cross-linking agent', 'sequestering agent'), using the 'directly physically interacts with' predicate. ChEMBL mechanisms classified as 'OTHER', where no specific interaction type is known, produce the more generic 'interacts_with' edge."
         source_files:
-          - "chembl_36_sqlite.tar.gz (drug_mechanism and activities tables)"
+          - "chembl_37_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "For mechanisms that imply a physical interaction without a specified functional effect (e.g. 'binding agent', 'chelating agent', 'cross-linking agent'), a 'directly_physically_interacts_with' edge is created. Mechanisms classified as 'OTHER' produce an 'interacts_with' edge."
 
@@ -249,9 +249,9 @@
         edge_properties:
           - biolink:publications
           - biolink:has_confidence_score
-        ui_explanation: "This edge asserts that a protein or protein family acts on a chemical as its substrate, based on ChEMBL drug mechanisms and bioactivities where the ChEMBL mechanism is 'substrate'. The protein/protein family is the subject and the chemical substrate is the object. Edges from curated drug mechanisms are manual; edges derived from autocurated bioactivity assays are marked as automated."
+        ui_explanation: "This edge asserts that a protein or protein family acts on a chemical as its substrate, based on ChEMBL drug mechanisms and bioactivities where the ChEMBL mechanism is 'substrate'. The protein/protein family is the subject and the chemical substrate is the object. All edges are marked as manual agent."
         source_files:
-          - "chembl_36_sqlite.tar.gz (drug_mechanism and activities tables)"
+          - "chembl_37_sqlite.tar.gz (drug_mechanism and activities tables)"
 
       # AnatomicalEntityHasPartAnatomicalEntityAssociation: complex/family composition
       - subject_categories:
@@ -271,7 +271,7 @@
           - infores:chembl
         ui_explanation: "This edge describes the protein composition of a ChEMBL target that is a complex, protein family, or selectivity/interaction group, asserting that the target 'has part' a particular constituent protein. It is derived from ChEMBL's curated target-to-component mappings (target_components and component_sequences), where each protein component of a complex or family target is linked to that target."
         source_files:
-          - "chembl_36_sqlite.tar.gz (target_dictionary, target_components, component_sequences tables)"
+          - "chembl_37_sqlite.tar.gz (target_dictionary, target_components, component_sequences tables)"
 
       # ChemicalEntityToChemicalEntityAssociation: metabolism
       - subject_categories:
@@ -295,7 +295,7 @@
           - biolink:publications
         ui_explanation: "This edge asserts that a chemical (a drug or substrate) has a particular metabolite, based on ChEMBL's manually curated drug metabolism records. It links a substrate chemical to its metabolite; where the parent drug differs from the metabolized substrate, an additional edge from the parent drug to the metabolite is also created. A species context qualifier records the organism in which the metabolic conversion was observed."
         source_files:
-          - "chembl_36_sqlite.tar.gz (metabolism, compound_records, compound_structures, metabolism_refs tables)"
+          - "chembl_37_sqlite.tar.gz (metabolism, compound_records, compound_structures, metabolism_refs tables)"
 
     node_type_info:
 
