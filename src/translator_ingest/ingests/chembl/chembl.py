@@ -18,6 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AnatomicalEntityHasPartAnatomicalEntityAssociation,
     ChemicalGeneInteractionAssociation,
     MacromolecularMachineHasSubstrateAssociation,
+    RetrievalSource,
 )
 
 from koza.model.graphs import KnowledgeGraph
@@ -32,7 +33,22 @@ QUALIFIER_CONFIG_PATH = INGESTS_PARSER_PATH / "chembl" / "chembl_qualifiers.json
 LATEST_VERSION = "37"
 
 INFORES_CHEMBL = "infores:chembl"
-CHEMBL_SOURCES = build_association_knowledge_sources(primary=INFORES_CHEMBL)
+
+CHEMBL_COMPOUND_PAGE_URL = "https://www.ebi.ac.uk/chembl/explore/compound/{}#DrugMechanisms"
+CHEMBL_METABOLISM_PAGE_URL = "https://www.ebi.ac.uk/chembl/explore/compound/{}#Metabolism"
+CHEMBL_TARGET_PAGE_URL = "https://www.ebi.ac.uk/chembl/explore/target/{}#ApprovedDrugsAndClinicalCandidates"
+CHEMBL_TARGET_COMPONENTS_PAGE_URL = "https://www.ebi.ac.uk/chembl/explore/target/{}#TargetComponents"
+CHEMBL_ACTIVITIES_URL = 'https://www.ebi.ac.uk/chembl/explore/activities/QUERYSTRING:molecule_chembl_id:("{}") AND target_chembl_id:("{}")?description=Activities'
+
+
+def build_chembl_sources(urls: list[str]) -> list[RetrievalSource]:
+    """Build the primary ChEMBL knowledge source, attaching the given source record URLs."""
+    return build_association_knowledge_sources(primary=(INFORES_CHEMBL, urls))
+
+
+def metabolism_page_url(entity: ChemicalEntity) -> str:
+    return CHEMBL_METABOLISM_PAGE_URL.format(entity.id.removeprefix(CHEMBL_COMPOUND_PREFIX))
+
 
 MOA_QUERY = """
         SELECT
@@ -657,7 +673,10 @@ def get_association(koza, record, action_type_map):
                 species_context_qualifier = species_context_qualifier,
                 subject_form_or_variant_qualifier = mutation_qualifier if association_type in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation") else None,
                 object_form_or_variant_qualifier = mutation_qualifier if association_type not in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation") else None,
-                sources=CHEMBL_SOURCES,
+                sources=build_chembl_sources([
+                    CHEMBL_COMPOUND_PAGE_URL.format(record["molecule_chembl_id"]),
+                    CHEMBL_TARGET_PAGE_URL.format(record["target_chembl_id"]),
+                ]),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 publications=publications,
@@ -704,7 +723,9 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
         object=object_id,
         species_context_qualifier = species_context_qualifier,
         anatomical_context_qualifier = [anatomical_context_qualifier] if anatomical_context_qualifier else None,
-        sources=CHEMBL_SOURCES,
+        sources=build_chembl_sources([
+            CHEMBL_ACTIVITIES_URL.format(record["molecule_chembl_id"], record["target_chembl_id"]),
+        ]),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=publications,
@@ -728,7 +749,10 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
         object=metabolite.id,
         species_context_qualifier = species_context_qualifier,
         # TODO: context_qualifier = context_qualifier,
-        sources=CHEMBL_SOURCES,
+        sources=build_chembl_sources([
+            metabolism_page_url(substrate),
+            metabolism_page_url(metabolite),
+        ]),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=references if len(references) > 0 else None,
@@ -747,7 +771,9 @@ def get_has_part_association(koza: koza.KozaTransform, component, target, record
         predicate="biolink:has_part",
         object=component.id,
         # TODO: species_context_qualifier = species_context_qualifier,
-        sources=CHEMBL_SOURCES,
+        sources=build_chembl_sources([
+            CHEMBL_TARGET_COMPONENTS_PAGE_URL.format(record["target_chembl_id"]),
+        ]),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )
