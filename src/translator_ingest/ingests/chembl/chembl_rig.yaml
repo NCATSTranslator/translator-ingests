@@ -123,7 +123,6 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-          - automated_agent
         primary_knowledge_sources:
           - infores:chembl
         edge_properties:
@@ -134,6 +133,7 @@
           - "chembl_37_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "The 'mechanism' reported by ChEMBL determines the type of edge created. For mechanisms that imply an effect of the chemical on the target (e.g. 'agonist', 'inhibitor', 'stabiliser'), an 'affects' edge with appropriate qualifiers is created. A full mapping of ChEMBL mechanisms to Biolink predicate and qualifier combinations can be found in chembl_qualifiers.json."
+          - "Includes source_record_urls on the infores:chembl source: edges from drug mechanisms link to the ChEMBL compound page (Drug Mechanisms section) and target page (Approved Drugs and Clinical Candidates section); edges from bioactivities link to the ChEMBL activities page filtered by molecule and target ChEMBL IDs."
 
       # GeneAffectsChemicalAssociation: gene/protein target affects chemical
       - subject_categories:
@@ -166,7 +166,6 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-          - automated_agent
         primary_knowledge_sources:
           - infores:chembl
         edge_properties:
@@ -177,6 +176,7 @@
           - "chembl_37_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "For mechanisms where the gene/protein acts on the chemical (e.g. 'hydrolytic enzyme', 'oxidative enzyme', 'reducing agent'), the gene is the subject and the chemical is the object. The object_aspect_qualifier and object_direction_qualifier describe what happens to the chemical."
+          - "Includes source_record_urls on the infores:chembl source: edges from drug mechanisms link to the ChEMBL compound page (Drug Mechanisms section) and target page (Approved Drugs and Clinical Candidates section); edges from bioactivities link to the ChEMBL activities page filtered by molecule and target ChEMBL IDs."
 
       # ChemicalGeneInteractionAssociation: direct physical interactions and untyped interactions
       - subject_categories:
@@ -212,7 +212,6 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-          - automated_agent
         primary_knowledge_sources:
           - infores:chembl
         edge_properties:
@@ -223,6 +222,7 @@
           - "chembl_37_sqlite.tar.gz (drug_mechanism and activities tables)"
         additional_notes:
           - "For mechanisms that imply a physical interaction without a specified functional effect (e.g. 'binding agent', 'chelating agent', 'cross-linking agent'), a 'directly_physically_interacts_with' edge is created. Mechanisms classified as 'OTHER' produce an 'interacts_with' edge."
+          - "Includes source_record_urls on the infores:chembl source: edges from drug mechanisms link to the ChEMBL compound page (Drug Mechanisms section) and target page (Approved Drugs and Clinical Candidates section); edges from bioactivities link to the ChEMBL activities page filtered by molecule and target ChEMBL IDs."
 
       # MacromolecularMachineHasSubstrateAssociation: substrate relationships
       - subject_categories:
@@ -243,7 +243,6 @@
           - knowledge_assertion
         agent_type:
           - manual_agent
-          - automated_agent
         primary_knowledge_sources:
           - infores:chembl
         edge_properties:
@@ -252,6 +251,8 @@
         ui_explanation: "This edge asserts that a protein or protein family acts on a chemical as its substrate, based on ChEMBL drug mechanisms and bioactivities where the ChEMBL mechanism is 'substrate'. The protein/protein family is the subject and the chemical substrate is the object. All edges are marked as manual agent."
         source_files:
           - "chembl_37_sqlite.tar.gz (drug_mechanism and activities tables)"
+        additional_notes:
+          - "Includes source_record_urls on the infores:chembl source: edges from drug mechanisms link to the ChEMBL compound page (Drug Mechanisms section) and target page (Approved Drugs and Clinical Candidates section); edges from bioactivities link to the ChEMBL activities page filtered by molecule and target ChEMBL IDs."
 
       # AnatomicalEntityHasPartAnatomicalEntityAssociation: complex/family composition
       - subject_categories:
@@ -272,6 +273,8 @@
         ui_explanation: "This edge describes the protein composition of a ChEMBL target that is a complex, protein family, or selectivity/interaction group, asserting that the target 'has part' a particular constituent protein. It is derived from ChEMBL's curated target-to-component mappings (target_components and component_sequences), where each protein component of a complex or family target is linked to that target."
         source_files:
           - "chembl_37_sqlite.tar.gz (target_dictionary, target_components, component_sequences tables)"
+        additional_notes:
+          - "Includes source_record_urls on the infores:chembl source, linking to the Target Components section of the ChEMBL target page."
 
       # ChemicalEntityToChemicalEntityAssociation: metabolism
       - subject_categories:
@@ -296,6 +299,8 @@
         ui_explanation: "This edge asserts that a chemical (a drug or substrate) has a particular metabolite, based on ChEMBL's manually curated drug metabolism records. It links a substrate chemical to its metabolite; where the parent drug differs from the metabolized substrate, an additional edge from the parent drug to the metabolite is also created. A species context qualifier records the organism in which the metabolic conversion was observed."
         source_files:
           - "chembl_37_sqlite.tar.gz (metabolism, compound_records, compound_structures, metabolism_refs tables)"
+        additional_notes:
+          - "Includes source_record_urls on the infores:chembl source, linking to the Metabolism section of the ChEMBL compound pages for both the substrate and the metabolite."
 
     node_type_info:
 
