@@ -99,7 +99,7 @@ def get_hpoa_association_sources(
         )
 
     else:
-        raise ValueError(f"Unknown source '{source_id}' value, can't set the primary knowledge source")
+        raise ValueError(f"Unknown source '{source_id}' value, can't set the supporting data source")
 
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco

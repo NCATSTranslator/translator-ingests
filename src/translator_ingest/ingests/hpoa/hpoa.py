@@ -34,9 +34,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 )
 
 from translator_ingest.util.github import GitHubReleases
-from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
-from translator_ingest.util.biolink import INFORES_HPOA
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     get_hpoa_association_sources,
@@ -417,18 +415,18 @@ def transform_gene_to_phenotype_record(
         # Raw frequencies - HPO term curies, ratios, percentages - normalized to HPO terms
         frequency = phenotype_frequency_to_hpo_term(koza_transform, record["frequency"])
 
-    dis_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
+    disease_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
     try:
         # Convert disease identifier to mondo term identifier if possible...
-        dis_id = koza_transform.lookup(name=dis_id, map_column="subject_id", map_name="mondo_map")
+        disease_context = koza_transform.lookup(name=disease_id, map_column="subject_id", map_name="mondo_map")
     except MapItemException:
         koza_transform.log(
             f"transform_record_gene_to_phenotype() - koza_transform.lookup "
-            f"failure for 'dis_id' field '{str(dis_id)}' in record '{str(record)}' ",
+            f"failure for 'dis_id' field '{str(disease_id)}' in record '{str(record)}' ",
             level="DEBUG"
         )
         # ...otherwise leave as is
-        pass
+        disease_context = disease_id
 
     # Evidence Code Ontology ("ECO") term, inherited from the phenotype.hpoa entry, translated
     # to ECO class CURIE based on HPO documentation and mapped onto a given agent_type
@@ -445,13 +443,17 @@ def transform_gene_to_phenotype_record(
         has_evidence_of_type=evidence_of_type,
         qualified_predicate="biolink:causes",
         subject_form_or_variant_qualifier=VE.genetic_variant_form,
-        disease_context_qualifier=dis_id,
+        disease_context_qualifier=disease_context,
         frequency_qualifier=frequency.frequency_qualifier,
         has_percentage=frequency.has_percentage,
         has_quotient=frequency.has_quotient,
         has_count=frequency.has_count,
         has_total=frequency.has_total,
-        sources=build_association_knowledge_sources(primary=INFORES_HPOA),
+        sources=get_hpoa_association_sources(
+                disease_id,  # infer the supporting data source from the original disease identifier
+                source_record_url_type="gene",
+                source_record_id=gene_id
+        ),
         knowledge_level=KnowledgeLevelEnum.logical_entailment,
         agent_type=agent_type,
         **{},

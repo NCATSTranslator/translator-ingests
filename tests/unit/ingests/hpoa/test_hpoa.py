@@ -308,7 +308,7 @@ def test_disease_to_phenotype_node_transform(
                         "resource_id": "infores:hpo-annotations",
                         "source_record_urls": ["https://hpo.jax.org/browse/disease/OMIM%3A117650"]
                     },
-                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"}
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
@@ -612,7 +612,8 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations",
                         "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8086"]
-                    }
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"}
                 ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.text_mining_agent,
@@ -655,7 +656,8 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations",
                         "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8120"]
-                    }
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:orphanet"}
                 ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_agent,
@@ -698,7 +700,8 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations",
                         "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8192"]
-                    }
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"}
                 ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
@@ -742,7 +745,8 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations",
                         "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8929"]
-                    }
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"}
                 ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_agent,
