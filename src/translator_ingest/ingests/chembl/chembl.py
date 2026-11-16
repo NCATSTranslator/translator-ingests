@@ -18,6 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AnatomicalEntityHasPartAnatomicalEntityAssociation,
     ChemicalGeneInteractionAssociation,
     MacromolecularMachineHasSubstrateAssociation,
+    RetrievalSource,
 )
 
 from koza.model.graphs import KnowledgeGraph
@@ -29,10 +30,25 @@ from translator_ingest import INGESTS_PARSER_PATH
 
 QUALIFIER_CONFIG_PATH = INGESTS_PARSER_PATH / "chembl" / "chembl_qualifiers.json"
 
-LATEST_VERSION = "36"
+LATEST_VERSION = "37"
 
 INFORES_CHEMBL = "infores:chembl"
-CHEMBL_SOURCES = build_association_knowledge_sources(primary=INFORES_CHEMBL)
+
+CHEMBL_COMPOUND_PAGE_URL = "https://www.ebi.ac.uk/chembl/explore/compound/{}#DrugMechanisms"
+CHEMBL_METABOLISM_PAGE_URL = "https://www.ebi.ac.uk/chembl/explore/compound/{}#Metabolism"
+CHEMBL_TARGET_PAGE_URL = "https://www.ebi.ac.uk/chembl/explore/target/{}#ApprovedDrugsAndClinicalCandidates"
+CHEMBL_TARGET_COMPONENTS_PAGE_URL = "https://www.ebi.ac.uk/chembl/explore/target/{}#TargetComponents"
+CHEMBL_ACTIVITIES_URL = 'https://www.ebi.ac.uk/chembl/explore/activities/QUERYSTRING:molecule_chembl_id:("{}") AND target_chembl_id:("{}")?description=Activities'
+
+
+def build_chembl_sources(urls: list[str]) -> list[RetrievalSource]:
+    """Build the primary ChEMBL knowledge source, attaching the given source record URLs."""
+    return build_association_knowledge_sources(primary=(INFORES_CHEMBL, urls))
+
+
+def metabolism_page_url(entity: ChemicalEntity) -> str:
+    return CHEMBL_METABOLISM_PAGE_URL.format(entity.id.removeprefix(CHEMBL_COMPOUND_PREFIX))
+
 
 MOA_QUERY = """
         SELECT
@@ -204,7 +220,6 @@ ACTIVITY_QUERY = """
         assays.assay_tissue,
         assays.relationship_type,
         assays.confidence_score,
-        assays.curated_by,
         assays.src_id AS assay_source_id,
         assay_type.assay_desc AS assay_type,
         bioassay_ontology.label AS BAO_label,
@@ -224,7 +239,6 @@ ACTIVITY_QUERY = """
         relationship_type.relationship_desc AS relationship_description,
         confidence_score_lookup.description AS confidence_score_description,
         confidence_score_lookup.target_mapping,
-        curation_lookup.description AS curation_description,
         drug_mechanism.mec_id
     FROM activities
     JOIN assays ON activities.assay_id=assays.assay_id
@@ -233,7 +247,6 @@ ACTIVITY_QUERY = """
     LEFT JOIN bioassay_ontology on bioassay_ontology.bao_id = assays.bao_format
     LEFT JOIN relationship_type ON relationship_type.relationship_type = assays.relationship_type
     LEFT JOIN confidence_score_lookup ON confidence_score_lookup.confidence_score = assays.confidence_score
-    LEFT JOIN curation_lookup ON curation_lookup.curated_by = assays.curated_by
     JOIN target_components ON (target_components.tid = target_dictionary.tid AND target_dictionary.target_type IN ('SINGLE PROTEIN'))
     JOIN component_sequences ON component_sequences.component_id = target_components.component_id
     LEFT JOIN drug_mechanism ON (drug_mechanism.molregno = activities.molregno AND drug_mechanism.tid = assays.tid AND activities.action_type = drug_mechanism.action_type)
@@ -660,7 +673,10 @@ def get_association(koza, record, action_type_map):
                 species_context_qualifier = species_context_qualifier,
                 subject_form_or_variant_qualifier = mutation_qualifier if association_type in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation") else None,
                 object_form_or_variant_qualifier = mutation_qualifier if association_type not in ("GeneAffectsChemicalAssociation", "MacromolecularMachineHasSubstrateAssociation") else None,
-                sources=CHEMBL_SOURCES,
+                sources=build_chembl_sources([
+                    CHEMBL_COMPOUND_PAGE_URL.format(record["molecule_chembl_id"]),
+                    CHEMBL_TARGET_PAGE_URL.format(record["target_chembl_id"]),
+                ]),
                 knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
                 agent_type=AgentTypeEnum.manual_agent,
                 publications=publications,
@@ -707,9 +723,11 @@ def get_activity_association(koza: koza.KozaTransform, chemical, target, action_
         object=object_id,
         species_context_qualifier = species_context_qualifier,
         anatomical_context_qualifier = [anatomical_context_qualifier] if anatomical_context_qualifier else None,
-        sources=CHEMBL_SOURCES,
+        sources=build_chembl_sources([
+            CHEMBL_ACTIVITIES_URL.format(record["molecule_chembl_id"], record["target_chembl_id"]),
+        ]),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.automated_agent if record["curated_by"] == "Autocuration" else AgentTypeEnum.manual_agent,
+        agent_type=AgentTypeEnum.manual_agent,
         publications=publications,
         has_confidence_score = record["confidence_score"],
         # TODO: assay_description = record["assay_description"],
@@ -731,7 +749,10 @@ def create_chemical_association(koza: koza.KozaTransform, substrate, metabolite,
         object=metabolite.id,
         species_context_qualifier = species_context_qualifier,
         # TODO: context_qualifier = context_qualifier,
-        sources=CHEMBL_SOURCES,
+        sources=build_chembl_sources([
+            metabolism_page_url(substrate),
+            metabolism_page_url(metabolite),
+        ]),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
         publications=references if len(references) > 0 else None,
@@ -750,7 +771,9 @@ def get_has_part_association(koza: koza.KozaTransform, component, target, record
         predicate="biolink:has_part",
         object=component.id,
         # TODO: species_context_qualifier = species_context_qualifier,
-        sources=CHEMBL_SOURCES,
+        sources=build_chembl_sources([
+            CHEMBL_TARGET_COMPONENTS_PAGE_URL.format(record["target_chembl_id"]),
+        ]),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
     )

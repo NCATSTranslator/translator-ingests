@@ -5,6 +5,7 @@ from typing import Optional
 from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
     ChemicalAffectsGeneAssociation,
+    ChemicalEntity,
     ChemicalEntityToChemicalEntityAssociation,
     ChemicalGeneInteractionAssociation,
     GeneAffectsChemicalAssociation,
@@ -18,7 +19,7 @@ import koza
 from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
-from translator_ingest.ingests.chembl.chembl import build_chemical_entity_from_row, transform_complexes
+from translator_ingest.ingests.chembl.chembl import build_chemical_entity_from_row, metabolism_page_url, transform_complexes
 
 from tests.unit.ingests import validate_transform_result, MockKozaWriter, MockKozaTransform
 
@@ -75,7 +76,13 @@ ASSOCIATION_TEST_SLOTS = ("category", "subject", "predicate", "object", "sources
                 "subject": "CHEMBL.TARGET:CHEMBL612409",
                 "predicate": "biolink:has_part",
                 "object": "UniProtKB:Q15125",
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:chembl"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:chembl",
+                        "source_record_urls": ["https://www.ebi.ac.uk/chembl/explore/target/CHEMBL612409#TargetComponents"],
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
             },
@@ -104,6 +111,17 @@ def test_ingest_transform(
             node_test_slots=NODE_TEST_SLOTS,
             edge_test_slots=ASSOCIATION_TEST_SLOTS,
         )
+
+
+@pytest.mark.parametrize(
+    "compound_id,expected_url",
+    [
+        ("CHEMBL.COMPOUND:CHEMBL25", "https://www.ebi.ac.uk/chembl/explore/compound/CHEMBL25#Metabolism"),
+        ("CHEMBL.COMPOUND:CHEMBL1201585", "https://www.ebi.ac.uk/chembl/explore/compound/CHEMBL1201585#Metabolism"),
+    ],
+)
+def test_metabolism_page_url(compound_id: str, expected_url: str):
+    assert metabolism_page_url(ChemicalEntity(id=compound_id)) == expected_url
 
 
 # ===== PYDANTIC ROUNDTRIP TESTS =====
