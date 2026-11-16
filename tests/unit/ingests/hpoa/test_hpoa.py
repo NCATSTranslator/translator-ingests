@@ -221,7 +221,11 @@ def test_disease_to_phenotype_node_transform(
                 # is 'Present in 30% to 79% of the cases'.
                 "frequency_qualifier": "HP:0040282",
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/disease/OMIM%3A117650"]
+                    },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -299,7 +303,11 @@ def test_disease_to_phenotype_node_transform(
                 "has_quotient": None,
                 "frequency_qualifier": None,
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/disease/OMIM%3A117650"]
+                    },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -334,7 +342,11 @@ def test_disease_to_phenotype_node_transform(
                 "has_quotient": None,
                 "frequency_qualifier": None,
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/disease/DECIPHER%3A16"]
+                    },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:decipher"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -395,7 +407,11 @@ def test_predicate(association: str, expected_predicate: str | None):
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A64170"]
+                    },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:medgen"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
@@ -425,7 +441,11 @@ def test_predicate(association: str, expected_predicate: str | None):
                 "qualified_predicate": "biolink:contributes_to",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A6505"]
+                    },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:medgen"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
@@ -484,7 +504,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         "publications": "PMID:26242992;PMID:4045952;PMID:11050011",
         "frequency": "11/11",
         "disease_id": "OMIM:301310",
-        "gene_to_disease_association_types": "MENDELIAN",
+        "gene_to_disease_association_types": "MENDELIAN"
     }
     # Find any entry with the expected fields in the result list
     assert any(
@@ -552,8 +572,6 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
     assert not non_mendelian, f"non-MENDELIAN association types survived preparation: {sorted(set(non_mendelian))}"
 
 
-
-
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
@@ -571,7 +589,7 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8086", "name": "AAAS", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8086", "name": "AAAS", "symbol": "AAAS", "category": ["biolink:Gene"]},
                 {"id": "HP:0000252", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -589,7 +607,13 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
                 "has_total": None,
                 "disease_context_qualifier": "MONDO:0009279",
                 "publications": ["PMID:11062474"],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8086"]
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.text_mining_agent,
             },
@@ -608,7 +632,7 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8120", "name": "AP3B2", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8120", "name": "AP3B2", "symbol": "AP3B2", "category": ["biolink:Gene"]},
                 {"id": "HP:0001298", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -626,7 +650,13 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
                 "has_total": None,
                 "disease_context_qualifier": "MONDO:0018614",
                 "publications": [],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8120"]
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_agent,
             },
@@ -645,7 +675,7 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8192", "name": "CLPP", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8192", "name": "CLPP", "symbol": "CLPP", "category": ["biolink:Gene"]},
                 {"id": "HP:0000013", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -663,7 +693,13 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
                 "has_total": 9,
                 "disease_context_qualifier": "MONDO:0013588",
                 "publications": ["PMID:23541340"],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8192"]
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
             },
@@ -683,7 +719,7 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8929", "name": "PHOX2B", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8929", "name": "PHOX2B", "symbol": "PHOX2B", "category": ["biolink:Gene"]},
                 {"id": "HP:0003005", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -701,7 +737,13 @@ def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2:
                 "has_total": None,
                 "disease_context_qualifier": "MONDO:0700041",
                 "publications": ["PMID:23541340", "PMID:12345678"],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8929"]
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_agent,
             },

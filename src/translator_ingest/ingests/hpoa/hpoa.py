@@ -49,8 +49,6 @@ from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
     hpo_to_mode_of_inheritance,
 )
 
-HPOA_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA)
-
 
 def get_latest_version() -> str:
     ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
@@ -242,7 +240,11 @@ def transform_disease_to_phenotype_edge_record(
             has_total=frequency.has_total,
             has_percentage=frequency.has_percentage,
             has_quotient=frequency.has_quotient,
-            sources=get_hpoa_association_sources(disease_id),
+            sources=get_hpoa_association_sources(
+                source_id=disease_id,
+                source_record_url_type="disease",
+                source_record_id=disease_id
+            ),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=agent_type,
             **{},
@@ -266,7 +268,7 @@ def transform_gene_to_disease_record(
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
     gene_id = record["ncbi_gene_id"]
-    gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
+    gene = Gene(id=gene_id, name=record["gene_symbol"], symbol=record["gene_symbol"], **{})
 
     qualified_predicate: str | None = get_qualified_predicate(record["association_type"])
 
@@ -281,7 +283,11 @@ def transform_gene_to_disease_record(
             object=disease_id,
             qualified_predicate="biolink:causes",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
-            sources=get_hpoa_association_sources(record["source"]),
+            sources=get_hpoa_association_sources(
+                record["source"],
+                source_record_url_type="gene",
+                source_record_id=gene_id
+            ),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
             **{},
@@ -294,7 +300,11 @@ def transform_gene_to_disease_record(
             object=disease_id,
             qualified_predicate="biolink:contributes_to",
             subject_form_or_variant_qualifier=VE.genetic_variant_form,
-            sources=get_hpoa_association_sources(record["source"]),
+            sources=get_hpoa_association_sources(
+                record["source"],
+                source_record_url_type="gene",
+                source_record_id=gene_id
+            ),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
             **{},
@@ -389,7 +399,7 @@ def transform_gene_to_phenotype_record(
              and edges (Association) or None if the data is incomplete
     """
     gene_id = "NCBIGene:" + str(record["ncbi_gene_id"])
-    gene = Gene(id=gene_id, name=record["gene_symbol"], **{})
+    gene = Gene(id=gene_id, name=record["gene_symbol"], symbol=record["gene_symbol"],**{})
 
     hpo_id = record["hpo_id"]
     if not hpo_id:
@@ -441,7 +451,7 @@ def transform_gene_to_phenotype_record(
         has_quotient=frequency.has_quotient,
         has_count=frequency.has_count,
         has_total=frequency.has_total,
-        sources=HPOA_SOURCES,
+        sources=build_association_knowledge_sources(primary=INFORES_HPOA),
         knowledge_level=KnowledgeLevelEnum.logical_entailment,
         agent_type=agent_type,
         **{},
