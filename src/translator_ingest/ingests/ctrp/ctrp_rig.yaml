@@ -31,10 +31,9 @@ source_info:
     This ingest is based on the CTRP v2.0 2015 CTD2 Expanded Dataset. The release is
     versioned in the download directory name, CTRPv2.0_2015_ctd2_ExpandedDataset.
   source_status: not_maintained
-  additional_notes:
-    - >-
-      The live CTRP portal describes itself as a living resource, but the availability and
-      release cadence of new downloadable bulk datasets have not been confirmed.
+  additional_notes: >-
+    The live CTRP portal describes itself as a living resource, but the availability and
+    release cadence of new downloadable bulk datasets have not been confirmed.
 
 ingest_info:
   ingest_categories:
