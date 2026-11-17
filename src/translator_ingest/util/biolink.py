@@ -93,6 +93,23 @@ def get_biolink_model_toolkit() -> Toolkit:
     return Toolkit(schema=get_biolink_schema().schema)
 
 
+@lru_cache(maxsize=1)
+def get_treatment_indication_predicates() -> frozenset[str]:
+    """
+    The predicates permitted on a ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation, namely
+    'biolink:treats_or_applied_or_studied_to_treat' and its descendants. Only that association class carries
+    clinical_approval_status and max_research_phase, so edges with any other predicate cannot carry them.
+
+    >>> "biolink:in_clinical_trials_for" in get_treatment_indication_predicates()
+    True
+    >>> "biolink:contraindicated_in" in get_treatment_indication_predicates()
+    False
+    """
+    return frozenset(get_biolink_model_toolkit().get_descendants(
+        "treats or applied or studied to treat", reflexive=True, formatted=True
+    ))
+
+
 def parse_attributes(attributes: Optional[dict]) -> Optional[dict]:
     return (
         attributes
