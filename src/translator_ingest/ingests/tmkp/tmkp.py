@@ -58,7 +58,8 @@ PREDICATE_REMAP = {
 MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 
 # Source edge ids of text-mined treats edges that none of their supporting sentences support, as judged by a
-# typed-decision model (Jev) over every supporting sentence. See jev/README.md for how the list was made.
+# typed-decision model (Jev) over every supporting sentence. How the list was made:
+# https://github.com/cbizon/tmkp-cleanup/tree/v1/treats
 JEV_DROPPED_EDGES_FILE = "tmkp_treats_jev_v3_dropped_edges.txt.gz"
 # TMKP edge ids aren't unique: a treats edge and a contributes_to edge for the same chemical and condition share an
 # id. The list only judges treats edges, so it applies only to these predicates.
@@ -466,7 +467,7 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     if not all([subject_id, predicate, object_id]):
         return None
 
-    # Drop treats edges that none of their supporting sentences support (see jev/README.md)
+    # Drop treats edges that none of their supporting sentences support (see JEV_DROPPED_EDGES_FILE)
     if predicate in JEV_FILTERED_PREDICATES and record.get("id") in koza_transform.state["jev_dropped_edge_ids"]:
         koza_transform.state["jev_dropped_edge_count"] += 1
         return None
