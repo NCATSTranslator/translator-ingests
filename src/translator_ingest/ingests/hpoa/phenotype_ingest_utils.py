@@ -1,8 +1,11 @@
 """
 HPOA processing utility methods
 """
+from urllib.parse import quote_plus
+
 import koza
 from pydantic import BaseModel
+
 from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource, AgentTypeEnum
 
 from translator_ingest.util.biolink import build_association_knowledge_sources
@@ -14,35 +17,87 @@ from translator_ingest.util.biolink import  (
     INFORES_HPOA
 )
 
-HPOA_MEDGEN_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
-HPOA_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
-HPOA_ORPHANET_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
-HPOA_DECIPHER_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIPHER])
+HPOA_BROWSE_ENDPOINT = "https://hpo.jax.org/browse/{type}/{identifier}"
+
+def get_hpoa_source_record_url(
+    source_record_url_type: str,
+    source_record_id: str
+) -> str:
+    """
+    Generates the source record url for a particular HPOA ingest context.
+    :param source_record_url_type: is either "disease", "gene" or "medgen"
+    :param source_record_id: object identifier for the target source_record_url
+    :return: str, constructed source_record_url
+    """
+    #
+    # source_record_urls, for each use case:
+    #
+    # disease-to-phenotype:
+    #      "https://hpo.jax.org/browse/disease/{disease_id}"
+    #
+    # genes-to-disease:
+    #      # some genes which don't resolve to any phenotypes may need to point to
+    #         "https://www.ncbi.nlm.nih.gov/medgen/?term={urlencoded(disease_id)}"
+    #      # otherwise:
+    #          "https://hpo.jax.org/browse/gene/{gene_id}" or "https://hpo.jax.org/browse/disease/{disease_id}"
+    #
+    # gene-to-phenotype:
+    #      "https://hpo.jax.org/browse/gene/{gene_id}"
+    #
+    identifier = quote_plus(source_record_id)
+
+    if source_record_url_type in ["disease", "gene"]:
+        return f"https://hpo.jax.org/browse/{source_record_url_type}/{identifier}"
+
+    elif source_record_url_type == "medgen":
+        return f"https://www.ncbi.nlm.nih.gov/medgen/?term={identifier}"
+
+    raise RuntimeError(f"Unrecognized source_record_url_type: '{source_record_url_type}'?")
 
 
-def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
+def get_hpoa_association_sources(
+    source_id: str,
+    source_record_url_type: str,
+    source_record_id: str
+) -> list[RetrievalSource]:
     """
     The primary knowledge source may either be inferred from the 'source' string
     matching a characteristic port of a HPOA-coded record['source'] encoded URI
     or from the CURIE namespace of a 'source' string, which is a disease identifier.
 
     :param source_id: HPOA data field value encoding the primary knowledge source
+    :param source_record_url_type: is either "disease" or "gene"
+    :param source_record_id: object identifier for the target source_record_url
     :return: list[RetrievalSource] of source infores identifiers
     """
+    source_record_url: str = get_hpoa_source_record_url(source_record_url_type, source_record_id)
+
     if "medgen" in source_id:
-        return HPOA_MEDGEN_OMIM_SOURCES
+        return build_association_knowledge_sources(
+            primary=(INFORES_HPOA,[source_record_url]),
+            supporting=[INFORES_MEDGEN, INFORES_OMIM]
+        )
 
     elif source_id.startswith("OMIM"):
-        return HPOA_OMIM_SOURCES
+        return build_association_knowledge_sources(
+            primary=(INFORES_HPOA,[source_record_url]),
+            supporting=[INFORES_OMIM]
+        )
 
     elif "orphadata" in source_id or source_id.startswith("ORPHA") or "orpha" in source_id.lower():
-        return HPOA_ORPHANET_SOURCES
+        return build_association_knowledge_sources(
+            primary=(INFORES_HPOA,[source_record_url]),
+            supporting=[INFORES_ORPHANET]
+        )
 
     elif source_id.startswith("DECIPHER"):
-        return HPOA_DECIPHER_SOURCES
+        return build_association_knowledge_sources(
+            primary=(INFORES_HPOA,[source_record_url]),
+            supporting=[INFORES_DECIPHER]
+        )
 
     else:
-        raise ValueError(f"Unknown source '{source_id}' value, can't set the primary knowledge source")
+        raise ValueError(f"Unknown source '{source_id}' value, can't set the supporting data source")
 
 
 # Evidence Code translations - https://www.ebi.ac.uk/ols4/ontologies/eco

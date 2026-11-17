@@ -178,7 +178,12 @@ def test_phenotype_frequency_to_hpo_term(
     assert result == frequency
 
 def test_decipher_resolution():
-    sources: list[RetrievalSource] = get_hpoa_association_sources("DECIPHER:16")
+    sources: list[RetrievalSource] = \
+        get_hpoa_association_sources(
+            source_id="DECIPHER:16",
+            source_record_url_type="disease",
+            source_record_id="DECIPHER:16"
+        )
     assert any(
         s.resource_id == "infores:decipher" and 
         s.resource_role == "supporting_data_source"
