@@ -43,9 +43,10 @@ from translator_ingest.ingests.tmkp.tmkp import (
     transform_tmkp_edge,
     transform_tmkp_repaired_edge,
     JEV_DROPPED_EDGES_FILE,
+    CHEM_DISEASE_RELATION,
     CHEM_GENE_RELATION,
     GENE_GENE_RELATION,
-    REGULATION_FILTER_FILES,
+    SENTENCE_FILTER_FILES,
     TMKP_TO_BIOLINK_SLOT_MAP,
     INFORES_TEXT_MINING_KP,
     PREDICATE_REMAP,
@@ -612,7 +613,7 @@ def test_jev_filter_keeps_contributes_to_edge_sharing_a_dropped_treats_id():
 
 
 def test_load_chem_gene_lists():
-    dropped, pruned = REGULATION_FILTER_FILES[CHEM_GENE_RELATION]
+    dropped, pruned = SENTENCE_FILTER_FILES[CHEM_GENE_RELATION]
     assert load_id_direction_pairs(TEST_DATA_DIR / dropped) == frozenset({("tmkp-test-chem-edge-1", "decreased")})
     assert load_pruned_sentences(TEST_DATA_DIR / pruned) == {
         ("tmkp-test-chem-edge-2", "increased"): frozenset({"tmkp:test-unsupported-sentence"})
@@ -716,6 +717,53 @@ def test_kept_gene_gene_edge_is_gene_regulates_gene_and_pruned():
     assert [r.id for r in study.has_study_results] == ["tmkp:test-supported-sentence"]
 
 
+def _chem_disease_record(edge_id: str, attributes: list | None = None, **extra: str) -> dict:
+    """A TMKP chemical contributes_to disease edge record (no qualifiers)."""
+    return {
+        "id": edge_id,
+        "subject": "CHEBI:15422",
+        "predicate": "biolink:contributes_to",
+        "object": "MONDO:0005148",
+        "relation": CHEM_DISEASE_RELATION,
+        "_attributes": json.dumps(attributes or []),
+        **extra,
+    }
+
+
+def test_load_chem_disease_lists_with_empty_direction():
+    dropped, pruned = SENTENCE_FILTER_FILES[CHEM_DISEASE_RELATION]
+    assert load_id_direction_pairs(TEST_DATA_DIR / dropped) == frozenset({("tmkp-test-cd-edge-1", "")})
+    assert load_pruned_sentences(TEST_DATA_DIR / pruned) == {
+        ("tmkp-test-cd-edge-2", ""): frozenset({"tmkp:test-unsupported-sentence"})
+    }
+
+
+@pytest.mark.parametrize("extra", [{}, {"object_direction_qualifier": ""}])
+def test_chem_disease_edge_dropped_without_a_direction(extra: dict):
+    """contributes_to edges have no direction; a missing or empty qualifier matches the list's empty direction."""
+    associations = [i for i in _run_edge_transform(_chem_disease_record("tmkp-test-cd-edge-1", **extra))
+                    if isinstance(i, Association)]
+    assert associations == []
+
+
+def test_chem_disease_list_does_not_drop_treats_edge_with_the_same_id():
+    """Treats edges share the relation; the contributes_to list only judges contributes_to edges."""
+    record = _chem_disease_record("tmkp-test-cd-edge-1") | {"predicate": "biolink:treats_or_applied_or_studied_to_treat"}
+    assert len([i for i in _run_edge_transform(record) if isinstance(i, Association)]) == 1
+
+
+def test_kept_chem_disease_edge_is_pruned_and_stays_contributes_to():
+    attributes = [_study_result("tmkp:test-unsupported-sentence", "PMID:1"),
+                  _study_result("tmkp:test-supported-sentence", "PMID:2")]
+    (association,) = [i for i in _run_edge_transform(_chem_disease_record("tmkp-test-cd-edge-2", attributes))
+                      if isinstance(i, Association)]
+    assert isinstance(association, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
+    assert association.predicate == "biolink:contributes_to"
+    (study,) = association.has_supporting_studies.values()
+    assert [r.id for r in study.has_study_results] == ["tmkp:test-supported-sentence"]
+    assert association.publications == ["PMID:2"]
+
+
 def _run_repaired_edge_transform(record: dict) -> list:
     """Helper: run transform_tmkp_repaired_edge through KozaRunner, return collected items."""
     writer = MockKozaWriter()
@@ -749,6 +797,19 @@ def test_repaired_chemical_edge_to_peptide_is_chemical_affects_gene():
     (association,) = [i for i in _run_repaired_edge_transform(record) if isinstance(i, Association)]
     assert isinstance(association, ChemicalAffectsGeneAssociation)
     assert association.object == "PR:000036009"
+
+
+def test_repaired_chem_disease_edge_is_contributes_to():
+    record = _chem_disease_record("tmkp-repair:test-4", [_study_result("tmkp:test-supported-sentence", "PMID:2")])
+    (association,) = [i for i in _run_repaired_edge_transform(record) if isinstance(i, Association)]
+    assert isinstance(association, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)
+    assert association.predicate == "biolink:contributes_to"
+
+
+def test_repaired_chem_disease_edge_with_gene_subject_fails():
+    record = _chem_disease_record("tmkp-repair:test-5") | {"subject": "UniProtKB:P05112"}
+    with pytest.raises(ValueError, match="outside the association's range"):
+        _run_repaired_edge_transform(record)
 
 
 def test_repaired_edge_outside_association_range_fails():
