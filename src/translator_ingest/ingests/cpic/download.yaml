@@ -1,0 +1,10 @@
+# This API supplies both tables on https://www.clinpgx.org/cpic/pairs.
+# The web page itself is HTML, not the TSV file named in the upstream RIG.
+- url: https://api.clinpgx.org/v1/cpic/pair
+  local_name: pairs.json
+- url: https://api.clinpgx.org/v1/download/file/data/genes.zip
+  local_name: genes.zip
+- url: https://api.clinpgx.org/v1/download/file/data/drugs.zip
+  local_name: drugs.zip
+- url: https://api.clinpgx.org/v1/download/file/data/chemicals.zip
+  local_name: chemicals.zip

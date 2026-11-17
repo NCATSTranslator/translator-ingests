@@ -1,0 +1,5 @@
+name: cpic
+
+# prepare_data joins the downloaded JSON to the entity tables in the ZIP files.
+reader:
+  format: json
