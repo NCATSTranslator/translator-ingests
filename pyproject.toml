@@ -3,33 +3,27 @@ requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bridge"
+name = "translator-ingests"
 dynamic = ["version"]
 description = "Translator Phase 3 Data Ingest Pipeline"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
-    "beautifulsoup4>=4.14.2",
     "biolink-model==4.4.4",
     # bmt >=1.5.0 defaults to the biolink-model 4.4.4 schema, matching the pinned
     # pydantic model above. Older bmt defaults to the 4.2.2 schema, which silently
     # disagrees with the pydantic classes about which qualifiers a class permits.
     "bmt>=1.5.0",
     "click>=8.0.0",
-    "codespell>=2.4.1",
-    "deepdiff>=8.6.1",
     "duckdb>=1.4.4",    # ChEMBL activities transform pre-joins over the source sqlite via duckdb
-    "hatchling",
     "kghub-downloader>=0.5.0",
     "koza>=2.6.1",
-    "mkdocs-minify-plugin>=0.8.0",
     "openpyxl",      # for pandas read_excel to work, needed for specific ingest
     "pandas==2.3.3",    # also installs numpy, used by some ingests
     "psycopg[binary]",     # for Postgres querying, needed for specific ingest
     "polars>=1.35.2",
     "requests",    ## needed for specific ingest
     "robokop-orion==2.0.9",
-    "uv-dynamic-versioning>=0.11.2",
     "xmltodict>=1.0.2",
     "zstandard>=0.25.0"
 ]
@@ -41,7 +35,8 @@ validate-kgx = "translator_ingest.util.validate_kgx:main"
 dev = [
     "pytest>=8.4.1",
     "black>=24.1.0",
-    "codespell>=2.2.0",
+    "codespell>=2.4.1",
+    "deepdiff>=8.6.1",
     "ruff>=0.12.8",
     # for CX notebook support: I use an old version that works with extensions
     "nbclassic",
@@ -52,7 +47,6 @@ dev = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",
     "mkdocs-minify-plugin>=0.8.0",
-    "biolink-model==4.4.4",
 ]
 
 [tool.pytest.ini_options]
@@ -63,17 +57,34 @@ line-length = 120
 target-version = "py312"
 extend-exclude = ["*.ipynb"]
 
+[tool.ruff.lint]
+extend-select = ["TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"src.translator_ingest".msg = "Import translator_ingest instead. Importing it as src.translator_ingest loads a second copy of every module, so module-level state like cached schemas or toolkits is created twice."
+
 [tool.black]
 line-length = 120
 target-version = ["py312"]
 
 [tool.uv]
 package = true
+# Rebuild the project (recompute its version from git) when the commit or tags change, not only when this
+# file does. Otherwise the installed version stays at whatever it was when the project was last built.
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
 
+# The package version comes from the latest vX.Y.Z git tag:
+# "1.2.3" when on a specific tag,
+# "1.2.4.devN+<commit>" if additional commits are present. N commits after the latest tag + current commit SHA.
 [tool.uv-dynamic-versioning]
 vcs = "git"
 style = "pep440"
-fallback-version = "0.0.0"
+# Only release tags count, e.g. v1.2.3, so a tag like v1.2.3-something is ignored instead of breaking every build.
+pattern = '^v(?P<base>\d+\.\d+\.\d+)$'
+# Versions after a release are pre-releases of the next one (1.2.4.devN), not post-releases of the last (1.2.3.postN)
+bump = true
+# Fail if no release tag is found, instead of quietly building version 0.0.0
+strict = true
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
@@ -83,9 +94,20 @@ packages = ["src/translator_ingest"]
 
 [tool.codespell]
 skip = [
+    # Downloaded and generated data
+    "./data",
+    "./releases",
+    "./logs",
+    "./output",
+    # Generated documentation (make docs-build)
+    "./site",
+    "./docs",
+    # Third-party code, if a virtual environment is not in a hidden directory (hidden ones are skipped by default)
+    "**/site-packages",
     "./src/translator_ingest/ingests/drug_rep_hub/indications_config.json",
     "./src/translator_ingest/ingests/drug_rep_hub/target_config.json",
     # Jupyter notebooks: JSON cell outputs embed base64 plot data (spurious "word" matches),
-    # and truncated pandas/HTML previews often break words mid-token (false typos). Same skip as Makefile CODESPELL_SKIP.
-    "**/*.ipynb",
+    # and truncated pandas/HTML previews often break words mid-token (false typos).
+    "*.ipynb",
 ]
+ignore-words = ".codespellignore"

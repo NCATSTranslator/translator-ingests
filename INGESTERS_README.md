@@ -111,19 +111,12 @@ This repository uses GitHub Actions to automate testing and quality checks.  Cod
   - Pushes to the `main` branch (e.g. a PR is merged)
   - Pull requests (`opened`, `reopened`, `synchronized`, `ready_for_review`)
 - **What it does:**
-  - Runs linting and setup checks on Python 3.12 (ruff, black, etc.)
-  - Runs the test suite across multiple Python versions (3.9 → 3.13)
-  - Executes `make test` to validate code with `pytest`
-
-**Codespell Workflow**
-
-- **Triggers on:**
-  - Pushes to the `main` branch (e.g. a PR is merged)
-  - Pull requests (`opened`, `reopened`, `synchronized`, `ready_for_review`)
-- **What it does:**
-  - Runs [Codespell](https://github.com/codespell-project/codespell) to check for common spelling errors in the codebase
-  - Skips files under `./data/*`
-  - Uses `.codespellignore` for custom exceptions
+  - Runs `pytest` on Python 3.12 and 3.13
+  - Runs the lint checks once, as a separate job:
+    - [Codespell](https://github.com/codespell-project/codespell) to check for common spelling errors, configured by
+      `[tool.codespell]` in `pyproject.toml` (skipped paths) and `.codespellignore` (words to accept)
+    - `ruff check`
+  - `make test` runs the same checks locally
 
 ## FYI CX's process
 
