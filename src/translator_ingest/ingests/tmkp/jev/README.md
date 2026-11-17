@@ -81,16 +81,8 @@ with 1Password), or a secret the job runner mounts as an environment variable.
 check of 60 sentences, the top answer matched the original run for 59, probabilities moved by up to 0.13, and all
 60 fell on the same side of the threshold.
 
-The original run's answers are the authoritative record, at
-`https://stars.renci.org/var/translator/ingests/tmkp/tmkp_treats_jev_v3_scores.jsonl.gz` (54 MB; one line per
-sentence with its edge and sentence ids, Jev's top choice and the probability of each option). Running step 3 on
-them reproduces the published list exactly, without a TypeSafe key:
-
-```bash
-curl -O https://stars.renci.org/var/translator/ingests/tmkp/tmkp_treats_jev_v3_scores.jsonl.gz
-gunzip tmkp_treats_jev_v3_scores.jsonl.gz
-python build_drop_list.py treats_sentences.jsonl tmkp_treats_jev_v3_scores.jsonl treats_edges.jsonl tmkp_treats_jev_v3_dropped_edges.txt.gz
-```
+Only the drop list is published; the original run's per-sentence answers aren't. Steps 1 and 3 are deterministic, so
+a rerun differs from the published list only where Jev's answers differ.
 
 ## Validation
 
