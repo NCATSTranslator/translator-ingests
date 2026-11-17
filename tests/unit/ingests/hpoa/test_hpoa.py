@@ -304,7 +304,42 @@ def test_disease_to_phenotype_node_transform(
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            }
+        ),
+        (   # Query 4 - Sample DECIPHER record
+            {
+                "database_id": "DECIPHER:16",
+                "disease_name": "22q11 deletion syndrome (Velocardiofacial / DiGeorge syndrome)",
+                "qualifier": "",
+                "hpo_id": "HP:0005403",
+                "reference": "DECIPHER:16",
+                "evidence": "IEA",
+                "onset": "",
+                "frequency": "",
+                "sex": "",
+                "modifier": "",
+                "aspect": "P",
+                "biocuration": "HPO:skoehler[2013-05-29]",
             },
+            {
+                "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
+                "subject": "DECIPHER:16",
+                "predicate": "biolink:has_phenotype",
+                "object": "HP:0005403",
+                "publications": [],
+                "has_evidence_of_type": ["ECO:0000501"],
+                "sex_qualifier": None,
+                "onset_qualifier": None,
+                "has_percentage": None,
+                "has_quotient": None,
+                "frequency_qualifier": None,
+                "sources": [
+                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:decipher"},
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.text_mining_agent,
+            }
         )
     ],
 )
