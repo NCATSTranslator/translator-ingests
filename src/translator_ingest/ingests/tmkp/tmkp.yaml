@@ -17,7 +17,7 @@ readers:
     header_mode: none
     files:
       - edges.tsv.gz
-    columns:
+    columns: &edge_columns
       - 'subject'
       - 'predicate'
       - 'object'
@@ -37,3 +37,11 @@ readers:
       - 'supporting_study_results'
       - 'supporting_publications'
       - '_attributes'
+  # Chemical -> protein edges rebuilt under corrected concepts, in the same column layout (see jev/chem_gene/README.md)
+  repaired_edges:
+    format: csv
+    delimiter: '\t'
+    header_mode: none
+    files:
+      - tmkp_chem_gene_repaired_edges.tsv.gz
+    columns: *edge_columns
