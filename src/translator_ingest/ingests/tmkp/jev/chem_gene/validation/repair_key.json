@@ -1,0 +1,1417 @@
+{
+ "0": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "hdl",
+  "curie": "UniProtKB:Q8WXH2",
+  "count": 41,
+  "jev_choice": null,
+  "jev_probability": 0.9,
+  "letter_to_curie": {
+   "A": "NCBIGene:3290",
+   "B": "PR:000008494",
+   "C": "PR:000008176",
+   "D": "NCBIGene:3069",
+   "E": "NCBIGene:338328"
+  }
+ },
+ "1": {
+  "group": "accepted",
+  "role": "object",
+  "key": "lax1",
+  "curie": "UniProtKB:Q8IWV1",
+  "count": 1,
+  "jev_choice": "UniProtKB:Q9LFB2-1",
+  "jev_probability": 0.96,
+  "letter_to_curie": {
+   "A": "PR:000009688",
+   "B": "UniProtKB:Q9LFB2-1"
+  }
+ },
+ "2": {
+  "group": "accepted",
+  "role": "object",
+  "key": "hnrnpa1",
+  "curie": "UniProtKB:P22626",
+  "count": 13,
+  "jev_choice": "UniProtKB:P09651",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "NCBIGene:664709",
+   "B": "UniProtKB:P09651",
+   "C": "NCBIGene:144983",
+   "D": "UniProtKB:Q8IWL2-1"
+  }
+ },
+ "3": {
+  "group": "accepted",
+  "role": "object",
+  "key": "lip4",
+  "curie": "UniProtKB:P57723",
+  "count": 6,
+  "jev_choice": "UniProtKB:Q9C064",
+  "jev_probability": 0.9,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9C064"
+  }
+ },
+ "4": {
+  "group": "accepted",
+  "role": "object",
+  "key": "slp4",
+  "curie": "UniProtKB:O95977",
+  "count": 1,
+  "jev_choice": "UniProtKB:Q96C24",
+  "jev_probability": 0.97,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q96C24"
+  }
+ },
+ "5": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "mcpt6",
+  "curie": "UniProtKB:Q15661",
+  "count": 5,
+  "jev_choice": null,
+  "jev_probability": 0.52,
+  "letter_to_curie": {
+   "A": "PR:000016592"
+  }
+ },
+ "6": {
+  "group": "accepted",
+  "role": "object",
+  "key": "xcp1",
+  "curie": "UniProtKB:Q9HD89",
+  "count": 1,
+  "jev_choice": "UniProtKB:O65493-1",
+  "jev_probability": 0.97,
+  "letter_to_curie": {
+   "A": "UniProtKB:O65493-1"
+  }
+ },
+ "7": {
+  "group": "accepted",
+  "role": "object",
+  "key": "myo1c",
+  "curie": "UniProtKB:Q12965",
+  "count": 5,
+  "jev_choice": "UniProtKB:O00159",
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "UniProtKB:O00159",
+   "B": "UniProtKB:A1L180"
+  }
+ },
+ "8": {
+  "group": "accepted",
+  "role": "object",
+  "key": "rip1",
+  "curie": "UniProtKB:Q15311",
+  "count": 453,
+  "jev_choice": "UniProtKB:Q13546",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q13546",
+   "B": "UniProtKB:Q13601",
+   "C": "NCBIGene:7386"
+  }
+ },
+ "9": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "pdi4",
+  "curie": "UniProtKB:Q9UM07",
+  "count": 3,
+  "jev_choice": null,
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "PR:000012222"
+  }
+ },
+ "10": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "copa",
+  "curie": "UniProtKB:P53621",
+  "count": 11,
+  "jev_choice": "UniProtKB:Q59385-1",
+  "jev_probability": 0.53,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q59385-1",
+   "B": "PR:000022319",
+   "C": "PR:000005733",
+   "D": "UniProtKB:Q59385-2",
+   "E": "PR:000019416"
+  }
+ },
+ "11": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "emi2",
+  "curie": "UniProtKB:Q9NX40",
+  "count": 22,
+  "jev_choice": null,
+  "jev_probability": 0.91,
+  "letter_to_curie": {
+   "A": "PR:000007412",
+   "B": "NCBIGene:286151"
+  }
+ },
+ "12": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "trs23",
+  "curie": "UniProtKB:Q9Y296",
+  "count": 1,
+  "jev_choice": null,
+  "jev_probability": 0.82,
+  "letter_to_curie": {
+   "A": "PR:000016615"
+  }
+ },
+ "13": {
+  "group": "accepted",
+  "role": "object",
+  "key": "chd5",
+  "curie": "UniProtKB:O60229",
+  "count": 34,
+  "jev_choice": "UniProtKB:Q8TDI0",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q8TDI0",
+   "B": "UniProtKB:O00258",
+   "C": "UniProtKB:Q8TD26"
+  }
+ },
+ "14": {
+  "group": "not_accepted",
+  "role": "subject",
+  "key": "99tc",
+  "curie": "DRUGBANK:DB14227",
+  "count": 56,
+  "jev_choice": "PUBCHEM.COMPOUND:450124",
+  "jev_probability": 0.61,
+  "letter_to_curie": {
+   "A": "PUBCHEM.COMPOUND:450124",
+   "B": "PUBCHEM.COMPOUND:178749",
+   "C": "PUBCHEM.COMPOUND:177194"
+  }
+ },
+ "15": {
+  "group": "accepted",
+  "role": "subject",
+  "key": "pdgfb",
+  "curie": "DRUGBANK:DB00102",
+  "count": 141,
+  "jev_choice": "UniProtKB:P01127",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:P01127"
+  }
+ },
+ "16": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "gpcr",
+  "curie": "UniProtKB:Q9HBX8",
+  "count": 10,
+  "jev_choice": "UniProtKB:Q8TDU6",
+  "jev_probability": 0.57,
+  "letter_to_curie": {
+   "A": "NCBIGene:441931",
+   "B": "UniProtKB:Q8TDU6",
+   "C": "UniProtKB:Q8TDS5",
+   "D": "UniProtKB:Q9HB89",
+   "E": "NCBIGene:442206"
+  }
+ },
+ "17": {
+  "group": "accepted",
+  "role": "object",
+  "key": "gabbr1",
+  "curie": "UniProtKB:O15205",
+  "count": 15,
+  "jev_choice": "UniProtKB:Q9UBS5",
+  "jev_probability": 0.9,
+  "letter_to_curie": {
+   "A": "UniProtKB:A0A1U9X7R0",
+   "B": "UniProtKB:Q9UBS5",
+   "C": "UniProtKB:H2L0Q3-3"
+  }
+ },
+ "18": {
+  "group": "accepted",
+  "role": "object",
+  "key": "cadherin3",
+  "curie": "UniProtKB:Q9H251",
+  "count": 6,
+  "jev_choice": "NCBIGene:1001",
+  "jev_probability": 0.92,
+  "letter_to_curie": {
+   "A": "PR:000074734",
+   "B": "UniProtKB:P22223-2",
+   "C": "NCBIGene:1001",
+   "D": "UniProtKB:P22223-1",
+   "E": "PR:000019287",
+   "F": "PR:000005245"
+  }
+ },
+ "19": {
+  "group": "accepted",
+  "role": "object",
+  "key": "trap",
+  "curie": "UniProtKB:Q8NHU6",
+  "count": 1748,
+  "jev_choice": "UniProtKB:P13686",
+  "jev_probability": 0.98,
+  "letter_to_curie": {
+   "A": "UniProtKB:P13686",
+   "B": "UniProtKB:Q96KG9",
+   "C": "NCBIGene:7186",
+   "D": "UniProtKB:Q9Y4A5"
+  }
+ },
+ "20": {
+  "group": "accepted",
+  "role": "object",
+  "key": "kiss1",
+  "curie": "UniProtKB:Q6ZVE7",
+  "count": 232,
+  "jev_choice": "UniProtKB:Q15726",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:A0ACI8R6T2",
+   "B": "UniProtKB:U3KQ86",
+   "C": "UniProtKB:Q15726"
+  }
+ },
+ "21": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "ribosomalproteinl27a",
+  "curie": "UniProtKB:P46776",
+  "count": 1,
+  "jev_choice": "UniProtKB:E9PKT2",
+  "jev_probability": 0.75,
+  "letter_to_curie": {
+   "A": "UniProtKB:E9PKT2",
+   "B": "PR:000050156",
+   "C": "PR:000049078",
+   "D": "PR:000014209",
+   "E": "UniProtKB:A0ACI8T3B8"
+  }
+ },
+ "22": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "11",
+  "curie": "UniProtKB:P29992",
+  "count": 3,
+  "jev_choice": null,
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "PR:000005011",
+   "B": "PR:000004179",
+   "C": "PR:000001366",
+   "D": "UniProtKB:Q8NCW6-1",
+   "E": "UniProtKB:Q9NYG5-1",
+   "F": "UniProtKB:Q9BWP8-1"
+  }
+ },
+ "23": {
+  "group": "accepted",
+  "role": "object",
+  "key": "mid1",
+  "curie": "UniProtKB:P29372",
+  "count": 16,
+  "jev_choice": "UniProtKB:O15344",
+  "jev_probability": 0.91,
+  "letter_to_curie": {
+   "A": "NCBIGene:58526",
+   "B": "UniProtKB:O15344",
+   "C": "UniProtKB:Q3EBY6-2"
+  }
+ },
+ "24": {
+  "group": "accepted",
+  "role": "object",
+  "key": "hrh2",
+  "curie": "UniProtKB:O43143",
+  "count": 22,
+  "jev_choice": "UniProtKB:P25021",
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "UniProtKB:P25021"
+  }
+ },
+ "25": {
+  "group": "accepted",
+  "role": "object",
+  "key": "prg4",
+  "curie": "UniProtKB:Q96GM1",
+  "count": 96,
+  "jev_choice": "UniProtKB:Q92954",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q09550-2",
+   "B": "UniProtKB:Q92954"
+  }
+ },
+ "26": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "rhogef",
+  "curie": "UniProtKB:Q8N1W1",
+  "count": 8,
+  "jev_choice": null,
+  "jev_probability": 0.53,
+  "letter_to_curie": {
+   "A": "UniProtKB:I3L2C0",
+   "B": "PR:000007475",
+   "C": "PR:000007473",
+   "D": "UniProtKB:Q5JSP0-1",
+   "E": "UniProtKB:A0A0D9SGH1",
+   "F": "PR:000007474"
+  }
+ },
+ "27": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "asp4",
+  "curie": "UniProtKB:Q96A33",
+  "count": 3,
+  "jev_choice": null,
+  "jev_probability": 0.88,
+  "letter_to_curie": {
+   "A": "PR:000010986",
+   "B": "UniProtKB:P46646-1",
+   "C": "NCBIGene:9476"
+  }
+ },
+ "28": {
+  "group": "accepted",
+  "role": "object",
+  "key": "dleu2",
+  "curie": "UniProtKB:O43261",
+  "count": 13,
+  "jev_choice": "NCBIGene:8847",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "NCBIGene:8847"
+  }
+ },
+ "29": {
+  "group": "accepted",
+  "role": "object",
+  "key": "glx2",
+  "curie": "UniProtKB:Q16775",
+  "count": 10,
+  "jev_choice": "UniProtKB:O24495-1",
+  "jev_probability": 0.91,
+  "letter_to_curie": {
+   "A": "UniProtKB:O24495-1"
+  }
+ },
+ "30": {
+  "group": "accepted",
+  "role": "object",
+  "key": "synaptotagmin5",
+  "curie": "UniProtKB:Q86SS6",
+  "count": 1,
+  "jev_choice": "NCBIGene:6861",
+  "jev_probability": 0.97,
+  "letter_to_curie": {
+   "A": "NCBIGene:6861",
+   "B": "PR:000015907",
+   "C": "PR:000078462",
+   "D": "UniProtKB:O00445-1",
+   "E": "PR:000043801",
+   "F": "UniProtKB:A0ACI8R9K3"
+  }
+ },
+ "31": {
+  "group": "accepted",
+  "role": "object",
+  "key": "ang1",
+  "curie": "UniProtKB:P03950",
+  "count": 568,
+  "jev_choice": "UniProtKB:Q15389",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:O76062",
+   "B": "UniProtKB:O14713-1",
+   "C": "UniProtKB:Q15389"
+  }
+ },
+ "32": {
+  "group": "accepted",
+  "role": "object",
+  "key": "vesicleassociatedprotein1",
+  "curie": "UniProtKB:O94979",
+  "count": 3,
+  "jev_choice": "PR:000012890",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "PR:000017248",
+   "B": "UniProtKB:Q8VZ95-2",
+   "C": "UniProtKB:Q8VZ95-1",
+   "D": "PR:000059767",
+   "E": "PR:000012890",
+   "F": "UniProtKB:Q9SYC9-1"
+  }
+ },
+ "33": {
+  "group": "accepted",
+  "role": "object",
+  "key": "mbp1",
+  "curie": "UniProtKB:O95967",
+  "count": 25,
+  "jev_choice": "NCBIGene:4155",
+  "jev_probability": 0.94,
+  "letter_to_curie": {
+   "A": "UniProtKB:P11226",
+   "B": "NCBIGene:105372217",
+   "C": "UniProtKB:P15822",
+   "D": "UniProtKB:P06733",
+   "E": "NCBIGene:4155"
+  }
+ },
+ "34": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "ap1",
+  "curie": "UniProtKB:P53539",
+  "count": 2667,
+  "jev_choice": null,
+  "jev_probability": 0.83,
+  "letter_to_curie": {
+   "A": "UniProtKB:P56377-1",
+   "B": "UniProtKB:P05412",
+   "C": "UniProtKB:O43747-1",
+   "D": "UniProtKB:P01100",
+   "E": "UniProtKB:Q10567-3"
+  }
+ },
+ "35": {
+  "group": "accepted",
+  "role": "object",
+  "key": "heatshockprotein9",
+  "curie": "UniProtKB:P38646",
+  "count": 1,
+  "jev_choice": "UniProtKB:P07900-1",
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "UniProtKB:P07900-1",
+   "B": "PR:000008821",
+   "C": "PR:000003415",
+   "D": "UniProtKB:P0DMV8-1",
+   "E": "UniProtKB:P10809-1",
+   "F": "PR:000003407"
+  }
+ },
+ "36": {
+  "group": "accepted",
+  "role": "object",
+  "key": "mrp1",
+  "curie": "UniProtKB:O15151",
+  "count": 902,
+  "jev_choice": "UniProtKB:P33527",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:P20585",
+   "B": "UniProtKB:P33527",
+   "C": "UniProtKB:P21926"
+  }
+ },
+ "37": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "dag",
+  "curie": "UniProtKB:Q8NCG7",
+  "count": 1,
+  "jev_choice": null,
+  "jev_probability": 0.98,
+  "letter_to_curie": {
+   "A": "NCBIGene:9162",
+   "B": "UniProtKB:Q14118",
+   "C": "NCBIGene:10125"
+  }
+ },
+ "38": {
+  "group": "accepted",
+  "role": "object",
+  "key": "dbp5",
+  "curie": "UniProtKB:P18583",
+  "count": 1,
+  "jev_choice": "UniProtKB:Q9UMR2",
+  "jev_probability": 0.97,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9UMR2"
+  }
+ },
+ "39": {
+  "group": "accepted",
+  "role": "object",
+  "key": "lgals2",
+  "curie": "UniProtKB:P17931",
+  "count": 1,
+  "jev_choice": "UniProtKB:P05162",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:P05162"
+  }
+ },
+ "40": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "ga",
+  "curie": "CHEBI:30778",
+  "count": 1,
+  "jev_choice": null,
+  "jev_probability": 0.9,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q06547-1",
+   "B": "UniProtKB:Q06547-2",
+   "C": "UniProtKB:P81069-1",
+   "D": "UniProtKB:Q9UI32"
+  }
+ },
+ "41": {
+  "group": "accepted",
+  "role": "object",
+  "key": "cdk1",
+  "curie": "UniProtKB:P00338",
+  "count": 1502,
+  "jev_choice": "UniProtKB:P06493",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:P06493",
+   "B": "NCBIGene:64710"
+  }
+ },
+ "42": {
+  "group": "accepted",
+  "role": "object",
+  "key": "il1ra",
+  "curie": "UniProtKB:P08887",
+  "count": 187,
+  "jev_choice": "UniProtKB:P18510",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:P18510",
+   "B": "NCBIGene:26525",
+   "C": "UniProtKB:P14778",
+   "D": "UniProtKB:Q6IA17-1"
+  }
+ },
+ "43": {
+  "group": "accepted",
+  "role": "object",
+  "key": "glycolateoxidase",
+  "curie": "UniProtKB:Q9UJM8",
+  "count": 1,
+  "jev_choice": "UniProtKB:Q9LRR9-1",
+  "jev_probability": 0.94,
+  "letter_to_curie": {
+   "A": "PR:000034287",
+   "B": "PR:000033604",
+   "C": "UniProtKB:O49506-1",
+   "D": "PR:000034724",
+   "E": "UniProtKB:Q9LRR9-1",
+   "F": "UniProtKB:O49506-2"
+  }
+ },
+ "44": {
+  "group": "accepted",
+  "role": "object",
+  "key": "oacyltransferase",
+  "curie": "UniProtKB:P35610",
+  "count": 16,
+  "jev_choice": "PR:000006432",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "PR:000006432",
+   "B": "UniProtKB:Q96N66-2",
+   "C": "PR:000015389",
+   "D": "UniProtKB:Q96N66-1",
+   "E": "PR:000006433",
+   "F": "UniProtKB:P35610-1"
+  }
+ },
+ "45": {
+  "group": "accepted",
+  "role": "object",
+  "key": "rac1",
+  "curie": "UniProtKB:P07998",
+  "count": 1620,
+  "jev_choice": "UniProtKB:P63000",
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9NUQ9-1",
+   "B": "UniProtKB:A0ACI8QMD7",
+   "C": "UniProtKB:P63000"
+  }
+ },
+ "46": {
+  "group": "accepted",
+  "role": "object",
+  "key": "pgp",
+  "curie": "UniProtKB:P16070",
+  "count": 1,
+  "jev_choice": "UniProtKB:P08183",
+  "jev_probability": 0.93,
+  "letter_to_curie": {
+   "A": "UniProtKB:P08183",
+   "B": "UniProtKB:A6NDG6",
+   "C": "NCBIGene:9489",
+   "D": "UniProtKB:Q9NXJ5"
+  }
+ },
+ "47": {
+  "group": "accepted",
+  "role": "object",
+  "key": "spp1",
+  "curie": "UniProtKB:Q9BX95",
+  "count": 422,
+  "jev_choice": "UniProtKB:P10451",
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "UniProtKB:P10451",
+   "B": "UniProtKB:Q9P0U4"
+  }
+ },
+ "48": {
+  "group": "accepted",
+  "role": "object",
+  "key": "il21",
+  "curie": "UniProtKB:Q9GZX6",
+  "count": 250,
+  "jev_choice": "UniProtKB:Q9HBE4",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9P0M4",
+   "B": "NCBIGene:50615",
+   "C": "UniProtKB:Q9HBE4"
+  }
+ },
+ "49": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "myosin7",
+  "curie": "UniProtKB:P13533",
+  "count": 41,
+  "jev_choice": "PR:000010830",
+  "jev_probability": 0.4,
+  "letter_to_curie": {
+   "A": "NCBIGene:4625",
+   "B": "UniProtKB:A0AAQ5BGU7",
+   "C": "PR:000038867",
+   "D": "PR:000010830",
+   "E": "UniProtKB:Q91Z83-1",
+   "F": "PR:000010820"
+  }
+ },
+ "50": {
+  "group": "accepted",
+  "role": "object",
+  "key": "hpf1",
+  "curie": "UniProtKB:P51522",
+  "count": 30,
+  "jev_choice": "UniProtKB:Q9NWY4",
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "NCBIGene:107986240",
+   "B": "UniProtKB:Q9NWY4"
+  }
+ },
+ "51": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "pigdpp4",
+  "curie": "UniProtKB:P27487",
+  "count": 1,
+  "jev_choice": null,
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "UniProtKB:P10669-1",
+   "B": "UniProtKB:P10669-2",
+   "C": "PR:000036413",
+   "D": "PR:000036416",
+   "E": "PR:000044789"
+  }
+ },
+ "52": {
+  "group": "accepted",
+  "role": "object",
+  "key": "irx3",
+  "curie": "UniProtKB:P78412",
+  "count": 20,
+  "jev_choice": "UniProtKB:P78415",
+  "jev_probability": 0.97,
+  "letter_to_curie": {
+   "A": "UniProtKB:P78415",
+   "B": "UniProtKB:Q8N4G7",
+   "C": "NCBIGene:144511952"
+  }
+ },
+ "53": {
+  "group": "accepted",
+  "role": "object",
+  "key": "htr3",
+  "curie": "UniProtKB:P40227",
+  "count": 7,
+  "jev_choice": "UniProtKB:P46098",
+  "jev_probability": 0.98,
+  "letter_to_curie": {
+   "A": "UniProtKB:P46098"
+  }
+ },
+ "54": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "dao2",
+  "curie": "UniProtKB:O75106",
+  "count": 6,
+  "jev_choice": "UniProtKB:P19801-2",
+  "jev_probability": 0.7,
+  "letter_to_curie": {
+   "A": "UniProtKB:P19801-2"
+  }
+ },
+ "55": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "kcr1",
+  "curie": "UniProtKB:Q5BKT4",
+  "count": 1,
+  "jev_choice": null,
+  "jev_probability": 0.7,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q5I7T1"
+  }
+ },
+ "56": {
+  "group": "accepted",
+  "role": "object",
+  "key": "proteincd25",
+  "curie": "UniProtKB:Q01453",
+  "count": 2,
+  "jev_choice": "PR:000001380",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q8NDB6",
+   "B": "UniProtKB:P35813-1",
+   "C": "PR:000014581",
+   "D": "UniProtKB:Q9HC78-1",
+   "E": "PR:000014582",
+   "F": "PR:000001380"
+  }
+ },
+ "57": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "pink1",
+  "curie": "UniProtKB:O96017",
+  "count": 14,
+  "jev_choice": "UniProtKB:Q9BXM7",
+  "jev_probability": 0.54,
+  "letter_to_curie": {
+   "A": "NCBIGene:100861548",
+   "B": "UniProtKB:Q9BXM7-1",
+   "C": "UniProtKB:Q9BXM7"
+  }
+ },
+ "58": {
+  "group": "accepted",
+  "role": "subject",
+  "key": "acidalphaglucosidase",
+  "curie": "DRUGBANK:DB01272",
+  "count": 4,
+  "jev_choice": "NCBIGene:2548",
+  "jev_probability": 0.94,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q14697-3",
+   "B": "PR:000007752",
+   "C": "UniProtKB:P35813-1",
+   "D": "PR:000007838",
+   "E": "PR:000007837",
+   "F": "NCBIGene:2548"
+  }
+ },
+ "59": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "dct1",
+  "curie": "UniProtKB:P49281",
+  "count": 4,
+  "jev_choice": "UniProtKB:Q09969-1",
+  "jev_probability": 0.33,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q09969-2",
+   "B": "PR:000006321",
+   "C": "PR:000015927",
+   "D": "PR:000000643",
+   "E": "UniProtKB:Q09969-1",
+   "F": "NCBIGene:1638"
+  }
+ },
+ "60": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "mannosidase",
+  "curie": "UniProtKB:Q9NTJ4",
+  "count": 1,
+  "jev_choice": "PR:000010105",
+  "jev_probability": 0.58,
+  "letter_to_curie": {
+   "A": "UniProtKB:A0ACI8V776",
+   "B": "UniProtKB:P49641-3",
+   "C": "PR:000010105",
+   "D": "UniProtKB:H0YGV7",
+   "E": "PR:000010110",
+   "F": "PR:000010106"
+  }
+ },
+ "61": {
+  "group": "accepted",
+  "role": "object",
+  "key": "ulbp4",
+  "curie": "UniProtKB:Q8TD07",
+  "count": 4,
+  "jev_choice": "UniProtKB:A0A2P1NST7",
+  "jev_probability": 0.98,
+  "letter_to_curie": {
+   "A": "UniProtKB:A0A2P1NST7",
+   "B": "UniProtKB:Q8TD07-1",
+   "C": "PR:000032542"
+  }
+ },
+ "62": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "rep1",
+  "curie": "UniProtKB:P23246",
+  "count": 22,
+  "jev_choice": null,
+  "jev_probability": 0.94,
+  "letter_to_curie": {
+   "A": "UniProtKB:P24386"
+  }
+ },
+ "63": {
+  "group": "accepted",
+  "role": "object",
+  "key": "aldh1",
+  "curie": "UniProtKB:P05091",
+  "count": 597,
+  "jev_choice": "UniProtKB:P00352",
+  "jev_probability": 0.98,
+  "letter_to_curie": {
+   "A": "UniProtKB:P00352"
+  }
+ },
+ "64": {
+  "group": "accepted",
+  "role": "object",
+  "key": "transcriptionfactor11",
+  "curie": "UniProtKB:Q14494",
+  "count": 1,
+  "jev_choice": "UniProtKB:A0ACI8T384",
+  "jev_probability": 0.92,
+  "letter_to_curie": {
+   "A": "PR:000011169",
+   "B": "UniProtKB:A0ACI8T384",
+   "C": "PR:000013037",
+   "D": "UniProtKB:B5MCC4",
+   "E": "PR:000015419",
+   "F": "UniProtKB:C9JM94"
+  }
+ },
+ "65": {
+  "group": "accepted",
+  "role": "object",
+  "key": "gnrh2",
+  "curie": "UniProtKB:P01148",
+  "count": 2,
+  "jev_choice": "UniProtKB:O43555",
+  "jev_probability": 0.95,
+  "letter_to_curie": {
+   "A": "UniProtKB:O43555"
+  }
+ },
+ "66": {
+  "group": "accepted",
+  "role": "object",
+  "key": "fnr",
+  "curie": "UniProtKB:P22570",
+  "count": 5,
+  "jev_choice": "PR:000022684",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "PR:000022684",
+   "B": "PR:000022676"
+  }
+ },
+ "67": {
+  "group": "accepted",
+  "role": "object",
+  "key": "epha2",
+  "curie": "UniProtKB:O43921",
+  "count": 9,
+  "jev_choice": "UniProtKB:P29317",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:P29317",
+   "B": "NCBIGene:101927479"
+  }
+ },
+ "68": {
+  "group": "accepted",
+  "role": "object",
+  "key": "cyp7a1",
+  "curie": "UniProtKB:Q02318",
+  "count": 1,
+  "jev_choice": "UniProtKB:P22680",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "NCBIGene:101929528",
+   "B": "UniProtKB:P22680"
+  }
+ },
+ "69": {
+  "group": "accepted",
+  "role": "object",
+  "key": "skp2",
+  "curie": "UniProtKB:Q9UBK9",
+  "count": 532,
+  "jev_choice": "UniProtKB:Q13309",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "NCBIGene:100130500",
+   "B": "UniProtKB:Q13309"
+  }
+ },
+ "70": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "ds",
+  "curie": "UniProtKB:Q14197",
+  "count": 1,
+  "jev_choice": null,
+  "jev_probability": 0.92,
+  "letter_to_curie": {
+   "A": "UniProtKB:E9PP71",
+   "B": "NCBIGene:1725",
+   "C": "UniProtKB:H0Y3U7",
+   "D": "UniProtKB:Q86SQ9"
+  }
+ },
+ "71": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "leu1",
+  "curie": "UniProtKB:P06127",
+  "count": 17,
+  "jev_choice": null,
+  "jev_probability": 0.89,
+  "letter_to_curie": {
+   "A": "UniProtKB:O43261",
+   "B": "NCBIGene:10301"
+  }
+ },
+ "72": {
+  "group": "accepted",
+  "role": "object",
+  "key": "fgf13",
+  "curie": "UniProtKB:O60258",
+  "count": 13,
+  "jev_choice": "UniProtKB:Q92913",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "NCBIGene:100129662",
+   "B": "UniProtKB:Q92913",
+   "C": "UniProtKB:P70377-1"
+  }
+ },
+ "73": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "cd2",
+  "curie": "UniProtKB:P06734",
+  "count": 1,
+  "jev_choice": "UniProtKB:P06729",
+  "jev_probability": 0.89,
+  "letter_to_curie": {
+   "A": "UniProtKB:P06729",
+   "B": "UniProtKB:A0ACI8QR43",
+   "C": "UniProtKB:Q5JVN7"
+  }
+ },
+ "74": {
+  "group": "accepted",
+  "role": "object",
+  "key": "ntf3",
+  "curie": "UniProtKB:P61970",
+  "count": 33,
+  "jev_choice": "UniProtKB:P20783",
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "UniProtKB:P20783"
+  }
+ },
+ "75": {
+  "group": "accepted",
+  "role": "object",
+  "key": "pak1",
+  "curie": "UniProtKB:O75914",
+  "count": 551,
+  "jev_choice": "UniProtKB:Q13153",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q16512",
+   "B": "UniProtKB:Q13153",
+   "C": "UniProtKB:A0ACI8TL61",
+   "D": "UniProtKB:A0ACI8TK42"
+  }
+ },
+ "76": {
+  "group": "accepted",
+  "role": "object",
+  "key": "npy",
+  "curie": "UniProtKB:P49146",
+  "count": 5,
+  "jev_choice": "UniProtKB:P01303",
+  "jev_probability": 0.95,
+  "letter_to_curie": {
+   "A": "UniProtKB:P01303",
+   "B": "NCBIGene:4889"
+  }
+ },
+ "77": {
+  "group": "not_accepted",
+  "role": "subject",
+  "key": "cd",
+  "curie": "DRUGBANK:DB14547",
+  "count": 24,
+  "jev_choice": null,
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9HC29",
+   "B": "UniProtKB:P16410",
+   "C": "NCBIGene:359"
+  }
+ },
+ "78": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "samd2",
+  "curie": "UniProtKB:Q6SZW1",
+  "count": 13,
+  "jev_choice": null,
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "PR:000014458"
+  }
+ },
+ "79": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "ncc2",
+  "curie": "UniProtKB:Q16627",
+  "count": 3,
+  "jev_choice": null,
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "PR:000001986"
+  }
+ },
+ "80": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "rnahelicaselikeprotein",
+  "curie": "UniProtKB:Q86XP3",
+  "count": 1,
+  "jev_choice": null,
+  "jev_probability": 0.8,
+  "letter_to_curie": {
+   "A": "PR:000032362",
+   "B": "UniProtKB:Q13838-1",
+   "C": "UniProtKB:Q86XP3-1",
+   "D": "PR:000006366",
+   "E": "PR:000004190",
+   "F": "NCBIGene:55661"
+  }
+ },
+ "81": {
+  "group": "accepted",
+  "role": "object",
+  "key": "epc1",
+  "curie": "UniProtKB:P36955",
+  "count": 7,
+  "jev_choice": "UniProtKB:Q9H2F5",
+  "jev_probability": 0.98,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9H2F5",
+   "B": "NCBIGene:102031319",
+   "C": "NCBIGene:128071537"
+  }
+ },
+ "82": {
+  "group": "accepted",
+  "role": "object",
+  "key": "ugt1a1",
+  "curie": "UniProtKB:Q9HAW8",
+  "count": 140,
+  "jev_choice": "UniProtKB:P22309",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:P22309"
+  }
+ },
+ "83": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "stx2",
+  "curie": "UniProtKB:P32856",
+  "count": 224,
+  "jev_choice": null,
+  "jev_probability": 0.89,
+  "letter_to_curie": {
+   "A": "PR:000015794",
+   "B": "UniProtKB:A0A348AY69"
+  }
+ },
+ "84": {
+  "group": "accepted",
+  "role": "object",
+  "key": "rbp2",
+  "curie": "UniProtKB:Q9H814",
+  "count": 25,
+  "jev_choice": "UniProtKB:P50120",
+  "jev_probability": 0.96,
+  "letter_to_curie": {
+   "A": "UniProtKB:P50120",
+   "B": "UniProtKB:Q6ISL4",
+   "C": "UniProtKB:O15034"
+  }
+ },
+ "85": {
+  "group": "not_accepted",
+  "role": "subject",
+  "key": "phosphatidylcholine",
+  "curie": "CHEBI:134593",
+  "count": 21,
+  "jev_choice": null,
+  "jev_probability": 0.95,
+  "letter_to_curie": {
+   "A": "UniProtKB:P21439-1",
+   "B": "PR:000009698",
+   "C": "UniProtKB:P21439-2",
+   "D": "PR:000044416",
+   "E": "PR:000012444",
+   "F": "UniProtKB:Q9UKL6-1"
+  }
+ },
+ "86": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "fa1",
+  "curie": "UniProtKB:P55769",
+  "count": 2,
+  "jev_choice": null,
+  "jev_probability": 0.98,
+  "letter_to_curie": {
+   "A": "UniProtKB:A0ACI8U3J5",
+   "B": "UniProtKB:P80370",
+   "C": "UniProtKB:B5MCZ6"
+  }
+ },
+ "87": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "alg13",
+  "curie": "UniProtKB:Q9NP73",
+  "count": 2,
+  "jev_choice": null,
+  "jev_probability": 0.66,
+  "letter_to_curie": {
+   "A": "PR:000066773",
+   "B": "PR:000003941",
+   "C": "UniProtKB:A0A087WVG5",
+   "D": "UniProtKB:A0A087WX01",
+   "E": "PR:000067578"
+  }
+ },
+ "88": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "oc3",
+  "curie": "UniProtKB:O60422",
+  "count": 1,
+  "jev_choice": null,
+  "jev_probability": 0.96,
+  "letter_to_curie": {
+   "A": "PR:000024866",
+   "B": "NCBIGene:128506",
+   "C": "UniProtKB:P31946-1",
+   "D": "PR:000011641",
+   "E": "PR:000024920"
+  }
+ },
+ "89": {
+  "group": "accepted",
+  "role": "object",
+  "key": "sgk2",
+  "curie": "UniProtKB:Q13769",
+  "count": 9,
+  "jev_choice": "UniProtKB:Q9HBY8",
+  "jev_probability": 0.93,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9QZS5-1",
+   "B": "UniProtKB:Q9HBY8",
+   "C": "UniProtKB:Q9HBY8-2",
+   "D": "UniProtKB:Q96BR1"
+  }
+ },
+ "90": {
+  "group": "accepted",
+  "role": "object",
+  "key": "eukaryotictranslationinitiationfactor2alphakinase",
+  "curie": "UniProtKB:Q9NZJ5",
+  "count": 1,
+  "jev_choice": "PR:000006958",
+  "jev_probability": 0.96,
+  "letter_to_curie": {
+   "A": "PR:000006958",
+   "B": "UniProtKB:A0ACI8Q339",
+   "C": "UniProtKB:A0ACI8RGD1",
+   "D": "PR:000006960",
+   "E": "PR:000075811",
+   "F": "UniProtKB:A0ACI8QVI5"
+  }
+ },
+ "91": {
+  "group": "accepted",
+  "role": "object",
+  "key": "mrp8",
+  "curie": "UniProtKB:Q09428",
+  "count": 81,
+  "jev_choice": "UniProtKB:P05109",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q96J66",
+   "B": "UniProtKB:P05109"
+  }
+ },
+ "92": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "mal1",
+  "curie": "UniProtKB:Q01469",
+  "count": 16,
+  "jev_choice": null,
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "PR:000007313"
+  }
+ },
+ "93": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "pnp1",
+  "curie": "UniProtKB:P00491",
+  "count": 5,
+  "jev_choice": "PR:000011344",
+  "jev_probability": 0.57,
+  "letter_to_curie": {
+   "A": "PR:000011344",
+   "B": "PR:000013451",
+   "C": "NCBIGene:5783"
+  }
+ },
+ "94": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "crp1",
+  "curie": "UniProtKB:Q15744",
+  "count": 30,
+  "jev_choice": "NCBIGene:1465",
+  "jev_probability": 0.42,
+  "letter_to_curie": {
+   "A": "NCBIGene:1396",
+   "B": "NCBIGene:1465",
+   "C": "PR:000005958",
+   "D": "PR:000005873"
+  }
+ },
+ "95": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "ski1",
+  "curie": "UniProtKB:Q5VTY9",
+  "count": 8,
+  "jev_choice": "UniProtKB:Q14703",
+  "jev_probability": 0.58,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q14703",
+   "B": "NCBIGene:6497",
+   "C": "UniProtKB:P12757-1"
+  }
+ },
+ "96": {
+  "group": "not_accepted",
+  "role": "object",
+  "key": "smk1",
+  "curie": "UniProtKB:Q6IN85",
+  "count": 2,
+  "jev_choice": null,
+  "jev_probability": 0.99,
+  "letter_to_curie": {
+   "A": "NCBIGene:139420",
+   "B": "NCBIGene:57223",
+   "C": "UniProtKB:Q6ZMV5"
+  }
+ },
+ "97": {
+  "group": "accepted",
+  "role": "object",
+  "key": "fabp1",
+  "curie": "UniProtKB:P00505",
+  "count": 146,
+  "jev_choice": "UniProtKB:P07148",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:P07148"
+  }
+ },
+ "98": {
+  "group": "accepted",
+  "role": "object",
+  "key": "rhamm",
+  "curie": "UniProtKB:P16070",
+  "count": 24,
+  "jev_choice": "UniProtKB:O75330",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "UniProtKB:O75330"
+  }
+ },
+ "99": {
+  "group": "accepted",
+  "role": "object",
+  "key": "amyloidpeptide",
+  "curie": "UniProtKB:P05067",
+  "count": 5,
+  "jev_choice": "PR:000036193",
+  "jev_probability": 1.0,
+  "letter_to_curie": {
+   "A": "NCBIGene:3375",
+   "B": "PR:000004168",
+   "C": "NCBIGene:83941",
+   "D": "PR:000008875",
+   "E": "PR:000036193"
+  }
+ }
+}

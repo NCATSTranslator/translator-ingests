@@ -1,5 +1,7 @@
 # TMKP treats filter
 
+Chemical → protein edges have their own filter and repairs: see `chem_gene/README.md`.
+
 The TMKP source (the 2024-09-07 KGX release) has 336,369 `treats_or_applied_or_studied_to_treat` edges. Many are
 misreadings of the sentence they came from. This filter drops the treats edges that none of their supporting
 sentences support.
@@ -153,16 +155,8 @@ What it wrongly flags: a few real treatments where the drug is an adjunct (G-CSF
 
 ## Other TMKP edge types
 
-The same approach could cover TMKP's other edges for about $140 in Jev calls. 300-sentence pilots, labeled by
-separate Claude instances that worked from a written rubric and never saw the Jev prompts, found:
-
-| Edge type | Edges | Sentences | Unsupported sentences | Pilot precision / recall |
-|---|---|---|---|---|
-| chemical → protein (`affects`, increased/decreased) | 683,406 | 1,502,246 | 56% | 0.96 / 0.68 |
-| protein → protein (`affects`, gene regulation) | 343,983 | 589,036 | 93% | 1.00 / 0.92 |
-| chemical → disease or phenotype (`contributes_to`) | 122,391 | 234,717 | 37% | 0.94 / 0.66 |
-
-For the protein edges, wrong gene grounding is a large part of the problem (e.g. "Rac1" grounded to pancreatic
-ribonuclease, "Sox2" to sulfhydryl oxidase 1). Those pilots used a regulation question, a grounding question and an
-HGNC rule (a mention that is exactly an approved gene symbol must be grounded to that gene). Their prompts aren't in
-this directory, and their filters are not applied.
+- **Chemical → protein** (`affects`, increased/decreased): filtered and repaired; see `chem_gene/README.md`.
+- **Protein → protein** (`affects`, gene regulation; 343,983 edges, 589,036 sentences; 93% of pilot sentences
+  unsupported) and **chemical → disease or phenotype** (`contributes_to`; 122,391 edges, 234,717 sentences; 37%
+  unsupported) aren't filtered yet. The chemical → protein pipeline (per-pair mapping check, repair, relation
+  question) should carry over, for roughly $35 and $10 in Jev calls.

@@ -1,0 +1,352 @@
+{
+ "0": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "Text says 'fibronectin (Fbn-1)'; means fibronectin, not fibrillin-1"
+ },
+ "1": {
+  "answer": "D",
+  "also_correct": "",
+  "note": "caldesmon"
+ },
+ "2": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "Yeast Arl1p and Arl1 degradation -> ARL1; one example is a bacterial strain ARL1"
+ },
+ "3": {
+  "answer": "NONE",
+  "also_correct": "",
+  "note": "TRAP-6 = thrombin receptor activating peptide, not a gene"
+ },
+ "4": {
+  "answer": "C",
+  "also_correct": "B",
+  "note": "SGK2 kinase; isoform option same protein"
+ },
+ "5": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "PDK1/Akt pathway and PDK1 substrates AKT/S6 -> PDPK1"
+ },
+ "6": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "7": {
+  "answer": "A",
+  "also_correct": "B,C",
+  "note": "PAN2 deadenylase; isoforms same protein"
+ },
+ "8": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "9": {
+  "answer": "NONE",
+  "also_correct": "",
+  "note": "Shiga toxin 2, not syntaxin-2"
+ },
+ "10": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "Text defines SP1 as sphingosine 1-phosphate receptor 1"
+ },
+ "11": {
+  "answer": "B",
+  "also_correct": "A,D",
+  "note": "ELK1 transcription factor; isoforms same protein"
+ },
+ "12": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "13": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "14": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "Text says NFE2-related factor 2 (NRF2) -> NFE2L2, not NFE2"
+ },
+ "15": {
+  "answer": "D",
+  "also_correct": "",
+  "note": "Uncertain: CS protein in HEK293 most plausibly citrate synthase"
+ },
+ "16": {
+  "answer": "NONE",
+  "also_correct": "",
+  "note": "Aminopeptidase P inhibited by apstatin alongside ACE is the membrane form XPNPEP2, not offered; XPNPEP1 (C) is the cytosolic form"
+ },
+ "17": {
+  "answer": "NONE",
+  "also_correct": "",
+  "note": "2 of 3 examples are yeast transaldolase Tal2 (human TALDO1, not offered), not bHLH TAL2"
+ },
+ "18": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "L-plastin (LCP1), Ser5 phosphorylation and actin bundling, not lipoprotein lipase"
+ },
+ "19": {
+  "answer": "D",
+  "also_correct": "",
+  "note": ""
+ },
+ "20": {
+  "answer": "C",
+  "also_correct": "",
+  "note": ""
+ },
+ "21": {
+  "answer": "D",
+  "also_correct": "",
+  "note": "IKAP/ELP1"
+ },
+ "22": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "23": {
+  "answer": "NONE",
+  "also_correct": "",
+  "note": "SMS is a treatment (drug/formula) reducing oxidative stress, not spermine synthase"
+ },
+ "24": {
+  "answer": "C",
+  "also_correct": "",
+  "note": "osteopontin"
+ },
+ "25": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "Examples split 1:1: anti-HGF rilotumumab = HGF; crizotinib sentence means MET. Chose HGF"
+ },
+ "26": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "27": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "28": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "2 of 3 centrosomal Cep68 (dox-inducible FLAG-Cep68); one is cartilage CEP-68 = CRTAC1"
+ },
+ "29": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "Mention is part of lncRNA TMPO-AS1"
+ },
+ "30": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "31": {
+  "answer": "C",
+  "also_correct": "",
+  "note": "EGF ligand"
+ },
+ "32": {
+  "answer": "C",
+  "also_correct": "",
+  "note": "P-glycoprotein = ABCB1"
+ },
+ "33": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "34": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "35": {
+  "answer": "NONE",
+  "also_correct": "",
+  "note": "IMP-4 metallo-beta-lactamase (bacterial)"
+ },
+ "36": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "37": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "PGC-1alpha = PPARGC1A"
+ },
+ "38": {
+  "answer": "D",
+  "also_correct": "",
+  "note": "ClC-1 = CLCN1 muscle chloride channel"
+ },
+ "39": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "40": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "Acyl carrier protein, not ACP1 phosphatase: yeast ACP1 = mitochondrial ACP (NDUFAB1); other examples are a PKS ACP and a feed-additive percentage"
+ },
+ "41": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "Uncertain: PHIP2 expressed with IPTG most likely PHIP second bromodomain construct"
+ },
+ "42": {
+  "answer": "C",
+  "also_correct": "",
+  "note": "Spi-1/PU.1"
+ },
+ "43": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "'multidrug resistance protein 1' (MDP1 typo) taken as ABCB1/MDR1; glutathione link hints MRP1/ABCC1 (not offered)"
+ },
+ "44": {
+  "answer": "C",
+  "also_correct": "",
+  "note": "GFP-clathrin light chain; CLC usually LCa (CLTA); could be CLTB"
+ },
+ "45": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "46": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "cystatin SN"
+ },
+ "47": {
+  "answer": "C",
+  "also_correct": "",
+  "note": ""
+ },
+ "48": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "2 of 3 (duplicated) choline acetyltransferase in N2a; the PC12 phosphorylation example is Chat = SH2D3C"
+ },
+ "49": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "50": {
+  "answer": "D",
+  "also_correct": "",
+  "note": "RhoGEF NET1 induced by LPA"
+ },
+ "51": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "52": {
+  "answer": "B",
+  "also_correct": "A",
+  "note": "SAP130 as Mincle ligand is the same SAP130 protein"
+ },
+ "53": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "54": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "55": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "Drosophila Pxn = peroxidasin (hemocyte marker) -> PXDN, not paxillin"
+ },
+ "56": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "Yeast POP4 RNase P/MRP subunit -> human POP4"
+ },
+ "57": {
+  "answer": "D",
+  "also_correct": "",
+  "note": "R345W F3 = fibulin-3 (EFEMP1) Malattia Leventinese mutation, not tissue factor"
+ },
+ "58": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "Ikaros = IKZF1"
+ },
+ "59": {
+  "answer": "A",
+  "also_correct": "",
+  "note": "Eosinophil major basic protein; methylation-list example less clear"
+ },
+ "60": {
+  "answer": "A",
+  "also_correct": "C",
+  "note": "Same concept, gene and protein ids"
+ },
+ "61": {
+  "answer": "NONE",
+  "also_correct": "",
+  "note": "RGP-1 is a polysaccharide treatment in carp, not a protein"
+ },
+ "62": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "63": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "CRIPTO-1 = TDGF1"
+ },
+ "64": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "65": {
+  "answer": "B",
+  "also_correct": "",
+  "note": "Z-DNA binding protein 1 in necroptosis, not IGF2BP1"
+ },
+ "66": {
+  "answer": "B",
+  "also_correct": "",
+  "note": ""
+ },
+ "67": {
+  "answer": "D",
+  "also_correct": "",
+  "note": "pRb-2/p130 = RBL2"
+ },
+ "68": {
+  "answer": "A",
+  "also_correct": "",
+  "note": ""
+ },
+ "69": {
+  "answer": "C",
+  "also_correct": "A",
+  "note": "Isoform 1 same protein"
+ }
+}

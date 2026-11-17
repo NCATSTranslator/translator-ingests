@@ -1,0 +1,1341 @@
+{
+ "0": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "1": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Emi2 (FBXO43) mapped to OCAD1; phosphorylation then proteolysis"
+ },
+ "2": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "ADH-1 is a peptide drug, not alcohol dehydrogenase"
+ },
+ "3": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "4": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "5": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "CDK1 mapped to LDHA"
+ },
+ "6": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "STAT5 unspecified mapped to STAT5B"
+ },
+ "7": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "8": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "SAH is substrate"
+ },
+ "9": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "plant ICS1 mapped to DNAI1"
+ },
+ "10": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "11": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "ERK1/2 pair mapped to MAPK3"
+ },
+ "12": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "insulin sensitivity, not insulin"
+ },
+ "13": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "14": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "15": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "16": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "ALA ambiguous, benefit of doubt"
+ },
+ "17": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "18": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "19": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "20": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "21": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "cIAP-1 is BIRC2, mapped to BIRC3"
+ },
+ "22": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "23": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "24": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "25": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "yeast Sec7 puncta"
+ },
+ "26": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "27": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "HES1 mapped to GAL3A"
+ },
+ "28": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "29": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "30": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "31": {
+  "relation": "NOEFF",
+  "mapping": "WRONG",
+  "note": "NOS family mapped to NOS1"
+ },
+ "32": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "insect HARP1"
+ },
+ "33": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "HDAC class mapped to HDAC1"
+ },
+ "34": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "35": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "36": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "enhances Parkin-mediated mitophagy, not Parkin itself"
+ },
+ "37": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "38": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "39": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "40": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "41": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Annexin V assay mapped to ANXA3"
+ },
+ "42": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "43": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "44": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "45": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "IGF-2 receptor, not IGF-2"
+ },
+ "46": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "47": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Plasmodium Rad51"
+ },
+ "48": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "49": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "DMSO vehicle/culture-condition effect"
+ },
+ "50": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "exposure associated with increased UCHL1"
+ },
+ "51": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "Rac-1 mapped to ribonuclease"
+ },
+ "52": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Ang1 is angiopoietin-1 not angiogenin; increase in QRHY group not PP"
+ },
+ "53": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "CD11b+ MDSC cell frequency"
+ },
+ "54": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "55": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "parasite PRDX6"
+ },
+ "56": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "57": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "viral NSP5"
+ },
+ "58": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "oxidative modification of apoB, not activity/abundance"
+ },
+ "59": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "60": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "61": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "RBP2 here is KDM5A; resistant vs sensitive cells"
+ },
+ "62": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "63": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "64": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "65": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "66": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "67": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "68": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "69": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "ERK1/2 mapped to MAPK1"
+ },
+ "70": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "CLA-1 (SR-BI) mapped to MPPA"
+ },
+ "71": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "72": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "Mgat-1 = GlcNAc transferase I, not MOGAT1"
+ },
+ "73": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "74": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "75": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "PTX3 mapped to PITX3; both inhibited and increased"
+ },
+ "76": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "77": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Prdx6 mapped to PRDX5; PC generic class"
+ },
+ "78": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "RAD51 mapped to XRCC2"
+ },
+ "79": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "substrate"
+ },
+ "80": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "81": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "82": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "Myt1 kinase (PKMYT1) mapped to myelin TF"
+ },
+ "83": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "84": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "MBD-2 mapped to DPEP2"
+ },
+ "85": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "86": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "87": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "88": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "89": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "effect relative to nafarelin group"
+ },
+ "90": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "91": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "92": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "93": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "ratio Abeta/APP"
+ },
+ "94": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "chicken ovalbumin"
+ },
+ "95": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "96": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "p38MAPK family"
+ },
+ "97": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "98": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "99": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "racemate part of 'ketamine racemate'"
+ },
+ "100": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "ghrelin generates DAG; DAG class mapped to one species"
+ },
+ "101": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "serine residue phosphorylation by CDK2"
+ },
+ "102": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "103": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "BSP1 reduces tyrosine phosphorylation"
+ },
+ "104": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "AP-1 mapped to JUN"
+ },
+ "105": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "106": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Silver is a gene (Pmel), not the metal"
+ },
+ "107": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "IL-23 heterodimer mapped to IL23A"
+ },
+ "108": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "TRA-1-60 antigen mapped to PLS1"
+ },
+ "109": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "worm Prdx-2; accumulation of disulfide form"
+ },
+ "110": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "PD-1 mapped to ribosomal protein"
+ },
+ "111": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "112": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "113": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "114": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "115": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "116": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "STZ-induced diabetes model"
+ },
+ "117": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "Nos2 mapped to NANOS2"
+ },
+ "118": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "DDR2+ cell proportion"
+ },
+ "119": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "120": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "IL-23 mapped to IL37"
+ },
+ "121": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "inhibits ubiquitination of MAD2B"
+ },
+ "122": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "123": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "anti-IFNg autoantibodies, not IFNg"
+ },
+ "124": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "PGD2 prostaglandin mapped to HPGDS"
+ },
+ "125": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "126": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "127": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "IGF/insulin hybrid receptor ambiguous"
+ },
+ "128": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "129": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "130": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "tamoxifen injection likely CreER induction"
+ },
+ "131": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "132": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "sCD40L increased by IL-7"
+ },
+ "133": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "134": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "135": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "136": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "MKK4/7 pair mapped to MKK4"
+ },
+ "137": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "138": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "yeast Mer2"
+ },
+ "139": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "140": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "141": {
+  "relation": "NOEFF",
+  "mapping": "OK",
+  "note": "non-significant attenuation"
+ },
+ "142": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "143": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "144": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "145": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "146": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "147": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "148": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "149": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "150": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "ERK1/2 mapped to MAPK1"
+ },
+ "151": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "yeast ADH2"
+ },
+ "152": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "153": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "154": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "PD-1 mapped to ribosomal protein"
+ },
+ "155": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "HIF1 mapped to SETD2; mixed no-effect/upregulation"
+ },
+ "156": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "157": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "PDK1 here is PDPK1, mapped to pyruvate dehydrogenase kinase"
+ },
+ "158": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "159": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "SP-A (SFTPA1/2 complex) mapped to SFTPA2"
+ },
+ "160": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "AP-1 mapped to JunD"
+ },
+ "161": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "162": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "C. elegans SDN-1"
+ },
+ "163": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "arabinopyranoside part of saponin name"
+ },
+ "164": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Rad inhibits Hsp90 not Hsp70; Hsp70 family"
+ },
+ "165": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "166": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "167": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "168": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "169": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "figure legend; Prx1 here peroxiredoxin-1 not PRRX1"
+ },
+ "170": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "PCP in conjunction with TCDD"
+ },
+ "171": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "double negative"
+ },
+ "172": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "173": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "174": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "175": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "176": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "RAPA vs NTG group"
+ },
+ "177": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "178": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "exercise effect"
+ },
+ "179": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "phosphate part of sugar phosphate names"
+ },
+ "180": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "relative to free-drug group"
+ },
+ "181": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "182": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "183": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "sterol part of enzyme name"
+ },
+ "184": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "185": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "Dox inducible degron tool"
+ },
+ "186": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "187": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "glucoside in C-glucosides; SGLT2 mapped to SMIT2"
+ },
+ "188": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "PARylation modification"
+ },
+ "189": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "190": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "NF-kB mapped to NFKB1"
+ },
+ "191": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "192": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "193": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "garbled IFN, benefit of doubt"
+ },
+ "194": {
+  "relation": "NOEFF",
+  "mapping": "OK"
+ },
+ "195": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "196": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "197": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "sodium sulfate part of dextran sodium sulfate"
+ },
+ "198": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "p38 MAPK family; HQH effect"
+ },
+ "199": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "yeast Far1; tet shut-off tool"
+ },
+ "200": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "blocked nuclear localization (signaling)"
+ },
+ "201": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "PKC isoenzymes mapped to PKC epsilon"
+ },
+ "202": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "PTP1B (PTPN1) mapped to PTPRB"
+ },
+ "203": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "204": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "respectively: cetuximab targets EGFR"
+ },
+ "205": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "206": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Tet-inducible tool; HES1 mapped to HESX1"
+ },
+ "207": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "DAPT gamma-secretase inhibitor mapped to wrong chemical"
+ },
+ "208": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "209": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "SUMO-modified form"
+ },
+ "210": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "211": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "212": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "IGF-I increases DAG; DAG class mapped to species"
+ },
+ "213": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "214": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "tet tool; non-human AceCS"
+ },
+ "215": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "216": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "217": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "SARM-1 is an androgen receptor modulator compound"
+ },
+ "218": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "219": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "TRAP mapped to SCYL1; cell counts"
+ },
+ "220": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "221": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "up in amygdala, down elsewhere"
+ },
+ "222": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "223": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "H2O2 mapped to dioxidaniumyl"
+ },
+ "224": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "225": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "226": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "227": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "generic anti-CD3 antibody mapped to muromonab"
+ },
+ "228": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "229": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "230": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "Cx43 mapped to Cx46"
+ },
+ "231": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "INS-1 cell line"
+ },
+ "232": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "233": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "MIP-1 mapped to MAPKAP1"
+ },
+ "234": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "235": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "236": {
+  "relation": "NOEFF",
+  "mapping": "OK"
+ },
+ "237": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "SPP1 phage"
+ },
+ "238": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "Drp1 (DNM1L) mapped to DPYSL1"
+ },
+ "239": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "240": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "241": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "242": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "CCAT2 lncRNA"
+ },
+ "243": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "plant CCA1"
+ },
+ "244": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "245": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "246": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "247": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "zileuton is 5-LOX inhibitor; PLA2 family"
+ },
+ "248": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "PAR2 mapped to riboflavin transporter"
+ },
+ "249": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "epigallocatechin part of EGCG"
+ },
+ "250": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "251": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "CD36 mapped to SR-BI"
+ },
+ "252": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "EF1a promoter; DAPT mapped to wrong chemical"
+ },
+ "253": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "lysis buffer; TRAP mapped to TRAF2"
+ },
+ "254": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "255": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "256": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "257": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "Hsp70 family mapped to HSPA1B"
+ },
+ "258": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "CD8+CD44+ cell frequency"
+ },
+ "259": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "260": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "mouse Mcpt6 = Tpsb2"
+ },
+ "261": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "262": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "263": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "mRNA up, protein down"
+ },
+ "264": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "265": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "266": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "STZ-induced diabetes model"
+ },
+ "267": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "grass carp ortholog"
+ },
+ "268": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "269": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "270": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "271": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "272": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "PGI2 prostacyclin mapped to its receptor"
+ },
+ "273": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "274": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "275": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "AT1R mapped to ATRAP"
+ },
+ "276": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "yeast frataxin; MET promoter shut-off tool"
+ },
+ "277": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "4-OHT inducible tool"
+ },
+ "278": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "279": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "ACC1 mapped to BCL2A1"
+ },
+ "280": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "reversed PTX-induced decrease"
+ },
+ "281": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "282": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "283": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "DAPT mapped to wrong chemical"
+ },
+ "284": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "rat Mdr2 = ABCB4"
+ },
+ "285": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "286": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "287": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "CD158b (KIR2DL2/L3) mapped to KIR2DL3"
+ },
+ "288": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "Drp1 mapped to utrophin"
+ },
+ "289": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "290": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "weak insignificant induction in KO vs WT"
+ },
+ "291": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "Cx43 mapped to Cx46"
+ },
+ "292": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "293": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "294": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "MIP-2 mapped to WDR26"
+ },
+ "295": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "THP-1 cell line"
+ },
+ "296": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "297": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "298": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "E2F1 mapped to UB2L3"
+ },
+ "299": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "plant RGL1; DEX inducible system"
+ }
+}

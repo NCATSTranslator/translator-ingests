@@ -27,6 +27,6 @@ jobs:
         with:
           # Match Makefile CODESPELL_SKIP. tmkp/jev/validation: verbatim source sentences. **/*.ipynb: notebook outputs use base64 blobs and
           # truncated HTML/table strings that split words mid-token—high false-positive rate for codespell.
-          skip: ./data/*,**/site-packages,**/*.ipynb,./src/translator_ingest/ingests/tmkp/jev/validation/*
+          skip: ./data/*,**/site-packages,**/*.ipynb,./src/translator_ingest/ingests/tmkp/jev/validation/*,./src/translator_ingest/ingests/tmkp/jev/chem_gene/validation/**
           ignore_words_file: .codespellignore
 
