@@ -3,11 +3,11 @@
   local_name: nodes.tsv.gz
 - url: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/edges.tsv.gz
   local_name: edges.tsv.gz
-# Treats edges to drop; made with a typed-decision model over every supporting sentence (see jev/README.md)
+# Treats edges to drop; made with a typed-decision model over every supporting sentence (see https://github.com/cbizon/tmkp-cleanup/tree/v1/treats)
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_treats_jev_v3_dropped_edges.txt.gz
   local_name: tmkp_treats_jev_v3_dropped_edges.txt.gz
 # Chemical -> protein edges: (id, direction) to drop, sentences to prune from kept edges, and repaired edges
-# (see jev/chem_gene/README.md)
+# (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_gene_dropped_edges.txt.gz
   local_name: tmkp_chem_gene_dropped_edges.txt.gz
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_gene_pruned_sentences.txt.gz
