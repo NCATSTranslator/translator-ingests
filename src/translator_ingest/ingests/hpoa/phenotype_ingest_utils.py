@@ -44,8 +44,6 @@ def get_hpoa_source_record_url(
     # gene-to-phenotype:
     #      "https://hpo.jax.org/browse/gene/{gene_id}"
     #
-    assert source_record_url_type in ["disease", "gene", "medgen"]  # sanity check
-
     identifier = quote_plus(source_record_id)
 
     if source_record_url_type in ["disease", "gene"]:
