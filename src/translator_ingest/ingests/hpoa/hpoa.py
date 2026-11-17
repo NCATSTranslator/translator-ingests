@@ -53,13 +53,6 @@ def get_latest_version() -> str:
     return ghr.get_latest_version()
 
 
-@koza.on_data_begin(tag="disease_to_phenotype_nodes")
-def on_data_begin_ingest_disease_to_phenotype_nodes(koza_transform: koza.KozaTransform) -> None:
-    # this metadata actually accessed downstream of
-    # the ingest_disease_to_phenotype_nodes method
-    # but initialized here for simplicity of usage
-    koza_transform.transform_metadata["number_of_diseases_without_phenotypes"] = 0
-
 """
 This particular Translator Ingest module targets the "phenotype.hpoa" file for parsing.
 
@@ -314,6 +307,8 @@ def on_data_begin_ingest_gene_to_disease_record(koza_transform: koza.KozaTransfo
         ).fetchall()
     }
 
+    koza_transform.state["diseases_without_phenotypes"] = set()
+
 
 # Qualified predicate of a gene to disease record, mapped onto its Biolink association class
 _GENE_TO_DISEASE_ASSOCIATION_CLASSES: dict[
@@ -354,7 +349,7 @@ def transform_gene_to_disease_record(
     if record["disease_id"] in koza_transform.state["diseases_with_phenotypes"]:
         source_record_url_type, source_record_id = "gene", gene_id
     else:
-        koza_transform.transform_metadata["number_of_diseases_without_phenotypes"] += 1
+        koza_transform.state["diseases_without_phenotypes"].add(record["disease_id"])
         source_record_url_type, source_record_id = "medgen", disease_id
 
     association = _GENE_TO_DISEASE_ASSOCIATION_CLASSES[qualified_predicate](
@@ -375,6 +370,12 @@ def transform_gene_to_disease_record(
     )
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
+
+
+@koza.on_data_end(tag="gene_to_disease")
+def on_data_end_ingest_gene_to_disease_record(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["number_of_diseases_without_phenotypes"] = \
+        len(koza_transform.state["diseases_without_phenotypes"])
 
 
 @koza.prepare_data(tag="gene_to_phenotype")
