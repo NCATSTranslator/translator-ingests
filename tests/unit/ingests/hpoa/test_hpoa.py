@@ -428,7 +428,7 @@ def test_on_data_begin_gene_to_disease(mock_koza_transform_gene_to_disease: koza
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:64170", "name": "CARD9", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:64170", "name": "CARD9", "symbol": "CARD9", "category": ["biolink:Gene"]},
                 {"id": "OMIM:212050", "category": ["biolink:Disease"]},
             ],
             # Captured edge contents
@@ -462,7 +462,7 @@ def test_on_data_begin_gene_to_disease(mock_koza_transform_gene_to_disease: koza
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:6505", "name": "SLC1A1", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:6505", "name": "SLC1A1", "symbol": "SLC1A1", "category": ["biolink:Gene"]},
                 {"id": "OMIM:615232", "category": ["biolink:Disease"]},
             ],
             # Captured edge contents
