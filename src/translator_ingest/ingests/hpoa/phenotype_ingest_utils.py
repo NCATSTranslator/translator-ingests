@@ -10,14 +10,14 @@ from translator_ingest.util.biolink import  (
     INFORES_MEDGEN,
     INFORES_OMIM,
     INFORES_ORPHANET,
-    INFORES_DECIFER,
+    INFORES_DECIPHER,
     INFORES_HPOA
 )
 
 HPOA_MEDGEN_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_MEDGEN, INFORES_OMIM])
 HPOA_OMIM_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_OMIM])
 HPOA_ORPHANET_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_ORPHANET])
-HPOA_DECIPHER_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIFER])
+HPOA_DECIPHER_SOURCES = build_association_knowledge_sources(primary=INFORES_HPOA, supporting=[INFORES_DECIPHER])
 
 
 def get_hpoa_association_sources(source_id: str) -> list[RetrievalSource]:
