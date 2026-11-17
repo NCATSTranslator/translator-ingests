@@ -29,11 +29,11 @@ RELATION_CRITERIA = {'other': {'what': '`text` states no effect of `regulator` o
                        'expression, phosphorylation or signaling, directly or indirectly.',
                'examples': ['myricetin upregulated TCF-1', 'sevoflurane stimulated CXCR2 mRNA expression']}}
 
-# mapping (asked once per distinct (mention, concept) pair, with up to three example sentences)
+# mapping (asked once per distinct (mention, concept) pair, with up to three example sentences; {kind} is the
+# role's kind in families.py)
 PAIR_INSTRUCTIONS = ('In each example sentence the words `mention` (marked with « ») were mapped to `concept`, a {kind}. Does '
  '`mention`, as used in these sentences, mean exactly `concept`? Use the context of the sentences to decide which '
  '{kind} the words refer to.')
-PAIR_KIND = {'object': 'human protein (a UniProt entry: entry name, then protein name)', 'subject': 'chemical or drug'}
 PAIR_CRITERIA = {'wrong': {'what': 'In the examples `mention` means something other than `concept`: a different protein (an alias '
                    'shared with another protein, read in context), a protein family or complex mapped to one '
                    'member, a non-human gene (yeast, plant, insect, worm, bacterial, viral) or something that '

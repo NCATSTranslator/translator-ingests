@@ -65,14 +65,18 @@ JEV_DROPPED_EDGES_FILE = "tmkp_treats_jev_v3_dropped_edges.txt.gz"
 # id. The list only judges treats edges, so it applies only to these predicates.
 JEV_FILTERED_PREDICATES = frozenset({"biolink:treats_or_applied_or_studied_to_treat", "biolink:treats"})
 
-# Chemical -> protein edges (see jev/chem_gene/README.md). TMKP's edge id also ignores the direction qualifier (an
-# increased and a decreased edge for the same pair share one), so these lists are keyed on (id, direction).
+# Regulation edges, chemical -> protein and protein -> protein (see jev/regulation/README.md). TMKP's edge id also
+# ignores the direction qualifier (an increased and a decreased edge for the same pair share one), so these lists are
+# keyed on (id, direction), per relation.
 # - dropped: edges none of whose sentences support them as mapped
 # - pruned: sentences removed from kept edges' evidence (dropped, or moved to a repaired edge)
-# - repaired: new edges for sentences whose chemical or protein was mapped wrongly, read as their own reader
+# - repaired: new edges for sentences whose regulator or target was mapped wrongly, read as their own reader
 CHEM_GENE_RELATION = "biolink:ChemicalToGeneAssociation"
-CHEM_GENE_DROPPED_EDGES_FILE = "tmkp_chem_gene_dropped_edges.txt.gz"
-CHEM_GENE_PRUNED_SENTENCES_FILE = "tmkp_chem_gene_pruned_sentences.txt.gz"
+GENE_GENE_RELATION = "biolink:GeneRegulatoryRelationship"
+REGULATION_FILTER_FILES = {
+    CHEM_GENE_RELATION: ("tmkp_chem_gene_dropped_edges.txt.gz", "tmkp_chem_gene_pruned_sentences.txt.gz"),
+    GENE_GENE_RELATION: ("tmkp_gene_gene_dropped_edges.txt.gz", "tmkp_gene_gene_pruned_sentences.txt.gz"),
+}
 REGULATES = "biolink:regulates"
 
 # Map TMKP attribute names to Biolink slot names.
@@ -101,6 +105,7 @@ ASSOCIATION_MAP = {
     "biolink:ChemicalToGeneAssociation": ChemicalAffectsGeneAssociation,
     "biolink:GeneToDiseaseAssociation": GeneToDiseaseAssociation,
     "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation": ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    # Gene regulation with a direction becomes GeneRegulatesGeneAssociation (_edge_graph)
     "biolink:GeneRegulatoryRelationship": GeneToGeneAssociation,
 }
 
@@ -500,23 +505,26 @@ def on_data_begin_edges(koza_transform: koza.KozaTransform) -> None:
     input_dir = Path(koza_transform.input_files_dir)
     state = koza_transform.state
     state["jev_dropped_edge_ids"] = load_dropped_edge_ids(input_dir / JEV_DROPPED_EDGES_FILE)
-    state["chem_gene_dropped_edges"] = load_id_direction_pairs(input_dir / CHEM_GENE_DROPPED_EDGES_FILE)
-    state["chem_gene_pruned_sentences"] = load_pruned_sentences(input_dir / CHEM_GENE_PRUNED_SENTENCES_FILE)
+    state["regulation_dropped_edges"] = {relation: load_id_direction_pairs(input_dir / dropped)
+                                         for relation, (dropped, _) in REGULATION_FILTER_FILES.items()}
+    state["regulation_pruned_sentences"] = {relation: load_pruned_sentences(input_dir / pruned)
+                                            for relation, (_, pruned) in REGULATION_FILTER_FILES.items()}
     state["jev_dropped_edge_count"] = 0
-    state["chem_gene_dropped_edge_count"] = 0
-    state["chem_gene_pruned_sentence_count"] = 0
+    state["regulation_dropped_edge_count"] = 0
+    state["regulation_pruned_sentence_count"] = 0
     logger.info(f"Loaded {len(state['jev_dropped_edge_ids'])} treats edge ids, "
-                f"{len(state['chem_gene_dropped_edges'])} chemical -> protein edges to drop and "
-                f"{sum(map(len, state['chem_gene_pruned_sentences'].values()))} sentences to prune from {input_dir}")
+                f"{sum(map(len, state['regulation_dropped_edges'].values()))} regulation edges to drop and "
+                f"{sum(len(v) for p in state['regulation_pruned_sentences'].values() for v in p.values())} sentences "
+                f"to prune from {input_dir}")
 
 
 @koza.on_data_end(tag="edges")
 def on_data_end_edges(koza_transform: koza.KozaTransform) -> None:
     """Report what the Jev filter lists removed."""
     state = koza_transform.state
-    logger.info(f"Dropped {state['jev_dropped_edge_count']} treats edges and {state['chem_gene_dropped_edge_count']} "
-                f"chemical -> protein edges; pruned {state['chem_gene_pruned_sentence_count']} sentences from kept "
-                f"chemical -> protein edges")
+    logger.info(f"Dropped {state['jev_dropped_edge_count']} treats edges and {state['regulation_dropped_edge_count']} "
+                f"regulation edges; pruned {state['regulation_pruned_sentence_count']} sentences from kept regulation "
+                f"edges")
 
 
 @koza.transform_record(tag="edges")
@@ -536,16 +544,16 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         state["jev_dropped_edge_count"] += 1
         return None
 
-    # Chemical -> protein edges: drop unsupported ones, prune the sentences that don't support kept ones
-    # (see jev/chem_gene/README.md)
+    # Regulation edges (chemical -> protein, protein -> protein): drop unsupported ones, prune the sentences that don't
+    # support kept ones (see jev/regulation/README.md)
     excluded_results: frozenset[str] = frozenset()
-    if relation == CHEM_GENE_RELATION and predicate not in JEV_FILTERED_PREDICATES:
+    if relation in REGULATION_FILTER_FILES and predicate not in JEV_FILTERED_PREDICATES:
         key = (record.get("id"), record.get("object_direction_qualifier"))
-        if key in state["chem_gene_dropped_edges"]:
-            state["chem_gene_dropped_edge_count"] += 1
+        if key in state["regulation_dropped_edges"][relation]:
+            state["regulation_dropped_edge_count"] += 1
             return None
-        excluded_results = state["chem_gene_pruned_sentences"].get(key, frozenset())
-        state["chem_gene_pruned_sentence_count"] += len(excluded_results)
+        excluded_results = state["regulation_pruned_sentences"][relation].get(key, frozenset())
+        state["regulation_pruned_sentence_count"] += len(excluded_results)
 
     # Validate subject/object prefixes match predicate domain/range constraints
     if not _validate_edge_prefixes(subject_id, object_id, predicate):
@@ -558,8 +566,8 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
 @koza.transform_record(tag="repaired_edges")
 def transform_tmkp_repaired_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph:
     """
-    Transform a repaired chemical -> protein edge (see jev/chem_gene/README.md): TMKP sentences whose chemical or
-    protein was mapped to the wrong concept, regrouped under the right one. A gene product as regulator makes a
+    Transform a repaired regulation edge (see jev/regulation/README.md): TMKP sentences whose regulator or target was
+    mapped to the wrong concept, regrouped under the right one. A gene product as regulator makes a
     biolink:regulates gene -> gene edge; a chemical regulator stays biolink:affects.
 
     These edges are built offline, so a subject or object outside the association's Biolink range is a build error
@@ -595,11 +603,12 @@ def _edge_graph(record: Dict[str, Any], excluded_results: frozenset[str] = froze
     # Remap predicates from source to canonical Biolink form
     predicate = PREDICATE_REMAP.get(record["predicate"], record["predicate"])
 
-    # Get association class: gene -> gene regulation (repaired edges) is the SIGNOR-style association
-    if predicate == REGULATES:
+    # Get association class. Gene regulation with a direction (all of TMKP's, and repaired gene -> gene edges) is the
+    # SIGNOR-style GeneRegulatesGeneAssociation with biolink:regulates.
+    assoc_class = ASSOCIATION_MAP.get(record.get("relation"), Association)
+    if assoc_class is GeneToGeneAssociation and record.get("object_direction_qualifier"):
         assoc_class = GeneRegulatesGeneAssociation
-    else:
-        assoc_class = ASSOCIATION_MAP.get(record.get("relation"), Association)
+        predicate = REGULATES
 
     # Knowledge level: 'treats_or_applied_or_studied_to_treat' is broad enough to warrant
     # 'knowledge_assertion' (the predicate semantics already account for uncertainty).

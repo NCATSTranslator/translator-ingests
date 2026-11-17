@@ -1,0 +1,1323 @@
+{
+ "0": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "ERT2 is estrogen receptor fusion domain"
+ },
+ "1": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "2": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "3": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "CaMKII mapped to CaMKI gamma; PKC isoform unknown"
+ },
+ "4": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "5": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "6": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "7": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "Cdk8 mapped to NEDD8; yeast"
+ },
+ "8": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "ATF5 downregulated in PRMT1-depleted cells"
+ },
+ "9": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "GLP-1 peptide mapped to receptor"
+ },
+ "10": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "11": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "12": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "integrin alpha7beta1"
+ },
+ "13": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "loss of MYBBP1A activates c-MYB"
+ },
+ "14": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "Nell-1 enhanced Nfatc1 promoter binding"
+ },
+ "15": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "16": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "17": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "Wnt3a increased Smad4-dependent signaling"
+ },
+ "18": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "COX-2 mapped to MT-CO2"
+ },
+ "19": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "20": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "21": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "correlation"
+ },
+ "22": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "23": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "24": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "25": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "26": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "27": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "28": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "29": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "PAR-1 mediates MMP-9 signaling"
+ },
+ "30": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "31": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "32": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "33": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Fli1 mapped to FLII"
+ },
+ "34": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "35": {
+  "relation": "REV",
+  "mapping": "WRONG"
+ },
+ "36": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "37": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "acts through Jak2 pathway, no stated effect"
+ },
+ "38": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "39": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "40": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "41": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "42": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "43": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "44": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "p90RSK family"
+ },
+ "45": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "46": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "47": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "48": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "HMB-45 antibody clone"
+ },
+ "49": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "50": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "E2F1 mapped to UBE2L3"
+ },
+ "51": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "52": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "binding"
+ },
+ "53": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "54": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "55": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "NRF1 = NFE2L1 in cholesterol sensing context"
+ },
+ "56": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "57": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "p65 is RELA, mapped to NFKB1"
+ },
+ "58": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "59": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "60": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "61": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Hsp27 is HSPB1"
+ },
+ "62": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "63": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "64": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "effect stated on IL-1b output, not NLRP3"
+ },
+ "65": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "empty object mention"
+ },
+ "66": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "67": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "68": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "acts via caspase-1 pyroptosis, no direct effect stated"
+ },
+ "69": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "70": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "71": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "72": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "73": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "cell line"
+ },
+ "74": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "cell line; NHE1 mapped to SLC9A8"
+ },
+ "75": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "76": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "77": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "78": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "79": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "mention is part of S6 kinase name"
+ },
+ "80": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "81": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "82": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "83": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "84": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "yeast Dnm1 is DNM1L ortholog, not dynamin-1"
+ },
+ "85": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "CD16 mapped to FCGR2A"
+ },
+ "86": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "87": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "88": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "PAR2 activation induces ICAM-1"
+ },
+ "89": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "90": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "91": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "92": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "93": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "94": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "95": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "human GCP-2 is CXCL6"
+ },
+ "96": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "reagent but explicitly called beta-catenin activator"
+ },
+ "97": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "98": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "99": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "100": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "101": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "102": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "FEN1 stabilizes BRCA1 at forks"
+ },
+ "103": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "promotes via IL-11/STAT3 signaling, no direct effect stated"
+ },
+ "104": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "105": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Thy1 is transgene promoter/mouse line"
+ },
+ "106": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "107": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "108": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "109": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "LITAF degrades NEDD4-2"
+ },
+ "110": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "111": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "TWIST1 represses ALX4"
+ },
+ "112": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "113": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "MST3 is STK24, mapped STK25"
+ },
+ "114": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "115": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "116": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "117": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "118": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "119": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "120": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "121": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "122": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "Pax7 represses MyoD"
+ },
+ "123": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "124": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "125": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "126": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "127": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "128": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "129": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "130": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "Par6C = PARD6A"
+ },
+ "131": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "132": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "mutual repression"
+ },
+ "133": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "Pdlim7 represses Tbx5 targets"
+ },
+ "134": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "135": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Syn3 synapsin mapped to syndecan-3"
+ },
+ "136": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "137": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "138": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "139": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "140": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "141": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "142": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "hypothesis; generic PKC mapped to PRKCE"
+ },
+ "143": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "144": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "145": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "ferritin-H is FTH1, mapped FTMT"
+ },
+ "146": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "CNS1 enhancer"
+ },
+ "147": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "AP-2 family"
+ },
+ "148": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "149": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "complex"
+ },
+ "150": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "151": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "Isl1-Cre driver"
+ },
+ "152": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "153": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "154": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "Smad7 inhibits BMP2 effect"
+ },
+ "155": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "PLIN1 blocks TNF-alpha's lipolytic effect"
+ },
+ "156": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "157": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "158": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "159": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "160": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "161": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "correlation"
+ },
+ "162": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "163": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "MAP2 mapped to METAP1"
+ },
+ "164": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "GLP1 peptide mapped to receptor"
+ },
+ "165": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "166": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "BAFF abrogates IL-10 inhibitory effect"
+ },
+ "167": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "168": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "FGF2 mapped to FGF13"
+ },
+ "169": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "direction unstated"
+ },
+ "170": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "HES1 mapped to GAL3A"
+ },
+ "171": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "172": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "Mycn ablation suppresses Wnt5a pathway"
+ },
+ "173": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "174": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "175": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "PAR2 mapped to PXR"
+ },
+ "176": {
+  "relation": "REV",
+  "mapping": "OK"
+ },
+ "177": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "HES1 mapped to GAL3A"
+ },
+ "178": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "NK CD16 is FCGR3A not 3B"
+ },
+ "179": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "180": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "181": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "Pref-1 activates ERK1/2"
+ },
+ "182": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "183": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "direction of target regulation unstated"
+ },
+ "184": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "IL-3 induces CD69"
+ },
+ "185": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "Siah2 reduces D-AKAP1"
+ },
+ "186": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "187": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Nrf2 mapped to GABPA"
+ },
+ "188": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "189": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "plant proteins"
+ },
+ "190": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "191": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "Stat5 unspecified mapped to STAT5B"
+ },
+ "192": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "193": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "bovine serum albumin reagent"
+ },
+ "194": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "195": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "PSGL-1 mapped to SYTL1"
+ },
+ "196": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "SATB1 upregulates VEGF-B"
+ },
+ "197": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "198": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "199": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "AP-1 mapped to JunB"
+ },
+ "200": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "201": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Drp1 mapped to DENR"
+ },
+ "202": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "yeast Mcm2/Sir2 with clear human orthologs"
+ },
+ "203": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Pat1 mapped to SLC36A1"
+ },
+ "204": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "205": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Nac1 mapped to SCN1A; Miz1 is ZBTB17"
+ },
+ "206": {
+  "relation": "DEC",
+  "mapping": "WRONG",
+  "note": "PP2A mapped to PP2A activator PTPA"
+ },
+ "207": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "empty object mention"
+ },
+ "208": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "LAP3 mapped to CXCR4"
+ },
+ "209": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "210": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "acts through PKA-IRE1-XBP1 cascade"
+ },
+ "211": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "generic actin"
+ },
+ "212": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "CNTF is gp130 agonist"
+ },
+ "213": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "214": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "215": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "Rac1 mapped to RNAS1"
+ },
+ "216": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "217": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "SP-A unspecified (SFTPA1/2)"
+ },
+ "218": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "219": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "complex"
+ },
+ "220": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "221": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "222": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "223": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "decapping DCP1 mapped to ACE"
+ },
+ "224": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "AP-1 family"
+ },
+ "225": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "226": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "AP-1 family"
+ },
+ "227": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "AP-1 family"
+ },
+ "228": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "229": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "AP-1 family"
+ },
+ "230": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "231": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "PAK2 mapped to PKN2"
+ },
+ "232": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "PAR-1 in Notch/Dll1 context likely polarity kinase, not thrombin receptor"
+ },
+ "233": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "PAR1 mapped to PXR"
+ },
+ "234": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "235": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "236": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "237": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "238": {
+  "relation": "INC",
+  "mapping": "OK",
+  "note": "MT-MMP = MT1-MMP in early literature"
+ },
+ "239": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "240": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "241": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "AP-1 family"
+ },
+ "242": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "243": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "244": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "DDX21 mapped to DDX56"
+ },
+ "245": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "246": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "Nox1 oxidizes/inhibits ERp72"
+ },
+ "247": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "CPS1 mapped to CYP21A2"
+ },
+ "248": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "RANKL downregulates Irf8"
+ },
+ "249": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "250": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "251": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "252": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "MED25 mapped to MED9; Gal4 yeast"
+ },
+ "253": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "sequestration/binding"
+ },
+ "254": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "255": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "256": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "TNF family"
+ },
+ "257": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "258": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "both induced by EGCG"
+ },
+ "259": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "yeast SC protein mapped to zinc transporter"
+ },
+ "260": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "HSP90 unspecified"
+ },
+ "261": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "pyrin from NLRP3 name"
+ },
+ "262": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "263": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "264": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "yeast genes"
+ },
+ "265": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "266": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "267": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "268": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "AP-1 family"
+ },
+ "269": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "270": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "271": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "TGF-beta2 inhibits FGF-2-induced proliferation"
+ },
+ "272": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Gadd45 unspecified"
+ },
+ "273": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "274": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "275": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "276": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "277": {
+  "relation": "DEC",
+  "mapping": "OK",
+  "note": "IL-2 effect requires loss of Sirt1 expression"
+ },
+ "278": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "E2F1 mapped to UBE2L3"
+ },
+ "279": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "280": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "281": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "282": {
+  "relation": "REV",
+  "mapping": "OK",
+  "note": "ARHGAP26 negatively regulates RhoA"
+ },
+ "283": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "284": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "285": {
+  "relation": "INC",
+  "mapping": "WRONG",
+  "note": "AP-1 family"
+ },
+ "286": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "287": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "288": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "289": {
+  "relation": "REV",
+  "mapping": "WRONG",
+  "note": "Ang II peptide"
+ },
+ "290": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Hsp90 unspecified"
+ },
+ "291": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "292": {
+  "relation": "INC",
+  "mapping": "OK"
+ },
+ "293": {
+  "relation": "OTHER",
+  "mapping": "OK",
+  "note": "complex"
+ },
+ "294": {
+  "relation": "OTHER",
+  "mapping": "OK"
+ },
+ "295": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "PAR2 mapped to SLC52A1"
+ },
+ "296": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "Ror2 mapped to RORA"
+ },
+ "297": {
+  "relation": "OTHER",
+  "mapping": "WRONG"
+ },
+ "298": {
+  "relation": "DEC",
+  "mapping": "OK"
+ },
+ "299": {
+  "relation": "OTHER",
+  "mapping": "WRONG",
+  "note": "bovine serum albumin reagent"
+ }
+}

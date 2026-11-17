@@ -1,6 +1,6 @@
 # TMKP treats filter
 
-Chemical → protein edges have their own filter and repairs: see `chem_gene/README.md`.
+Chemical → protein and protein → protein edges have their own filter and repairs: see `regulation/README.md`.
 
 The TMKP source (the 2024-09-07 KGX release) has 336,369 `treats_or_applied_or_studied_to_treat` edges. Many are
 misreadings of the sentence they came from. This filter drops the treats edges that none of their supporting
@@ -147,8 +147,8 @@ What it wrongly flags: a few real treatments where the drug is an adjunct (G-CSF
 
 ## Other TMKP edge types
 
-- **Chemical → protein** (`affects`, increased/decreased): filtered and repaired; see `chem_gene/README.md`.
-- **Protein → protein** (`affects`, gene regulation; 343,983 edges, 589,036 sentences; 93% of pilot sentences
-  unsupported) and **chemical → disease or phenotype** (`contributes_to`; 122,391 edges, 234,717 sentences; 37%
-  unsupported) aren't filtered yet. The chemical → protein pipeline (per-pair mapping check, repair, relation
-  question) should carry over, for roughly $35 and $10 in Jev calls.
+- **Chemical → protein** and **protein → protein** (`affects`, increased/decreased): filtered and repaired; see
+  `regulation/README.md`.
+- **Chemical → disease or phenotype** (`contributes_to`; 122,391 edges, 234,717 sentences; 37% of pilot sentences
+  unsupported) isn't filtered yet. The regulation pipeline (per-pair mapping check, repair, relation question) should
+  carry over, for roughly $10 in Jev calls.

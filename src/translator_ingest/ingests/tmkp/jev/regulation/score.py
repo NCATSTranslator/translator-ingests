@@ -12,7 +12,7 @@ Items already in the output are skipped. Failed calls go to the errors file (rew
 the next run. A chunk in which most calls fail stops the run.
 
     TYPESAFE_API_KEY="$(security find-generic-password -s typesafe -w)" \\
-        uv run score.py pairs chem_gene_pairs.jsonl chem_gene_pair_scores.jsonl pair_errors.jsonl
+        uv run score.py pairs chem_gene_pairs.jsonl chem_gene_pair_scores.jsonl pair_errors.jsonl --family chem_gene
     TYPESAFE_API_KEY="$(security find-generic-password -s typesafe -w)" \\
         uv run score.py relation chem_gene_sentences.jsonl chem_gene_relation_scores.jsonl relation_errors.jsonl
 """
@@ -27,24 +27,25 @@ from pathlib import Path
 from typesafe_sdk import TypeSafeClient, TypeSafeError
 
 import jev_client
-from prompts import (PAIR_CRITERIA, PAIR_INSTRUCTIONS, PAIR_KIND, RELATION_CRITERIA, RELATION_INSTRUCTIONS,
-                     marked)
+from families import FAMILIES
+from prompts import PAIR_CRITERIA, PAIR_INSTRUCTIONS, RELATION_CRITERIA, RELATION_INSTRUCTIONS, marked
 
 CHUNK = 4000
 KEYS = {"pairs": ("role", "key", "curie"), "relation": ("edge_id", "sentence_id")}
 
 
-def ask_pair(client: TypeSafeClient, pair: dict) -> dict:
+def ask_pair(client: TypeSafeClient, pair: dict, family: str) -> dict:
     """The mapping question for one (mention, concept) pair, shown with its example sentences."""
     state = {"mention": pair["mention"], "concept": pair["name"] or pair["curie"],
              "examples": [marked(e) for e in pair["examples"]]}
-    answer = jev_client.choose(client, state, PAIR_INSTRUCTIONS.format(kind=PAIR_KIND[pair["role"]]), PAIR_CRITERIA)
+    kind = FAMILIES[family]["kind"][pair["role"]]
+    answer = jev_client.choose(client, state, PAIR_INSTRUCTIONS.format(kind=kind), PAIR_CRITERIA)
     return {"role": pair["role"], "key": pair["key"], "curie": pair["curie"], "count": pair["count"],
             "choice": answer["choice"], "probabilities": answer["probabilities"], "model": answer["model"],
             "input_tokens": answer["input_tokens"]}
 
 
-def ask_relation(client: TypeSafeClient, s: dict) -> dict:
+def ask_relation(client: TypeSafeClient, s: dict, family: str) -> dict:
     """The relation question for one sentence."""
     state = {"text": s["text"], "regulator": f'{s["subject_mention"]} [{s["subject_name"]}]',
              "target": f'{s["object_mention"]} [{s["object_name"]}]'}
@@ -63,6 +64,8 @@ def main() -> None:
     parser.add_argument("errors", type=Path)
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--limit", type=int, help="score at most this many items (for a trial run)")
+    parser.add_argument("--family", choices=sorted(FAMILIES), default="chem_gene",
+                        help="which regulator kind the pair question names (families.py)")
     args = parser.parse_args()
     fields = KEYS[args.mode]
     client = jev_client.connect()
@@ -75,7 +78,7 @@ def main() -> None:
 
     def ask(item: dict) -> dict:
         try:
-            return question(client, item)
+            return question(client, item, args.family)
         except TypeSafeError as e:
             return {**{k: item[k] for k in fields}, "error": f"{type(e).__name__}: {e}"}
 

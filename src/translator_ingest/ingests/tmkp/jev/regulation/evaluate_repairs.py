@@ -1,22 +1,23 @@
 """
-Score Jev's repair choices against blind labels on two samples:
+Score Jev's repair choices against blind labels for one family's samples:
 
-- repair: 100 pairs judged wrong (P(wrong) >= 0.9); labeled with the candidates shown in shuffled order. The labels
-  used a "non-human genes get none" rule; repair_labels_human_overrides.json re-adjudicates those rows under the
-  final rule (any organism maps to its human counterpart, or none).
-- symbol: 70 pairs flagged by the HGNC symbol hint; TMKP's current concept was among the shuffled options.
+- repair: pairs Jev acted on or dropped, labeled with the candidates (and, for gene_gene, TMKP's current concept)
+  shown in shuffled order. chem_gene's labels predate the human-only rule; repair_labels_human_overrides.json
+  re-adjudicates its non-human rows under the final rule (any organism maps to its human counterpart, or none).
+- symbol (chem_gene only): pairs flagged by the HGNC symbol hint, with TMKP's current concept among the options.
 
 A pair's outcome follows build_repairs.py: symbol-hint pairs keep or repair at P >= 0.7, other pairs repair at
 P >= 0.9, anything else is dropped.
 
-    python evaluate_repairs.py validation
+    python evaluate_repairs.py validation/chem_gene
+    python evaluate_repairs.py validation/gene_gene
 """
 
 import json
 import sys
 from pathlib import Path
 
-from build_repairs import HINT_ACCEPT, REPAIR_ACCEPT
+from build_repairs import HINT_ACCEPT, REPAIR_ACCEPT, read_jsonl
 from rules import norm
 
 
@@ -46,19 +47,23 @@ def report(name: str, rows: list[tuple[str | None, set[str], int]]) -> None:
           f"sentences; dropped although a right answer was offered: {missed}")
 
 
+def load_by_n(path: Path) -> dict[int, dict]:
+    """A JSON object keyed by sample row number."""
+    with open(path) as f:
+        return {int(n): x for n, x in json.load(f).items()}
+
+
 def main(validation: str) -> None:
-    """Print accuracy of the acted-on choices for both samples."""
+    """Print accuracy of the acted-on choices for the family's samples."""
     v = Path(validation)
-    with open(v / "answers_repair_choices.jsonl") as f:
-        choices = {(r["role"], r["key"], r["curie"]): r for r in map(json.loads, f)}
+    choices = {(r["role"], r["key"], r["curie"]): r for r in read_jsonl(v / "answers_repair_choices.jsonl")}
 
-    def load_json(name: str) -> dict[int, dict]:
-        with open(v / name) as f:
-            return {int(n): x for n, x in json.load(f).items()}
-
-    key, labels = load_json("repair_key.json"), load_json("repair_labels.json")
-    with open(v / "repair_labels_human_overrides.json") as f:
-        overrides = {int(n): x for n, x in json.load(f)["overrides"].items()}
+    key, labels = load_by_n(v / "repair_key.json"), load_by_n(v / "repair_labels.json")
+    overrides_path = v / "repair_labels_human_overrides.json"
+    overrides = {}
+    if overrides_path.exists():
+        with open(overrides_path) as f:
+            overrides = {int(n): x for n, x in json.load(f)["overrides"].items()}
     rows = []
     for n, k in key.items():
         choice = choices.get((k["role"], k["key"], k["curie"]))
@@ -66,9 +71,10 @@ def main(validation: str) -> None:
                      k["count"]))
     report("repair sample", rows)
 
-    key, labels = load_json("symbol_key.json"), load_json("symbol_labels.json")
-    with open(v / "symbol_sample.jsonl") as f:
-        mentions = {r["n"]: r["mention"] for r in map(json.loads, f)}
+    if not (v / "symbol_key.json").exists():
+        return
+    key, labels = load_by_n(v / "symbol_key.json"), load_by_n(v / "symbol_labels.json")
+    mentions = {r["n"]: r["mention"] for r in read_jsonl(v / "symbol_sample.jsonl")}
     by_concept = {(c["curie"], c["key"]): c for c in choices.values() if c.get("symbol_hint")}
     rows = [(outcome(by_concept[(k["current"], norm(mentions[n]))]), truth(labels[n], k["letter_to_curie"]),
              k["count"]) for n, k in key.items()]

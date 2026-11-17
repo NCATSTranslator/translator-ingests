@@ -1,17 +1,18 @@
 """
-Write one JSON line per supporting sentence of every TMKP chemical -> protein edge, with the edge's direction
-qualifier and both mention spans.
+Write one JSON line per supporting sentence of every TMKP edge of one regulation family (families.py), with the
+edge's direction qualifier and both mention spans.
 
-    python extract_sentences.py edges.tsv.gz nodes.tsv.gz chem_gene_sentences.jsonl
+    python extract_sentences.py chem_gene edges.tsv.gz nodes.tsv.gz chem_gene_sentences.jsonl
 """
 import gzip
 import json
 import sys
 
-RELATION = "biolink:ChemicalToGeneAssociation"
+from families import in_family
 
 
-def main(edges_path: str, nodes_path: str, out_path: str) -> None:
+
+def main(family: str, edges_path: str, nodes_path: str, out_path: str) -> None:
     """One pass over edges.tsv.gz."""
     with gzip.open(nodes_path, "rt") as f:
         names = {p[0]: p[1] for p in (line.rstrip("\n").split("\t") for line in f)}
@@ -19,7 +20,7 @@ def main(edges_path: str, nodes_path: str, out_path: str) -> None:
     with gzip.open(edges_path, "rt") as f, open(out_path, "w") as out:
         for line in f:
             p = line.rstrip("\n").split("\t")
-            if p[14] != RELATION or p[1] == "biolink:treats_or_applied_or_studied_to_treat":
+            if not in_family(family, p[1], p[14]):
                 continue
             for result in json.loads(p[18]):
                 if result["attribute_type_id"] != "biolink:has_supporting_study_result":

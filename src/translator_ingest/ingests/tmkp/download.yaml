@@ -6,11 +6,17 @@
 # Treats edges to drop; made with a typed-decision model over every supporting sentence (see jev/README.md)
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_treats_jev_v3_dropped_edges.txt.gz
   local_name: tmkp_treats_jev_v3_dropped_edges.txt.gz
-# Chemical -> protein edges: (id, direction) to drop, sentences to prune from kept edges, and repaired edges
-# (see jev/chem_gene/README.md)
+# Regulation edges (chemical -> protein, protein -> protein): (id, direction) to drop, sentences to prune from kept
+# edges, and repaired edges (see jev/regulation/README.md)
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_gene_dropped_edges.txt.gz
   local_name: tmkp_chem_gene_dropped_edges.txt.gz
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_gene_pruned_sentences.txt.gz
   local_name: tmkp_chem_gene_pruned_sentences.txt.gz
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_gene_repaired_edges.tsv.gz
   local_name: tmkp_chem_gene_repaired_edges.tsv.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_gene_gene_dropped_edges.txt.gz
+  local_name: tmkp_gene_gene_dropped_edges.txt.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_gene_gene_pruned_sentences.txt.gz
+  local_name: tmkp_gene_gene_pruned_sentences.txt.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_gene_gene_repaired_edges.tsv.gz
+  local_name: tmkp_gene_gene_repaired_edges.tsv.gz

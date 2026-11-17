@@ -30,7 +30,7 @@ endif
 # (truncation can leave a substring that looks like a misspelling of a longer word),
 # (3) acronyms and external vocabulary tokens in analysis cells add more noise.
 # Prefer spell-checking .py, .yaml, and prose docs instead.
-CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb,./src/translator_ingest/ingests/tmkp/jev/validation/*,./src/translator_ingest/ingests/tmkp/jev/chem_gene/validation/**
+CODESPELL_SKIP := ./data/*,**/site-packages,**/*.ipynb,./src/translator_ingest/ingests/tmkp/jev/validation/*,./src/translator_ingest/ingests/tmkp/jev/regulation/validation/**
 
 # Include additional makefiles
 include rig.Makefile

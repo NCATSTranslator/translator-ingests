@@ -9,7 +9,7 @@ A chemical-side mention gets gene-product candidates too, since many errors are 
 
 NameRes failures after retries are recorded in the output (nameres_error), not hidden.
 
-    python repair_candidates.py pairs.jsonl pair_scores.jsonl hgnc.txt out.jsonl
+    python repair_candidates.py chem_gene pairs.jsonl pair_scores.jsonl hgnc.txt out.jsonl
 """
 import csv
 import json
@@ -20,6 +20,7 @@ import urllib.request
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
+from families import FAMILIES
 from rules import load_hgnc_symbols, norm
 
 NAMERES = "https://name-resolution-sri.renci.org/lookup"
@@ -75,7 +76,7 @@ def nameres(query: str, **params) -> list[dict]:
     return []
 
 
-def candidates_for(pair: dict, symbol: dict, alias: dict, info: dict) -> dict:
+def candidates_for(pair: dict, symbol: dict, alias: dict, info: dict, chemical_regulator: bool) -> dict:
     """Up to MAX_CANDIDATES replacement concepts for one pair, excluding its current concept."""
     found, seen, error = [], {pair["curie"]}, None
 
@@ -95,7 +96,7 @@ def candidates_for(pair: dict, symbol: dict, alias: dict, info: dict) -> dict:
         g = info[hgnc_id]
         add(g["curie"], g["label"], g["type"], "hgnc_alias")
     queries = [dict(biolink_type="GeneOrGeneProduct", only_taxa="NCBITaxon:9606", only_prefixes="UniProtKB|NCBIGene")]
-    if pair["role"] == "subject":
+    if pair["role"] == "subject" and chemical_regulator:
         queries.append(dict(biolink_type="ChemicalEntity", only_prefixes="CHEBI|DRUGBANK|PUBCHEM.COMPOUND"))
     try:
         for params in queries:
@@ -114,7 +115,7 @@ def symbol_hint(pair: dict, symbols: dict[str, set[str]]) -> bool:
     return pair["curie"].startswith("UniProtKB:") and bool(ups) and pair["curie"] not in ups
 
 
-def main(pairs_path: str, scores_path: str, hgnc_path: str, out_path: str) -> None:
+def main(family: str, pairs_path: str, scores_path: str, hgnc_path: str, out_path: str) -> None:
     """Candidates for every pair with P(wrong) >= 0.9, and for every pair the HGNC symbol rule flags (a hint, not
     a verdict: common aliases like PDK1 for PDPK1 collide with another gene's symbol, so those pairs also get a
     "keep the current mapping" option downstream)."""
@@ -126,7 +127,8 @@ def main(pairs_path: str, scores_path: str, hgnc_path: str, out_path: str) -> No
     pairs = [p for p in pairs if p["symbol_hint"] or (p["role"], p["key"], p["curie"]) in wrong]
     symbol, alias, info = load_hgnc(hgnc_path)
     with ThreadPoolExecutor(max_workers=8) as pool, open(out_path, "w") as out:
-        for result in pool.map(lambda p: {**candidates_for(p, symbol, alias, info), "symbol_hint": p["symbol_hint"]},
+        for result in pool.map(lambda p: {**candidates_for(p, symbol, alias, info, FAMILIES[family]["chemical_regulator"]),
+                           "symbol_hint": p["symbol_hint"]},
                                 pairs):
             out.write(json.dumps(result) + "\n")
     print(f"candidates for {len(pairs)} pairs written to {out_path}")

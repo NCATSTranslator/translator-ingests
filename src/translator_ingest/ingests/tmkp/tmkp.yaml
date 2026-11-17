@@ -37,11 +37,12 @@ readers:
       - 'supporting_study_results'
       - 'supporting_publications'
       - '_attributes'
-  # Chemical -> protein edges rebuilt under corrected concepts, in the same column layout (see jev/chem_gene/README.md)
+  # Regulation edges rebuilt under corrected concepts, in the same column layout (see jev/regulation/README.md)
   repaired_edges:
     format: csv
     delimiter: '\t'
     header_mode: none
     files:
       - tmkp_chem_gene_repaired_edges.tsv.gz
+      - tmkp_gene_gene_repaired_edges.tsv.gz
     columns: *edge_columns

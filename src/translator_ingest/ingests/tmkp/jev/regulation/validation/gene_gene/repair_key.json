@@ -1,0 +1,1108 @@
+{
+ "0": {
+  "group": "acted",
+  "role": "subject",
+  "key": "trpc7",
+  "curie": "UniProtKB:O94759",
+  "count": 6,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q9HCX4",
+  "letter_to_curie": {
+   "A": "NCBIGene:100874024",
+   "B": "UniProtKB:O94759",
+   "C": "UniProtKB:Q9HCX4",
+   "D": "NCBIGene:106478968"
+  }
+ },
+ "1": {
+  "group": "acted",
+  "role": "subject",
+  "key": "il18",
+  "curie": "UniProtKB:Q13478",
+  "count": 2,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q14116",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q13478",
+   "B": "UniProtKB:Q14116-2",
+   "C": "UniProtKB:Q14116",
+   "D": "UniProtKB:Q6IA17-1"
+  }
+ },
+ "2": {
+  "group": "acted",
+  "role": "object",
+  "key": "cd36",
+  "curie": "UniProtKB:Q8WTV0",
+  "count": 489,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P16671",
+  "letter_to_curie": {
+   "A": "UniProtKB:P16671",
+   "B": "UniProtKB:Q8WTV0"
+  }
+ },
+ "3": {
+  "group": "acted",
+  "role": "object",
+  "key": "cpla2",
+  "curie": "UniProtKB:Q92993",
+  "count": 11,
+  "symbol_hint": false,
+  "jev_outcome": "NCBIGene:5321",
+  "letter_to_curie": {
+   "A": "NCBIGene:123745",
+   "B": "UniProtKB:Q92993",
+   "C": "NCBIGene:283748",
+   "D": "NCBIGene:5321"
+  }
+ },
+ "4": {
+  "group": "drop",
+  "role": "object",
+  "key": "ssi4",
+  "curie": "UniProtKB:O14544",
+  "count": 4,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:O14544",
+   "B": "UniProtKB:P16671-1",
+   "C": "UniProtKB:P57723-1",
+   "D": "UniProtKB:Q99733-1"
+  }
+ },
+ "5": {
+  "group": "acted",
+  "role": "subject",
+  "key": "id1",
+  "curie": "UniProtKB:O75874",
+  "count": 11,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P41134",
+  "letter_to_curie": {
+   "A": "UniProtKB:P41134-2",
+   "B": "UniProtKB:P41134",
+   "C": "UniProtKB:O75874",
+   "D": "UniProtKB:P41134-1"
+  }
+ },
+ "6": {
+  "group": "acted",
+  "role": "object",
+  "key": "mst1",
+  "curie": "UniProtKB:P26927",
+  "count": 280,
+  "symbol_hint": false,
+  "jev_outcome": "UniProtKB:Q13043",
+  "letter_to_curie": {
+   "A": "UniProtKB:P26927",
+   "B": "UniProtKB:Q13043"
+  }
+ },
+ "7": {
+  "group": "drop",
+  "role": "object",
+  "key": "scp2",
+  "curie": "UniProtKB:P54108",
+  "count": 36,
+  "symbol_hint": true,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P54108",
+   "B": "UniProtKB:O14595",
+   "C": "UniProtKB:Q9BX26",
+   "D": "UniProtKB:P22307"
+  }
+ },
+ "8": {
+  "group": "drop",
+  "role": "subject",
+  "key": "transketolase",
+  "curie": "UniProtKB:P29401",
+  "count": 5,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P29401-2",
+   "B": "UniProtKB:P29401-1",
+   "C": "UniProtKB:P29401"
+  }
+ },
+ "9": {
+  "group": "drop",
+  "role": "subject",
+  "key": "pgl1",
+  "curie": "UniProtKB:O14521",
+  "count": 10,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:O14713-1",
+   "B": "UniProtKB:O14521"
+  }
+ },
+ "10": {
+  "group": "acted",
+  "role": "object",
+  "key": "rgl1",
+  "curie": "UniProtKB:Q15334",
+  "count": 2,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q9NZL6",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9NZL6",
+   "B": "UniProtKB:Q15334",
+   "C": "NCBIGene:64333"
+  }
+ },
+ "11": {
+  "group": "acted",
+  "role": "subject",
+  "key": "psap",
+  "curie": "UniProtKB:Q8IWL2",
+  "count": 4,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P07602",
+  "letter_to_curie": {
+   "A": "NCBIGene:729238",
+   "B": "UniProtKB:Q8IWL2",
+   "C": "UniProtKB:P07602",
+   "D": "UniProtKB:Q9NZJ7"
+  }
+ },
+ "12": {
+  "group": "drop",
+  "role": "object",
+  "key": "hml2",
+  "curie": "UniProtKB:Q8IUN9",
+  "count": 10,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P80303-1",
+   "B": "UniProtKB:P06396-2",
+   "C": "UniProtKB:Q8IUN9",
+   "D": "NCBIGene:3682"
+  }
+ },
+ "13": {
+  "group": "drop",
+  "role": "object",
+  "key": "rim2",
+  "curie": "UniProtKB:O00203",
+  "count": 6,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:O00203",
+   "B": "UniProtKB:Q9UQ26"
+  }
+ },
+ "14": {
+  "group": "drop",
+  "role": "object",
+  "key": "mum2",
+  "curie": "UniProtKB:Q9Y5R8",
+  "count": 3,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9Y5R8",
+   "B": "UniProtKB:Q15007"
+  }
+ },
+ "15": {
+  "group": "acted",
+  "role": "subject",
+  "key": "chl1",
+  "curie": "UniProtKB:Q96FC9",
+  "count": 122,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:O00533",
+  "letter_to_curie": {
+   "A": "UniProtKB:O00533",
+   "B": "NCBIGene:101927193",
+   "C": "UniProtKB:Q96FC9",
+   "D": "NCBIGene:101927174"
+  }
+ },
+ "16": {
+  "group": "drop",
+  "role": "object",
+  "key": "mrd1",
+  "curie": "UniProtKB:Q9P267",
+  "count": 2,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9Y4C8",
+   "B": "UniProtKB:Q9P267"
+  }
+ },
+ "17": {
+  "group": "acted",
+  "role": "subject",
+  "key": "dlp1",
+  "curie": "UniProtKB:Q16527",
+  "count": 31,
+  "symbol_hint": false,
+  "jev_outcome": "NCBIGene:10059",
+  "letter_to_curie": {
+   "A": "NCBIGene:57107",
+   "B": "NCBIGene:10059",
+   "C": "UniProtKB:Q16527"
+  }
+ },
+ "18": {
+  "group": "acted",
+  "role": "subject",
+  "key": "arl6",
+  "curie": "UniProtKB:P49703",
+  "count": 33,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q9H0F7",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9H0F7",
+   "B": "UniProtKB:P49703"
+  }
+ },
+ "19": {
+  "group": "acted",
+  "role": "object",
+  "key": "rhamm",
+  "curie": "UniProtKB:P16070",
+  "count": 26,
+  "symbol_hint": false,
+  "jev_outcome": "UniProtKB:O75330",
+  "letter_to_curie": {
+   "A": "UniProtKB:O75330",
+   "B": "UniProtKB:P16070"
+  }
+ },
+ "20": {
+  "group": "drop",
+  "role": "object",
+  "key": "ssea1",
+  "curie": "UniProtKB:P22083",
+  "count": 22,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P22083",
+   "B": "UniProtKB:O14713-1",
+   "C": "UniProtKB:Q92633-1"
+  }
+ },
+ "21": {
+  "group": "acted",
+  "role": "object",
+  "key": "pig8",
+  "curie": "UniProtKB:Q86XR8",
+  "count": 4,
+  "symbol_hint": false,
+  "jev_outcome": "UniProtKB:O14681",
+  "letter_to_curie": {
+   "A": "UniProtKB:O14681",
+   "B": "UniProtKB:Q86XR8"
+  }
+ },
+ "22": {
+  "group": "drop",
+  "role": "object",
+  "key": "wnt1inducedsecretedprotein",
+  "curie": "UniProtKB:O95388",
+  "count": 4,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P20591-1",
+   "B": "UniProtKB:O43166-2",
+   "C": "UniProtKB:O95388"
+  }
+ },
+ "23": {
+  "group": "acted",
+  "role": "object",
+  "key": "lama3",
+  "curie": "UniProtKB:Q16363",
+  "count": 19,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q16787",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q16363",
+   "B": "UniProtKB:Q16787"
+  }
+ },
+ "24": {
+  "group": "acted",
+  "role": "object",
+  "key": "chrna7",
+  "curie": "UniProtKB:Q494W8",
+  "count": 9,
+  "symbol_hint": true,
+  "jev_outcome": "NCBIGene:1139",
+  "letter_to_curie": {
+   "A": "UniProtKB:P36544",
+   "B": "UniProtKB:Q494W8",
+   "C": "NCBIGene:1139"
+  }
+ },
+ "25": {
+  "group": "acted",
+  "role": "object",
+  "key": "pmp22",
+  "curie": "UniProtKB:Q9NR77",
+  "count": 16,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q01453",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q01453",
+   "B": "NCBIGene:338661",
+   "C": "UniProtKB:Q9NR77"
+  }
+ },
+ "26": {
+  "group": "drop",
+  "role": "object",
+  "key": "dip1",
+  "curie": "UniProtKB:Q86YT6",
+  "count": 32,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q86YT6",
+   "B": "UniProtKB:Q9NZQ3",
+   "C": "UniProtKB:O95273"
+  }
+ },
+ "27": {
+  "group": "acted",
+  "role": "subject",
+  "key": "fads1",
+  "curie": "UniProtKB:O15146",
+  "count": 32,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:O60427",
+  "letter_to_curie": {
+   "A": "UniProtKB:O15146",
+   "B": "UniProtKB:O60427",
+   "C": "UniProtKB:Q8NFF5-1"
+  }
+ },
+ "28": {
+  "group": "acted",
+  "role": "object",
+  "key": "p47protein",
+  "curie": "UniProtKB:Q9Y230",
+  "count": 1,
+  "symbol_hint": false,
+  "jev_outcome": "NCBIGene:5341",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9UNZ2-1",
+   "B": "NCBIGene:5341",
+   "C": "UniProtKB:Q9Y230"
+  }
+ },
+ "29": {
+  "group": "acted",
+  "role": "object",
+  "key": "frs2",
+  "curie": "UniProtKB:O43559",
+  "count": 3,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q8WU20",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q8WU20",
+   "B": "UniProtKB:O43559"
+  }
+ },
+ "30": {
+  "group": "acted",
+  "role": "subject",
+  "key": "lat2",
+  "curie": "UniProtKB:Q92536",
+  "count": 23,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q9GZY6",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9GZY6",
+   "B": "UniProtKB:Q92536",
+   "C": "UniProtKB:Q9UHI5"
+  }
+ },
+ "31": {
+  "group": "acted",
+  "role": "object",
+  "key": "tf",
+  "curie": "UniProtKB:P13726",
+  "count": 35,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P13726",
+  "letter_to_curie": {
+   "A": "NCBIGene:4558",
+   "B": "UniProtKB:P02787",
+   "C": "UniProtKB:P13726"
+  }
+ },
+ "32": {
+  "group": "acted",
+  "role": "subject",
+  "key": "il27",
+  "curie": "UniProtKB:Q14213",
+  "count": 92,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q8NEV9",
+  "letter_to_curie": {
+   "A": "NCBIGene:56005",
+   "B": "UniProtKB:Q14213",
+   "C": "UniProtKB:Q8NEV9",
+   "D": "UniProtKB:Q8TAD2"
+  }
+ },
+ "33": {
+  "group": "acted",
+  "role": "object",
+  "key": "brcc3",
+  "curie": "UniProtKB:Q8WUY9",
+  "count": 21,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P46736",
+  "letter_to_curie": {
+   "A": "UniProtKB:P46736",
+   "B": "UniProtKB:Q8WUY9"
+  }
+ },
+ "34": {
+  "group": "acted",
+  "role": "subject",
+  "key": "map2",
+  "curie": "UniProtKB:P50579",
+  "count": 110,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P11137",
+  "letter_to_curie": {
+   "A": "NCBIGene:5595",
+   "B": "UniProtKB:P11137",
+   "C": "UniProtKB:O00187",
+   "D": "UniProtKB:P50579"
+  }
+ },
+ "35": {
+  "group": "acted",
+  "role": "object",
+  "key": "map2",
+  "curie": "UniProtKB:O00187",
+  "count": 100,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P11137",
+  "letter_to_curie": {
+   "A": "UniProtKB:P11137",
+   "B": "UniProtKB:P50579",
+   "C": "NCBIGene:5595",
+   "D": "UniProtKB:O00187"
+  }
+ },
+ "36": {
+  "group": "acted",
+  "role": "subject",
+  "key": "myonectin",
+  "curie": "UniProtKB:Q4G0M1",
+  "count": 13,
+  "symbol_hint": false,
+  "jev_outcome": "NCBIGene:114902",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q4G0M1",
+   "B": "NCBIGene:114902"
+  }
+ },
+ "37": {
+  "group": "drop",
+  "role": "object",
+  "key": "def1",
+  "curie": "UniProtKB:Q9ULH1",
+  "count": 2,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9ULH1",
+   "B": "NCBIGene:1667",
+   "C": "UniProtKB:P59665"
+  }
+ },
+ "38": {
+  "group": "drop",
+  "role": "object",
+  "key": "pop3",
+  "curie": "UniProtKB:W6CW81",
+  "count": 23,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9BVC4",
+   "B": "UniProtKB:Q9HBV1",
+   "C": "UniProtKB:W6CW81"
+  }
+ },
+ "39": {
+  "group": "acted",
+  "role": "subject",
+  "key": "ccr9",
+  "curie": "UniProtKB:O00590",
+  "count": 48,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P51686",
+  "letter_to_curie": {
+   "A": "UniProtKB:O00590",
+   "B": "UniProtKB:P51686"
+  }
+ },
+ "40": {
+  "group": "acted",
+  "role": "object",
+  "key": "kir2dl5b",
+  "curie": "UniProtKB:Q8N743",
+  "count": 1,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q8NHK3",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q8NHK3",
+   "B": "UniProtKB:Q8N743"
+  }
+ },
+ "41": {
+  "group": "acted",
+  "role": "subject",
+  "key": "cap1",
+  "curie": "UniProtKB:Q16651",
+  "count": 107,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q01518",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q13114",
+   "B": "UniProtKB:Q01518",
+   "C": "UniProtKB:Q16651"
+  }
+ },
+ "42": {
+  "group": "acted",
+  "role": "object",
+  "key": "abcd3",
+  "curie": "UniProtKB:P78423",
+  "count": 3,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P28288",
+  "letter_to_curie": {
+   "A": "UniProtKB:P28288",
+   "B": "UniProtKB:P78423"
+  }
+ },
+ "43": {
+  "group": "drop",
+  "role": "subject",
+  "key": "dcp1",
+  "curie": "UniProtKB:P12821",
+  "count": 51,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "NCBIGene:55802",
+   "B": "UniProtKB:P12821",
+   "C": "NCBIGene:196513"
+  }
+ },
+ "44": {
+  "group": "drop",
+  "role": "object",
+  "key": "coq8",
+  "curie": "UniProtKB:Q8NI60",
+  "count": 5,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q96D53",
+   "B": "UniProtKB:Q8NI60"
+  }
+ },
+ "45": {
+  "group": "acted",
+  "role": "object",
+  "key": "nob1",
+  "curie": "UniProtKB:Q86TI0",
+  "count": 19,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q9ULX3",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9ULX3",
+   "B": "UniProtKB:Q86TI0"
+  }
+ },
+ "46": {
+  "group": "acted",
+  "role": "object",
+  "key": "septin2",
+  "curie": "UniProtKB:Q9NVA2",
+  "count": 4,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q15019",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9NVA2",
+   "B": "UniProtKB:Q15019"
+  }
+ },
+ "47": {
+  "group": "drop",
+  "role": "subject",
+  "key": "orf3",
+  "curie": "UniProtKB:Q9NPA0",
+  "count": 111,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9NPA0",
+   "B": "UniProtKB:Q9UQ07-4",
+   "C": "UniProtKB:Q8WWH4"
+  }
+ },
+ "48": {
+  "group": "drop",
+  "role": "subject",
+  "key": "gtbp",
+  "curie": "UniProtKB:P62820",
+  "count": 2,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P52701-1",
+   "B": "UniProtKB:P62820",
+   "C": "UniProtKB:P52701-2",
+   "D": "UniProtKB:P52701"
+  }
+ },
+ "49": {
+  "group": "drop",
+  "role": "subject",
+  "key": "sh2",
+  "curie": "UniProtKB:Q9UKN7",
+  "count": 1,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "NCBIGene:63898",
+   "B": "UniProtKB:O60733-2",
+   "C": "UniProtKB:Q9UKN7",
+   "D": "UniProtKB:P06396-2"
+  }
+ },
+ "50": {
+  "group": "acted",
+  "role": "subject",
+  "key": "glud2",
+  "curie": "UniProtKB:O43424",
+  "count": 6,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:O43424",
+  "letter_to_curie": {
+   "A": "UniProtKB:P49448",
+   "B": "UniProtKB:O43424"
+  }
+ },
+ "51": {
+  "group": "acted",
+  "role": "object",
+  "key": "ephb2",
+  "curie": "UniProtKB:P54762",
+  "count": 5,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P29323",
+  "letter_to_curie": {
+   "A": "UniProtKB:P54762",
+   "B": "UniProtKB:P29323"
+  }
+ },
+ "52": {
+  "group": "acted",
+  "role": "subject",
+  "key": "fcgr3a",
+  "curie": "UniProtKB:P12318",
+  "count": 6,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P08637",
+  "letter_to_curie": {
+   "A": "UniProtKB:P08637",
+   "B": "UniProtKB:P12318"
+  }
+ },
+ "53": {
+  "group": "acted",
+  "role": "object",
+  "key": "lap2",
+  "curie": "UniProtKB:P07900",
+  "count": 51,
+  "symbol_hint": false,
+  "jev_outcome": "UniProtKB:P42166",
+  "letter_to_curie": {
+   "A": "UniProtKB:P42166",
+   "B": "UniProtKB:Q96RT1",
+   "C": "UniProtKB:P07900"
+  }
+ },
+ "54": {
+  "group": "drop",
+  "role": "subject",
+  "key": "dr1",
+  "curie": "UniProtKB:P01911",
+  "count": 5,
+  "symbol_hint": true,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q01658",
+   "B": "UniProtKB:P01911",
+   "C": "NCBIGene:3122"
+  }
+ },
+ "55": {
+  "group": "drop",
+  "role": "object",
+  "key": "add1",
+  "curie": "UniProtKB:P36956",
+  "count": 12,
+  "symbol_hint": true,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P36956",
+   "B": "NCBIGene:143365922",
+   "C": "UniProtKB:P35611"
+  }
+ },
+ "56": {
+  "group": "drop",
+  "role": "object",
+  "key": "glutathionestransferase",
+  "curie": "UniProtKB:O60760",
+  "count": 2,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P10620-1",
+   "B": "UniProtKB:O60760",
+   "C": "UniProtKB:O15217-1",
+   "D": "UniProtKB:Q99735-1"
+  }
+ },
+ "57": {
+  "group": "acted",
+  "role": "object",
+  "key": "rpl23",
+  "curie": "UniProtKB:P18621",
+  "count": 18,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P62829",
+  "letter_to_curie": {
+   "A": "UniProtKB:P18621",
+   "B": "UniProtKB:P62829"
+  }
+ },
+ "58": {
+  "group": "acted",
+  "role": "subject",
+  "key": "stk3",
+  "curie": "UniProtKB:Q9Y6E0",
+  "count": 20,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q13188",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9Y6E0",
+   "B": "UniProtKB:Q13188"
+  }
+ },
+ "59": {
+  "group": "drop",
+  "role": "object",
+  "key": "chemerin",
+  "curie": "UniProtKB:Q99969",
+  "count": 78,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q99788-1",
+   "B": "UniProtKB:Q99969"
+  }
+ },
+ "60": {
+  "group": "drop",
+  "role": "subject",
+  "key": "osteoinductivefactor",
+  "curie": "UniProtKB:P20774",
+  "count": 1,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P29692-2",
+   "B": "UniProtKB:P20774",
+   "C": "UniProtKB:Q99732-1"
+  }
+ },
+ "61": {
+  "group": "acted",
+  "role": "subject",
+  "key": "imp4",
+  "curie": "UniProtKB:Q8TCT7",
+  "count": 3,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q96G21",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q96G21",
+   "B": "UniProtKB:Q8TCT7",
+   "C": "UniProtKB:Q96G21-1",
+   "D": "UniProtKB:Q8TEX9"
+  }
+ },
+ "62": {
+  "group": "acted",
+  "role": "subject",
+  "key": "cdh20",
+  "curie": "UniProtKB:Q9UN71",
+  "count": 5,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q9HBT6",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9HBT6",
+   "B": "UniProtKB:Q9UN71"
+  }
+ },
+ "63": {
+  "group": "drop",
+  "role": "object",
+  "key": "tox",
+  "curie": "UniProtKB:Q96NM4",
+  "count": 3,
+  "symbol_hint": true,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "NCBIGene:100505501",
+   "B": "UniProtKB:Q96NM4",
+   "C": "UniProtKB:O94900",
+   "D": "UniProtKB:O94842-1"
+  }
+ },
+ "64": {
+  "group": "acted",
+  "role": "object",
+  "key": "snx30",
+  "curie": "UniProtKB:Q8WV41",
+  "count": 4,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q5VWJ9",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q5VWJ9",
+   "B": "NCBIGene:122455334",
+   "C": "UniProtKB:Q8WV41"
+  }
+ },
+ "65": {
+  "group": "drop",
+  "role": "subject",
+  "key": "glutamatereceptor1",
+  "curie": "UniProtKB:P42261",
+  "count": 17,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q13255-1",
+   "B": "UniProtKB:P42261",
+   "C": "UniProtKB:Q13255-2"
+  }
+ },
+ "66": {
+  "group": "drop",
+  "role": "subject",
+  "key": "rpf1",
+  "curie": "UniProtKB:P78424",
+  "count": 5,
+  "symbol_hint": true,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P46934",
+   "B": "UniProtKB:Q9H9Y2",
+   "C": "UniProtKB:P78424"
+  }
+ },
+ "67": {
+  "group": "drop",
+  "role": "subject",
+  "key": "wbp1",
+  "curie": "UniProtKB:P39656",
+  "count": 2,
+  "symbol_hint": true,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q96G27",
+   "B": "NCBIGene:100532735",
+   "C": "UniProtKB:P39656"
+  }
+ },
+ "68": {
+  "group": "acted",
+  "role": "subject",
+  "key": "il1",
+  "curie": "UniProtKB:Q14116",
+  "count": 4,
+  "symbol_hint": false,
+  "jev_outcome": "UniProtKB:P01583",
+  "letter_to_curie": {
+   "A": "UniProtKB:P01583",
+   "B": "UniProtKB:Q14116",
+   "C": "UniProtKB:Q6IA17-1"
+  }
+ },
+ "69": {
+  "group": "acted",
+  "role": "subject",
+  "key": "mpp2",
+  "curie": "UniProtKB:Q08050",
+  "count": 11,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q14168",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q14168",
+   "B": "UniProtKB:Q08050"
+  }
+ },
+ "70": {
+  "group": "acted",
+  "role": "subject",
+  "key": "pit1",
+  "curie": "UniProtKB:Q8WUM9",
+  "count": 58,
+  "symbol_hint": false,
+  "jev_outcome": "UniProtKB:P28069",
+  "letter_to_curie": {
+   "A": "UniProtKB:P28069",
+   "B": "UniProtKB:Q8WUM9"
+  }
+ },
+ "71": {
+  "group": "acted",
+  "role": "object",
+  "key": "slc7a2",
+  "curie": "UniProtKB:Q8WY07",
+  "count": 8,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P52569",
+  "letter_to_curie": {
+   "A": "UniProtKB:P52569",
+   "B": "UniProtKB:Q8WY07"
+  }
+ },
+ "72": {
+  "group": "drop",
+  "role": "subject",
+  "key": "bb1",
+  "curie": "UniProtKB:P13688",
+  "count": 3,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:P28336",
+   "B": "UniProtKB:Q9NPH6-2",
+   "C": "UniProtKB:P13688",
+   "D": "UniProtKB:Q96N66"
+  }
+ },
+ "73": {
+  "group": "acted",
+  "role": "subject",
+  "key": "oat1",
+  "curie": "UniProtKB:O14649",
+  "count": 17,
+  "symbol_hint": false,
+  "jev_outcome": "UniProtKB:Q4U2R8",
+  "letter_to_curie": {
+   "A": "UniProtKB:O14649",
+   "B": "UniProtKB:Q4U2R8",
+   "C": "UniProtKB:Q4U2R8-4"
+  }
+ },
+ "74": {
+  "group": "drop",
+  "role": "object",
+  "key": "zbp1",
+  "curie": "UniProtKB:Q9NZI8",
+  "count": 58,
+  "symbol_hint": true,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9NZI8",
+   "B": "UniProtKB:Q9H171"
+  }
+ },
+ "75": {
+  "group": "acted",
+  "role": "subject",
+  "key": "ror1",
+  "curie": "UniProtKB:P35398",
+  "count": 78,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q01973",
+  "letter_to_curie": {
+   "A": "UniProtKB:P35398",
+   "B": "UniProtKB:Q01973-1",
+   "C": "UniProtKB:Q01973",
+   "D": "NCBIGene:101927034"
+  }
+ },
+ "76": {
+  "group": "acted",
+  "role": "object",
+  "key": "cep68",
+  "curie": "UniProtKB:Q9NQ79",
+  "count": 1,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q76N32",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q9NQ79",
+   "B": "UniProtKB:Q76N32"
+  }
+ },
+ "77": {
+  "group": "drop",
+  "role": "subject",
+  "key": "nucleoporinnup205",
+  "curie": "UniProtKB:Q92621",
+  "count": 1,
+  "symbol_hint": false,
+  "jev_outcome": null,
+  "letter_to_curie": {
+   "A": "NCBIGene:23636",
+   "B": "UniProtKB:Q92621"
+  }
+ },
+ "78": {
+  "group": "acted",
+  "role": "subject",
+  "key": "cdk1",
+  "curie": "UniProtKB:P00338",
+  "count": 624,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:P06493",
+  "letter_to_curie": {
+   "A": "UniProtKB:P00338",
+   "B": "NCBIGene:64710",
+   "C": "UniProtKB:P06493"
+  }
+ },
+ "79": {
+  "group": "acted",
+  "role": "subject",
+  "key": "elp3",
+  "curie": "UniProtKB:Q13285",
+  "count": 16,
+  "symbol_hint": true,
+  "jev_outcome": "UniProtKB:Q9H9T3",
+  "letter_to_curie": {
+   "A": "UniProtKB:Q13285",
+   "B": "UniProtKB:Q9H9T3"
+  }
+ }
+}

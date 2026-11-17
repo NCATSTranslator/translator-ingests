@@ -1,5 +1,5 @@
 """
-Decide every TMKP chemical -> protein sentence (keep as mapped, repair, or drop), then write:
+Decide every sentence of one TMKP regulation family (keep as mapped, repair, or drop), then write:
 
 - repaired edges, in TMKP's edges.tsv column layout (no header), so the ingest's existing reader can parse them
 - a sidecar (JSON lines) recording which original edges and sentences each repaired edge came from
@@ -21,7 +21,7 @@ A repaired sentence's edge: a gene product as regulator (UniProtKB, PR, NCBIGene
 biolink:affects (biolink:ChemicalToGeneAssociation). Both keep qualified_predicate causes, aspect
 activity_or_abundance and the original direction.
 
-    python build_repairs.py <data dir>
+    python build_repairs.py chem_gene <data dir>
 """
 import gzip
 import hashlib
@@ -30,6 +30,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from families import FAMILIES, in_family
 from rules import FAMILY_NAMES, ISOTOPE, LIPID_SPECIES, fragment, norm
 
 RELATION_THRESHOLD = 0.7
@@ -70,18 +71,18 @@ def read_jsonl(path: Path) -> list[dict]:
         return [json.loads(line) for line in f]
 
 
-def load_answers(d: Path) -> dict:
+def load_answers(d: Path, family: str) -> dict:
     """Jev's answers the decision needs: pair verdicts, repair choices, CPT1 choices, relation answers."""
     def load(name: str) -> list[dict]:
         return read_jsonl(d / name)
 
     return {
         "pair_wrong": {(r["role"], r["key"], r["curie"]): r["probabilities"]["wrong"]
-                       for r in load("chem_gene_pair_scores.jsonl")},
-        "choices": {(r["role"], r["key"], r["curie"]): r for r in load("chem_gene_repair_choices.jsonl")},
-        "cpt1": {(r["edge_id"], r["sentence_id"]): r for r in load("chem_gene_cpt1_choices.jsonl")},
+                       for r in load(f"{family}_pair_scores.jsonl")},
+        "choices": {(r["role"], r["key"], r["curie"]): r for r in load(f"{family}_repair_choices.jsonl")},
+        "cpt1": {(r["edge_id"], r["sentence_id"]): r for r in load(f"{family}_cpt1_choices.jsonl")},
         "relation": {(r["edge_id"], r["sentence_id"]): r["relation"]["probabilities"]
-                     for r in load("chem_gene_relation_scores.jsonl")},
+                     for r in load(f"{family}_relation_scores.jsonl")},
     }
 
 
@@ -128,14 +129,14 @@ def decide(s: dict, relation: dict, answers: dict) -> tuple[str, str, str | None
     return "repair", f"{how_s}/{how_o}", subj, obj
 
 
-def main(data: str) -> None:
+def main(family: str, data: str) -> None:
     """Decide sentences, gather evidence for repaired ones, and write the outputs."""
     d = Path(data)
-    answers = load_answers(d)
+    answers = load_answers(d, family)
 
     outcomes, reasons = Counter(), Counter()
     kept_edges, repaired, not_kept = set(), defaultdict(list), []
-    with open(d / "chem_gene_sentences.jsonl") as f, open(d / "chem_gene_sentence_decisions.jsonl", "w") as out:
+    with open(d / f"{family}_sentences.jsonl") as f, open(d / f"{family}_sentence_decisions.jsonl", "w") as out:
         for s in map(json.loads, f):
             key = (s["edge_id"], s["sentence_id"])
             direction = s["object_direction"]
@@ -156,7 +157,7 @@ def main(data: str) -> None:
     with gzip.open(d / "edges.tsv.gz", "rt") as f:
         for line in f:
             p = line.rstrip("\n").split("\t")
-            if p[14] != "biolink:ChemicalToGeneAssociation" or p[1] == "biolink:treats_or_applied_or_studied_to_treat":
+            if not in_family(family, p[1], p[14]):
                 continue
             all_edges.add((p[13], p[9]))
             for a in json.loads(p[18]):
@@ -164,8 +165,8 @@ def main(data: str) -> None:
                     evidence[(p[13], a["value"])] = a
 
     n_regulates = 0
-    with (gzip.open(d / "tmkp_chem_gene_repaired_edges.tsv.gz", "wt") as tsv,
-          open(d / "tmkp_chem_gene_repaired_sources.jsonl", "w") as side):
+    with (gzip.open(d / f"tmkp_{family}_repaired_edges.tsv.gz", "wt") as tsv,
+          open(d / f"tmkp_{family}_repaired_sources.jsonl", "w") as side):
         for (subj, obj, direction), keys in sorted(repaired.items()):
             results = [evidence[k] for k in keys]
             nested = [{n["attribute_type_id"]: n["value"] for n in r["attributes"]} for r in results]
@@ -174,7 +175,7 @@ def main(data: str) -> None:
             gene_regulator = subj.startswith(GENE_PREFIXES)
             n_regulates += gene_regulator
             predicate = "biolink:regulates" if gene_regulator else "biolink:affects"
-            relation_type = "biolink:GeneRegulatoryRelationship" if gene_regulator else "biolink:ChemicalToGeneAssociation"
+            relation_type = "biolink:GeneRegulatoryRelationship" if gene_regulator else FAMILIES["chem_gene"]["relation"]
             edge_id = "tmkp-repair:" + hashlib.sha256(f"{subj}|{predicate}|{obj}|{direction}".encode()).hexdigest()
             attributes = [
                 {"attribute_type_id": "biolink:knowledge_level", "value": "not_provided"},
@@ -197,11 +198,11 @@ def main(data: str) -> None:
                                    "original_edges": sorted({k[0] for k in keys})}) + "\n")
 
     dropped = sorted(all_edges - kept_edges)
-    with gzip.open(d / "tmkp_chem_gene_dropped_edges.txt.gz", "wt") as f:
+    with gzip.open(d / f"tmkp_{family}_dropped_edges.txt.gz", "wt") as f:
         f.write("".join(f"{edge_id}\t{direction}\n" for edge_id, direction in dropped))
     # Kept edges lose the sentences that don't support them as mapped (dropped, or moved to a repaired edge)
     pruned = sorted(k for k in not_kept if k[:2] in kept_edges)
-    with gzip.open(d / "tmkp_chem_gene_pruned_sentences.txt.gz", "wt") as f:
+    with gzip.open(d / f"tmkp_{family}_pruned_sentences.txt.gz", "wt") as f:
         f.write("".join(f"{edge_id}\t{direction}\t{sentence_id}\n" for edge_id, direction, sentence_id in pruned))
 
     total = sum(outcomes.values())

@@ -43,8 +43,9 @@ from translator_ingest.ingests.tmkp.tmkp import (
     transform_tmkp_edge,
     transform_tmkp_repaired_edge,
     JEV_DROPPED_EDGES_FILE,
-    CHEM_GENE_DROPPED_EDGES_FILE,
-    CHEM_GENE_PRUNED_SENTENCES_FILE,
+    CHEM_GENE_RELATION,
+    GENE_GENE_RELATION,
+    REGULATION_FILTER_FILES,
     TMKP_TO_BIOLINK_SLOT_MAP,
     INFORES_TEXT_MINING_KP,
     PREDICATE_REMAP,
@@ -611,10 +612,9 @@ def test_jev_filter_keeps_contributes_to_edge_sharing_a_dropped_treats_id():
 
 
 def test_load_chem_gene_lists():
-    assert load_id_direction_pairs(TEST_DATA_DIR / CHEM_GENE_DROPPED_EDGES_FILE) == frozenset(
-        {("tmkp-test-chem-edge-1", "decreased")}
-    )
-    assert load_pruned_sentences(TEST_DATA_DIR / CHEM_GENE_PRUNED_SENTENCES_FILE) == {
+    dropped, pruned = REGULATION_FILTER_FILES[CHEM_GENE_RELATION]
+    assert load_id_direction_pairs(TEST_DATA_DIR / dropped) == frozenset({("tmkp-test-chem-edge-1", "decreased")})
+    assert load_pruned_sentences(TEST_DATA_DIR / pruned) == {
         ("tmkp-test-chem-edge-2", "increased"): frozenset({"tmkp:test-unsupported-sentence"})
     }
 
@@ -674,6 +674,46 @@ def test_chem_gene_pruning_only_applies_to_the_listed_direction():
                     if isinstance(i, Association)]
     (study,) = associations[0].has_supporting_studies.values()
     assert [r.id for r in study.has_study_results] == ["tmkp:test-unsupported-sentence"]
+
+
+def _gene_gene_record(edge_id: str, direction: str, attributes: list | None = None) -> dict:
+    """A TMKP protein -> protein (gene regulation) edge record."""
+    return {
+        "id": edge_id,
+        "subject": "UniProtKB:P05112",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:Q02413",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity_or_abundance",
+        "object_direction_qualifier": direction,
+        "relation": GENE_GENE_RELATION,
+        "_attributes": json.dumps(attributes or []),
+    }
+
+
+@pytest.mark.parametrize("direction,kept", [("increased", False), ("decreased", True)])
+def test_gene_gene_edge_dropped_by_id_and_direction(direction: str, kept: bool):
+    associations = [i for i in _run_edge_transform(_gene_gene_record("tmkp-test-gene-edge-1", direction))
+                    if isinstance(i, Association)]
+    assert len(associations) == (1 if kept else 0)
+
+
+def test_gene_gene_lists_are_kept_apart_from_chem_gene_lists():
+    """An id on the chemical -> protein drop list doesn't drop a protein -> protein edge, and vice versa."""
+    for record in (_gene_gene_record("tmkp-test-chem-edge-1", "decreased"),
+                   _chem_gene_record("tmkp-test-gene-edge-1", "increased")):
+        assert len([i for i in _run_edge_transform(record) if isinstance(i, Association)]) == 1
+
+
+def test_kept_gene_gene_edge_is_gene_regulates_gene_and_pruned():
+    attributes = [_study_result("tmkp:test-unsupported-sentence", "PMID:1"),
+                  _study_result("tmkp:test-supported-sentence", "PMID:2")]
+    (association,) = [i for i in _run_edge_transform(_gene_gene_record("tmkp-test-gene-edge-2", "decreased", attributes))
+                      if isinstance(i, Association)]
+    assert isinstance(association, GeneRegulatesGeneAssociation)
+    assert association.predicate == "biolink:regulates"
+    (study,) = association.has_supporting_studies.values()
+    assert [r.id for r in study.has_study_results] == ["tmkp:test-supported-sentence"]
 
 
 def _run_repaired_edge_transform(record: dict) -> list:
@@ -828,7 +868,8 @@ class TestTransformTmkpEdge:
         assert associations[0].object_direction_qualifier is None
 
     def test_gene_to_gene_with_qualifiers(self):
-        """GeneToGeneAssociation passes through source qualifiers without altering predicate."""
+        """Gene regulation with a direction becomes GeneRegulatesGeneAssociation with biolink:regulates (as SIGNOR
+        models it), keeping the source qualifiers."""
         record = {
             "subject": "NCBIGene:100",
             "predicate": "biolink:affects",
@@ -842,8 +883,8 @@ class TestTransformTmkpEdge:
 
         associations = [i for i in items if isinstance(i, Association)]
         assert len(associations) == 1
-        assert isinstance(associations[0], GeneToGeneAssociation)
-        assert associations[0].predicate == "biolink:affects"
+        assert isinstance(associations[0], GeneRegulatesGeneAssociation)
+        assert associations[0].predicate == "biolink:regulates"
         assert associations[0].qualified_predicate == "biolink:causes"
         assert associations[0].object_aspect_qualifier == "activity_or_abundance"
         assert associations[0].object_direction_qualifier == "increased"
