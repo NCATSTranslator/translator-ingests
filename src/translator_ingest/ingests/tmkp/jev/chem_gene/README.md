@@ -146,13 +146,12 @@ uv run choose_cpt1.py data/chem_gene_sentences.jsonl data/chem_gene_cpt1_choices
 cp edges.tsv.gz data/ && python build_repairs.py data                                           # 8. decide and write
 ```
 
-- **Steps 1, 2 and 8 are deterministic.** Rerunning them reproduces the published files exactly from the recorded
-  answers.
+- **Steps 1, 2 and 8 are deterministic.** Given the same Jev answers and candidates, step 8 reproduces the published
+  files exactly.
 - **Step 4 depends on the live NameRes service,** and Jev's answers vary slightly between runs. In a 71-call check
-  against the original run, 70 gave the same answer.
-- **The recorded inputs and answers are on stars** next to the ingest files, and are the authoritative record:
-  `chem_gene_pair_scores.jsonl.gz`, `chem_gene_relation_scores.jsonl.gz`, `chem_gene_repair_candidates_norm.jsonl.gz`,
-  `chem_gene_repair_choices.jsonl.gz` and `chem_gene_cpt1_choices.jsonl.gz`.
+  against the original run, 70 gave the same answer. So a full rerun gives nearly, not exactly, the published files.
+- **Only the three ingest files are published.** The original run's Jev answers and repair candidates aren't; the
+  answers this directory's validation needs are in `validation/`.
 
 **Cost.** About $63 in Jev calls for the full run: $2.12 for the pair questions and $60.81 for the relation
 questions. The repair choices, CPT1 choices and the validation runs added well under a dollar each. Jev charges $0.042
