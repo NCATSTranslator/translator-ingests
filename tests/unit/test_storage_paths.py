@@ -1,7 +1,9 @@
 """Tests for storage path resolution via INGESTS_DATA_PATH / INGESTS_RELEASES_PATH."""
 import os
+import platform
 import subprocess
 import sys
+import platform
 from pathlib import Path
 
 import pytest
@@ -26,6 +28,10 @@ def test_existing_directory_is_used(monkeypatch, tmp_path):
     assert resolve_storage_path(ENV_VAR, DEFAULT) == tmp_path.absolute()
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Not supported on Windows"
+)
 @pytest.mark.parametrize("kind", ["missing", "regular_file", "dangling_symlink"])
 def test_non_directory_raises(monkeypatch, tmp_path, kind):
     target = tmp_path / kind

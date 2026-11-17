@@ -1,21 +1,36 @@
 import pytest
 from koza.runner import KozaRunner, KozaTransformHooks
 from tests.unit.ingests import MockKozaWriter
+from translator_ingest.util.biolink import get_treatment_indication_predicates
 
 ## ADJUST based on what I am actually using
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
-    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
     DiseaseOrPhenotypicFeature,
     RetrievalSource,
     ChemicalAffectsGeneAssociation,    ## ONLY for affects
     ChemicalGeneInteractionAssociation,    ## ONLY for interacts_with
 )
 from translator_ingest.ingests.ttd.ttd import (
-    p1_05_transform, p1_07_transform
+    p1_05_transform, p1_07_transform, parse_header
 )
-from translator_ingest.ingests.ttd.mappings import MOA_MAPPING
+from translator_ingest.ingests.ttd.mappings import CLINICAL_STATUS_MAP, MOA_MAPPING
 import pandas as pd
+
+
+## TTD text files are UTF-8: P1-05 has U+2010 HYPHEN (bytes e2 80 90), and 0x90 is undefined in
+## Windows' default cp1252, so reading without an explicit encoding fails there
+def test_parse_header_reads_utf8(tmp_path):
+    ttd_file = tmp_path / "P1-05.txt"
+    ttd_file.write_bytes(
+        "TTD Download File\n"
+        "-----------------\n"
+        "Drug‐disease mapping, ≥ phase 1\n"
+        "-----------------\n"
+        "D0V8AG\tTRADENAME\tTemozolomide\n".encode("utf-8")
+    )
+    assert parse_header(ttd_file) == {"len_header": 4}
 
 
 ## P1-05
@@ -40,6 +55,13 @@ def p1_05_output():
     return writer.items
 
 
+@pytest.mark.parametrize("clinical_status", sorted(CLINICAL_STATUS_MAP))
+def test_clinical_status_predicates_fit_treatment_association(clinical_status):
+    """Every P1-05 edge is a ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
+    so every mapped predicate must be one that the class permits."""
+    assert CLINICAL_STATUS_MAP[clinical_status]["predicate"] in get_treatment_indication_predicates()
+
+
 def test_p1_05_output(p1_05_output):
     ## check basic output
     entities = p1_05_output
@@ -49,8 +71,11 @@ def test_p1_05_output(p1_05_output):
 
     ## check association contents
     ## Doing because entities includes Nodes as well
-    association = [e for e in entities if isinstance(e, ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation)][0]
+    association = [e for e in entities if isinstance(e, ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation)][0]
     assert association
+    assert association.predicate == "biolink:in_clinical_trials_for"
+    assert association.max_research_phase == "clinical_trial_phase_2"
+    assert association.clinical_approval_status is None
     ## placeholder: go through contents of association, test stuff that isn't hard-coded or isn't subject/object
 
     ## sources stuff
