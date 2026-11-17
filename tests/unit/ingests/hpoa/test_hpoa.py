@@ -22,7 +22,8 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter, validate_transform_result
 from translator_ingest.ingests.hpoa.hpoa import (
-    on_data_begin_gene_to_disease,
+    on_data_begin_ingest_disease_to_phenotype_nodes,
+    on_data_begin_ingest_gene_to_disease_record,
     prepare_gene_to_phenotype_data,
     transform_disease_to_phenotype_edge_record,
     transform_disease_to_phenotype_node_record,
@@ -394,7 +395,7 @@ def mock_koza_transform_gene_to_disease() -> koza.KozaTransform:
                                        mappings={},
                                        extra_fields={},
                                        input_files_dir=Path(HPOA_TEST_DATA_PATH))
-    on_data_begin_gene_to_disease(koza_transform)
+    on_data_begin_ingest_gene_to_disease_record(koza_transform)
     return koza_transform
 
 
@@ -509,6 +510,9 @@ def test_gene_to_disease_transform(
     result_nodes: list | None,
     result_edge: dict | None,
 ):
+    # initializes metadata key accessed in transform_gene_to_disease_record()
+    on_data_begin_ingest_disease_to_phenotype_nodes(mock_koza_transform_gene_to_disease)
+
     validate_transform_result(
         result=transform_gene_to_disease_record(mock_koza_transform_gene_to_disease, test_record),
         expected_nodes=result_nodes,

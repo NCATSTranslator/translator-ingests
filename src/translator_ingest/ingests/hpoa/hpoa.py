@@ -52,6 +52,14 @@ def get_latest_version() -> str:
     ghr = GitHubReleases(git_org="obophenotype", git_repo="human-phenotype-ontology")
     return ghr.get_latest_version()
 
+
+@koza.on_data_begin(tag="disease_to_phenotype_nodes")
+def on_data_begin_ingest_disease_to_phenotype_nodes(koza_transform: koza.KozaTransform) -> None:
+    # this metadata actually accessed downstream of
+    # the ingest_disease_to_phenotype_nodes method
+    # but initialized here for simplicity of usage
+    koza_transform.transform_metadata["number_of_diseases_without_phenotypes"] = 0
+
 """
 This particular Translator Ingest module targets the "phenotype.hpoa" file for parsing.
 
@@ -144,6 +152,11 @@ def transform_disease_to_phenotype_node_record(
             )
 
     return KnowledgeGraph(nodes=nodes)
+
+
+@koza.on_data_end(tag="disease_to_phenotype_nodes")
+def on_data_end_ingest_disease_to_phenotype_nodes(koza_transform: koza.KozaTransform) -> None:
+    koza_transform.transform_metadata["number_of_diseases_with_phenotypes"] = len(_disease_nodes)
 
 
 @koza.transform_record(tag="disease_to_phenotype_edges")
@@ -280,7 +293,7 @@ def _hpoa_duckdb(koza_transform: koza.KozaTransform) -> duckdb.DuckDBPyConnectio
 
 
 @koza.on_data_begin(tag="gene_to_disease")
-def on_data_begin_gene_to_disease(koza_transform: koza.KozaTransform) -> None:
+def on_data_begin_ingest_gene_to_disease_record(koza_transform: koza.KozaTransform) -> None:
     """
     Cache, in koza_transform.state["diseases_with_phenotypes"], the set of (raw,
     un-normalized) disease identifiers having phenotypic annotation in either
@@ -320,7 +333,7 @@ def transform_gene_to_disease_record(
     (Pydantic encapsulated) Biolink knowledge graph statement.
 
     :param koza_transform: KozaTransform object, whose state must hold the "diseases_with_phenotypes"
-                           set computed by on_data_begin_gene_to_disease()
+                           set computed by on_data_begin_gene_to_disease_record()
     :param record: Dict contents of a single input data record
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
@@ -341,6 +354,7 @@ def transform_gene_to_disease_record(
     if record["disease_id"] in koza_transform.state["diseases_with_phenotypes"]:
         source_record_url_type, source_record_id = "gene", gene_id
     else:
+        koza_transform.transform_metadata["number_of_diseases_without_phenotypes"] += 1
         source_record_url_type, source_record_id = "medgen", disease_id
 
     association = _GENE_TO_DISEASE_ASSOCIATION_CLASSES[qualified_predicate](
