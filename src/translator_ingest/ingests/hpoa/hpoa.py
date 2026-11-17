@@ -253,6 +253,64 @@ def transform_disease_to_phenotype_edge_record(
     return None
 
 
+# HPOA source files exposed, by view name, to DuckDB queries (see _hpoa_duckdb)
+_HPOA_DUCKDB_VIEWS: dict[str, str] = {
+    "hpoa": "phenotype.hpoa",
+    "g2p": "genes_to_phenotype.txt",
+    "g2d": "genes_to_disease.txt",
+}
+
+
+def _hpoa_duckdb(koza_transform: koza.KozaTransform) -> duckdb.DuckDBPyConnection:
+    """
+    Open an in-memory DuckDB connection exposing the HPOA source files as views
+    named 'hpoa' (phenotype.hpoa), 'g2p' (genes_to_phenotype.txt) and 'g2d'
+    (genes_to_disease.txt). Views are lazy: a file is only read by queries using it.
+
+    :param koza_transform: koza.KozaTransform whose input_files_dir holds the HPOA files
+    :return: duckdb.DuckDBPyConnection with the views registered
+    """
+    hpoa_data_path = koza_transform.input_files_dir
+    if not hpoa_data_path:
+        raise IOError("Koza transform input_files_dir was not configured, source data path could not be resolved.")
+    db = duckdb.connect(":memory:", read_only=False)
+    for view_name, file_name in _HPOA_DUCKDB_VIEWS.items():
+        db.execute(f"create view {view_name} as select * from read_csv('{hpoa_data_path / file_name}')")
+    return db
+
+
+@koza.on_data_begin(tag="gene_to_disease")
+def on_data_begin_gene_to_disease(koza_transform: koza.KozaTransform) -> None:
+    """
+    Cache, in koza_transform.state["diseases_with_phenotypes"], the set of (raw,
+    un-normalized) disease identifiers having phenotypic annotation in either
+    phenotype.hpoa or genes_to_phenotype.txt, i.e. the diseases for which the
+    HPO website will display phenotypic data.
+
+    :param koza_transform: koza.KozaTransform
+    """
+    db = _hpoa_duckdb(koza_transform)
+    koza_transform.state["diseases_with_phenotypes"] = {
+        disease_id
+        for (disease_id,) in db.execute(
+            """
+            select database_id from hpoa where aspect = 'P'
+            union
+            select disease_id from g2p
+            """
+        ).fetchall()
+    }
+
+
+# Qualified predicate of a gene to disease record, mapped onto its Biolink association class
+_GENE_TO_DISEASE_ASSOCIATION_CLASSES: dict[
+    str, type[CausalGeneToDiseaseAssociation] | type[GeneToDiseaseAssociation]
+] = {
+    "biolink:causes": CausalGeneToDiseaseAssociation,
+    "biolink:contributes_to": GeneToDiseaseAssociation,
+}
+
+
 @koza.transform_record(tag="gene_to_disease")
 def transform_gene_to_disease_record(
     koza_transform: koza.KozaTransform, record: dict[str, Any]
@@ -261,55 +319,46 @@ def transform_gene_to_disease_record(
     Transform an HPOA 'genes_to_disease.txt' data entry into a
     (Pydantic encapsulated) Biolink knowledge graph statement.
 
-    :param koza_transform: KozaTransform object (unused in this implementation)
+    :param koza_transform: KozaTransform object, whose state must hold the "diseases_with_phenotypes"
+                           set computed by on_data_begin_gene_to_disease()
     :param record: Dict contents of a single input data record
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
+    qualified_predicate: str | None = get_qualified_predicate(record["association_type"])
+    if qualified_predicate is None or \
+            qualified_predicate not in _GENE_TO_DISEASE_ASSOCIATION_CLASSES:
+        # We ignore UNKNOWN associations for now (see the RIG)
+        return None
+
     gene_id = record["ncbi_gene_id"]
     gene = Gene(id=gene_id, name=record["gene_symbol"], symbol=record["gene_symbol"], **{})
-
-    qualified_predicate: str | None = get_qualified_predicate(record["association_type"])
 
     disease_id = record["disease_id"].replace("ORPHA:", "Orphanet:")
     disease = Disease(id=disease_id, **{})
 
-    if qualified_predicate == "biolink:causes":
-        association = CausalGeneToDiseaseAssociation(
-            id=entity_id(),
-            subject=gene_id,
-            predicate=GeneToDiseasePredicateEnum.biolinkCOLONassociated_with,
-            object=disease_id,
-            qualified_predicate="biolink:causes",
-            subject_form_or_variant_qualifier=VE.genetic_variant_form,
-            sources=get_hpoa_association_sources(
-                record["source"],
-                source_record_url_type="gene",
-                source_record_id=gene_id
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-            **{},
-        )
-    elif qualified_predicate == "biolink:contributes_to":
-        association = GeneToDiseaseAssociation(
-            id=entity_id(),
-            subject=gene_id,
-            predicate=GeneToDiseasePredicateEnum.biolinkCOLONassociated_with,
-            object=disease_id,
-            qualified_predicate="biolink:contributes_to",
-            subject_form_or_variant_qualifier=VE.genetic_variant_form,
-            sources=get_hpoa_association_sources(
-                record["source"],
-                source_record_url_type="gene",
-                source_record_id=gene_id
-            ),
-            knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-            agent_type=AgentTypeEnum.manual_agent,
-            **{},
-        )
+    # The HPO website only has something to show for diseases with phenotypic
+    # annotation; otherwise, the source_record_url falls back onto MedGen
+    if record["disease_id"] in koza_transform.state["diseases_with_phenotypes"]:
+        source_record_url_type, source_record_id = "gene", gene_id
     else:
-        # We ignore UNKNOWN associations for now (see the RIG)
-        return None
+        source_record_url_type, source_record_id = "medgen", disease_id
+
+    association = _GENE_TO_DISEASE_ASSOCIATION_CLASSES[qualified_predicate](
+        id=entity_id(),
+        subject=gene_id,
+        predicate=GeneToDiseasePredicateEnum.biolinkCOLONassociated_with,
+        object=disease_id,
+        qualified_predicate=qualified_predicate,
+        subject_form_or_variant_qualifier=VE.genetic_variant_form,
+        sources=get_hpoa_association_sources(
+            record["source"],
+            source_record_url_type=source_record_url_type,
+            source_record_id=source_record_id
+        ),
+        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
+        agent_type=AgentTypeEnum.manual_agent,
+        **{},
+    )
 
     return KnowledgeGraph(nodes=[gene, disease], edges=[association])
 
@@ -325,33 +374,24 @@ def prepare_gene_to_phenotype_data(
     :param data: Iterable[dict[str, Any]]
     :return: Iterable[dict[str, Any]] | None
     """
-    hpoa_data_path = koza_transform.input_files_dir
-    if not hpoa_data_path:
-        raise IOError("Koza transform input_files_dir was not configured, source data path could not be resolved.")
-    phenotype_file_path = hpoa_data_path / "phenotype.hpoa"
-    genes_to_phenotype_file_path = hpoa_data_path / "genes_to_phenotype.txt"
-    genes_to_disease_file_path = hpoa_data_path / "genes_to_disease.txt"
-
-    db = duckdb.connect(":memory:", read_only=False)
+    db = _hpoa_duckdb(koza_transform)
     return (
         db.execute(
-            f"""
+            """
     with
-      hpoa as (select * from read_csv('{phenotype_file_path}')),
-      g2p as (select * from read_csv('{genes_to_phenotype_file_path}')),
-      g2d as (select 
+      g2d_clean as (select
         replace(ncbi_gene_id, 'NCBIGene:', '') as ncbi_gene_id_clean,
-        disease_id, 
-        association_type 
-        from read_csv('{genes_to_disease_file_path}')),
-      g2d_grouped as (select 
+        disease_id,
+        association_type
+        from g2d),
+      g2d_grouped as (select
         ncbi_gene_id_clean,
         disease_id,
         -- sorted so the joined column below is deterministic: list() does not
         -- guarantee an order, so an unsorted list of a gene-disease pair asserted
         -- both MENDELIAN and POLYGENIC could come out in either order
         list_sort(list(distinct association_type)) as association_types
-        from g2d 
+        from g2d_clean
         group by ncbi_gene_id_clean, disease_id)
     select g2p.*, 
             hpoa.evidence,

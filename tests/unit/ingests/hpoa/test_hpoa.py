@@ -22,6 +22,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter, validate_transform_result
 from translator_ingest.ingests.hpoa.hpoa import (
+    on_data_begin_gene_to_disease,
     prepare_gene_to_phenotype_data,
     transform_disease_to_phenotype_edge_record,
     transform_disease_to_phenotype_node_record,
@@ -382,10 +383,42 @@ def test_predicate(association: str, expected_predicate: str | None):
     assert predicate == expected_predicate
 
 
+@pytest.fixture(scope="package")
+def mock_koza_transform_gene_to_disease() -> koza.KozaTransform:
+    """
+    MockKozaTransform reading the HPOA sample data files, with its state
+    initialized by the gene_to_disease on_data_begin hook, as in a real run.
+    """
+    writer: KozaWriter = MockKozaWriter()
+    koza_transform = MockKozaTransform(writer=writer,
+                                       mappings={},
+                                       extra_fields={},
+                                       input_files_dir=Path(HPOA_TEST_DATA_PATH))
+    on_data_begin_gene_to_disease(koza_transform)
+    return koza_transform
+
+
+def test_on_data_begin_gene_to_disease(mock_koza_transform_gene_to_disease: koza.KozaTransform):
+    """
+    Diseases having phenotypic ('P' aspect) annotation in phenotype.hpoa,
+    or listed in genes_to_phenotype.txt, as raw (un-normalized) identifiers.
+    """
+    assert mock_koza_transform_gene_to_disease.state["diseases_with_phenotypes"] == {
+        # from phenotype.hpoa (and genes_to_phenotype.txt, for OMIM:301310, OMIM:601718 and ORPHA:791)
+        "OMIM:212050",
+        "OMIM:301310",
+        "OMIM:601718",
+        "ORPHA:791",
+        # only from genes_to_phenotype.txt
+        "OMIM:153800",
+        "OMIM:248200",
+    }
+
+
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - Sample Mendelian disease
+        (  # Query 0 - Sample Mendelian disease, with phenotypic annotation in phenotype.hpoa
             {
                 "association_type": "MENDELIAN",
                 "disease_id": "OMIM:212050",
@@ -419,7 +452,7 @@ def test_predicate(association: str, expected_predicate: str | None):
                 "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
-        (   # Query 1 - Sample Polygenic disease
+        (   # Query 1 - Sample Polygenic disease, without any phenotypic annotation
             {
                 "association_type": "POLYGENIC",
                 "disease_id": "OMIM:615232",
@@ -444,7 +477,8 @@ def test_predicate(association: str, expected_predicate: str | None):
                     {
                         "resource_role": "primary_knowledge_source",
                         "resource_id": "infores:hpo-annotations",
-                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A6505"]
+                        # OMIM:615232 has no phenotypic annotation, hence the MedGen fallback
+                        "source_record_urls": ["https://www.ncbi.nlm.nih.gov/medgen/?term=OMIM%3A615232"]
                     },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:medgen"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
@@ -470,13 +504,13 @@ def test_predicate(association: str, expected_predicate: str | None):
     ],
 )
 def test_gene_to_disease_transform(
-    mock_koza_transform_1: koza.KozaTransform,
+    mock_koza_transform_gene_to_disease: koza.KozaTransform,
     test_record: dict,
     result_nodes: list | None,
     result_edge: dict | None,
 ):
     validate_transform_result(
-        result=transform_gene_to_disease_record(mock_koza_transform_1, test_record),
+        result=transform_gene_to_disease_record(mock_koza_transform_gene_to_disease, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
