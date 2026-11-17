@@ -4,17 +4,23 @@ Tests of HPOA Utils methods
 import pytest
 
 import koza
+
+from biolink_model.datamodel.pydanticmodel_v2 import RetrievalSource
+
 from koza.io.writer.writer import KozaWriter
 from koza.transform import Mappings
+
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter
 
 from translator_ingest.ingests.hpoa.phenotype_ingest_utils import (
+    get_hpoa_association_sources,
     FrequencyHpoTerm,
     Frequency,
     get_frequency_hpo_term,
     map_percentage_frequency_to_hpo_term,
     phenotype_frequency_to_hpo_term,
 )
+
 
 #
 # Removing unit test since HPO versioning is via
@@ -170,3 +176,11 @@ def test_phenotype_frequency_to_hpo_term(
 ):
     result: Frequency | None = phenotype_frequency_to_hpo_term(mock_koza_transform_u,query)
     assert result == frequency
+
+def test_decipher_resolution():
+    sources: list[RetrievalSource] = get_hpoa_association_sources("DECIPHER:16")
+    assert any(
+        s.resource_id == "infores:decipher" and 
+        s.resource_role == "supporting_data_source"
+        for s in sources
+    ), "DECIPHER not added as supporting_data_source infores"

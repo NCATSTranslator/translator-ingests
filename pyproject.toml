@@ -21,7 +21,7 @@ dependencies = [
     "duckdb>=1.4.4",    # ChEMBL activities transform pre-joins over the source sqlite via duckdb
     "hatchling",
     "kghub-downloader>=0.5.0",
-    "koza>=2.4.0",
+    "koza>=2.6.1",
     "mkdocs-minify-plugin>=0.8.0",
     "openpyxl",      # for pandas read_excel to work, needed for specific ingest
     "pandas==2.3.3",    # also installs numpy, used by some ingests
