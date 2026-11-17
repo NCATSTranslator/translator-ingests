@@ -1,6 +1,7 @@
 import koza
 import pandas as pd
 
+from datetime import datetime, timezone
 from typing import Any, Iterable
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -44,23 +45,19 @@ BIOLINK_REGULATES = "biolink:regulates"
 
 
 def get_latest_version() -> str:
-    # SIGNOR has some issues with downloading the latest data programmatically.
-    # In the short term we implemented downloading it from our own server,
-    # so the data version is static. We would like to do something like following when that is fixed.
-    #
-    # SIGNOR doesn't provide a great way to get the version,
-    # but this link serves a file named something like "Oct2025_release.txt"
-    # signor_latest_release_url = "https://signor.uniroma2.it/releases/getLatestRelease.php"
-    # signor_latest_response = requests.post(signor_latest_release_url)
-    # signor_latest_response.raise_for_status()
-    # extract the version from the file name
-    # file_name = signor_latest_response.headers['Content-Disposition']
-    # file_name = file_name.replace("attachment; filename=", "").replace("_release.txt",
-    #
-    #
-    # also note that currently the file we have on the RENCI server corresponds to a date but that's the download date
-    # the actual version is
-    return "2026_July"
+    """Return the UTC date on which SIGNOR data is downloaded, formatted as ``YYYY_MM_DD``.
+
+    The ingest downloads SIGNOR's live "complete dataset" export (see download.yaml) rather than
+    a stable release, because only the export carries the SCORE column. Neither a release label
+    nor a file hash identifies that export: it includes curation added since the last release,
+    and SIGNOR returns its rows in a different order on every request. Source data is stored per
+    version, so each new date fetches a fresh export and reruns on the same date reuse it.
+
+    >>> version = get_latest_version()  # for example '2026_11_12'
+    >>> datetime.strptime(version, "%Y_%m_%d").strftime("%Y_%m_%d") == version
+    True
+    """
+    return datetime.now(timezone.utc).strftime("%Y_%m_%d")
 
 
 @koza.prepare_data(tag="signor_parsing")
