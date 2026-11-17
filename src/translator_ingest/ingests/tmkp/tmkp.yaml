@@ -37,7 +37,8 @@ readers:
       - 'supporting_study_results'
       - 'supporting_publications'
       - '_attributes'
-  # Regulation edges rebuilt under corrected concepts, in the same column layout (see jev/regulation/README.md)
+  # Regulation edges rebuilt under corrected concepts, in the same column layout
+  # (https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
   repaired_edges:
     format: csv
     delimiter: '\t'

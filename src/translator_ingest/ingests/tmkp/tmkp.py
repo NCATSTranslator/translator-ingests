@@ -59,15 +59,16 @@ PREDICATE_REMAP = {
 MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 
 # Source edge ids of text-mined treats edges that none of their supporting sentences support, as judged by a
-# typed-decision model (Jev) over every supporting sentence. See jev/README.md for how the list was made.
+# typed-decision model (Jev) over every supporting sentence. How the list was made:
+# https://github.com/cbizon/tmkp-cleanup/tree/v1/treats
 JEV_DROPPED_EDGES_FILE = "tmkp_treats_jev_v3_dropped_edges.txt.gz"
 # TMKP edge ids aren't unique: a treats edge and a contributes_to edge for the same chemical and condition share an
 # id. The list only judges treats edges, so it applies only to these predicates.
 JEV_FILTERED_PREDICATES = frozenset({"biolink:treats_or_applied_or_studied_to_treat", "biolink:treats"})
 
-# Regulation edges, chemical -> protein and protein -> protein (see jev/regulation/README.md). TMKP's edge id also
-# ignores the direction qualifier (an increased and a decreased edge for the same pair share one), so these lists are
-# keyed on (id, direction), per relation.
+# Regulation edges, chemical -> protein and protein -> protein (https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation).
+# TMKP's edge id also ignores the direction qualifier (an increased and a decreased edge for the same pair share one),
+# so these lists are keyed on (id, direction), per relation.
 # - dropped: edges none of whose sentences support them as mapped
 # - pruned: sentences removed from kept edges' evidence (dropped, or moved to a repaired edge)
 # - repaired: new edges for sentences whose regulator or target was mapped wrongly, read as their own reader
@@ -539,13 +540,13 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         return None
 
     state = koza_transform.state
-    # Drop treats edges that none of their supporting sentences support (see jev/README.md)
+    # Drop treats edges that none of their supporting sentences support (see JEV_DROPPED_EDGES_FILE)
     if predicate in JEV_FILTERED_PREDICATES and record.get("id") in state["jev_dropped_edge_ids"]:
         state["jev_dropped_edge_count"] += 1
         return None
 
     # Regulation edges (chemical -> protein, protein -> protein): drop unsupported ones, prune the sentences that don't
-    # support kept ones (see jev/regulation/README.md)
+    # support kept ones (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
     excluded_results: frozenset[str] = frozenset()
     if relation in REGULATION_FILTER_FILES and predicate not in JEV_FILTERED_PREDICATES:
         key = (record.get("id"), record.get("object_direction_qualifier"))
@@ -566,8 +567,8 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
 @koza.transform_record(tag="repaired_edges")
 def transform_tmkp_repaired_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph:
     """
-    Transform a repaired regulation edge (see jev/regulation/README.md): TMKP sentences whose regulator or target was
-    mapped to the wrong concept, regrouped under the right one. A gene product as regulator makes a
+    Transform a repaired regulation edge: TMKP sentences whose regulator or target was mapped to the wrong concept,
+    regrouped under the right one (https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation). A gene product as regulator makes a
     biolink:regulates gene -> gene edge; a chemical regulator stays biolink:affects.
 
     These edges are built offline, so a subject or object outside the association's Biolink range is a build error

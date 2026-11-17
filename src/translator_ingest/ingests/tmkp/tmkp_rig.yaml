@@ -47,25 +47,25 @@ ingest_info:
       description: Gzipped TSV of text-mined assertions between entities
     - file_name: tmkp_treats_jev_v3_dropped_edges.txt.gz
       location: https://stars.renci.org/var/translator/ingests/tmkp/
-      description: Ids of TMKP treats edges whose supporting sentences don't support them, one per line (see jev/README.md)
+      description: Ids of TMKP treats edges whose supporting sentences don't support them, one per line (see https://github.com/cbizon/tmkp-cleanup/tree/v1/treats)
     - file_name: tmkp_chem_gene_dropped_edges.txt.gz
       location: https://stars.renci.org/var/translator/ingests/tmkp/
-      description: Chemical -> protein edges (id, direction) none of whose sentences support them as mapped (see jev/regulation/README.md)
+      description: Chemical -> protein edges (id, direction) none of whose sentences support them as mapped (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
     - file_name: tmkp_chem_gene_pruned_sentences.txt.gz
       location: https://stars.renci.org/var/translator/ingests/tmkp/
-      description: Supporting sentences (edge id, direction, sentence id) removed from kept chemical -> protein edges (see jev/regulation/README.md)
+      description: Supporting sentences (edge id, direction, sentence id) removed from kept chemical -> protein edges (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
     - file_name: tmkp_chem_gene_repaired_edges.tsv.gz
       location: https://stars.renci.org/var/translator/ingests/tmkp/
-      description: Chemical -> protein edges rebuilt from sentences whose chemical or protein was mapped wrongly, in TMKP's edges.tsv layout (see jev/regulation/README.md)
+      description: Chemical -> protein edges rebuilt from sentences whose chemical or protein was mapped wrongly, in TMKP's edges.tsv layout (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
     - file_name: tmkp_gene_gene_dropped_edges.txt.gz
       location: https://stars.renci.org/var/translator/ingests/tmkp/
-      description: Protein -> protein edges (id, direction) none of whose sentences support them as mapped (see jev/regulation/README.md)
+      description: Protein -> protein edges (id, direction) none of whose sentences support them as mapped (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
     - file_name: tmkp_gene_gene_pruned_sentences.txt.gz
       location: https://stars.renci.org/var/translator/ingests/tmkp/
-      description: Supporting sentences (edge id, direction, sentence id) removed from kept protein -> protein edges (see jev/regulation/README.md)
+      description: Supporting sentences (edge id, direction, sentence id) removed from kept protein -> protein edges (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
     - file_name: tmkp_gene_gene_repaired_edges.tsv.gz
       location: https://stars.renci.org/var/translator/ingests/tmkp/
-      description: Protein -> protein edges rebuilt from sentences whose proteins were mapped wrongly, in TMKP's edges.tsv layout (see jev/regulation/README.md)
+      description: Protein -> protein edges rebuilt from sentences whose proteins were mapped wrongly, in TMKP's edges.tsv layout (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
 
   included_content:
     - file_name: nodes.tsv.gz
@@ -81,13 +81,13 @@ ingest_info:
       rationale: "Validation uses BMT to dynamically determine valid ID prefixes for each predicate's domain/range constraints, filtering out semantically invalid edges such as reversed ChemicalToDiseaseOrPhenotypicFeatureAssociation edges where diseases/phenotypes (MONDO, HP prefixes) are incorrectly positioned as subjects."
     - file_name: edges.tsv.gz
       filtered_records: "Treats edges listed in tmkp_treats_jev_v3_dropped_edges.txt.gz: 110,469 of 336,369 (33%). An edge is listed when none of its supporting sentences says the drug is used, tested or proposed to treat the condition in patients or live animals, as judged by a typed-decision model (Jev) over all 873,268 supporting sentences."
-      rationale: "Many text-mined treats edges are misreadings: the condition is only background, the drug causes the condition, the two are merely co-mentioned, a reagent is applied to cells, or the only evidence is in vitro. On labeled samples (labeled by Claude against a written rubric) the sentence filter had 0.97 precision and 0.87 recall for unsupported sentences. Methodology and scripts in jev/."
+      rationale: "Many text-mined treats edges are misreadings: the condition is only background, the drug causes the condition, the two are merely co-mentioned, a reagent is applied to cells, or the only evidence is in vitro. On labeled samples (labeled by Claude against a written rubric) the sentence filter had 0.97 precision and 0.87 recall for unsupported sentences. Methodology, scripts and validation: https://github.com/cbizon/tmkp-cleanup/tree/v1/treats"
     - file_name: edges.tsv.gz
       filtered_records: "Chemical -> protein edges listed (by id and direction) in tmkp_chem_gene_dropped_edges.txt.gz: 276,321 of 683,406. Each supporting sentence is kept only if both mentions are mapped to the right concept (hard rules for families/complexes, chemical name fragments, lipid classes and isotopes; a per-pair mapping check by a typed-decision model, Jev) and it says the chemical raises or lowers the protein in the edge's direction; an edge with no such sentence is dropped. Kept edges lose their other sentences (tmkp_chem_gene_pruned_sentences.txt.gz, 112,601)."
-      rationale: "58% of chemical -> protein sentences don't support their edge as mapped, mostly because a mention was mapped to the wrong concept. On a held-out labeled sample, not keeping a sentence on its edge had 0.96 precision and 0.77 recall. TMKP's edge id ignores the direction qualifier, so the list is keyed on id and direction. Methodology and scripts in jev/regulation/."
+      rationale: "58% of chemical -> protein sentences don't support their edge as mapped, mostly because a mention was mapped to the wrong concept. On a held-out labeled sample, not keeping a sentence on its edge had 0.96 precision and 0.77 recall. TMKP's edge id ignores the direction qualifier, so the list is keyed on id and direction. Methodology, scripts and validation: https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation"
     - file_name: edges.tsv.gz
       filtered_records: "Protein -> protein edges listed (by id and direction) in tmkp_gene_gene_dropped_edges.txt.gz: 300,090 of 343,983. Same method as chemical -> protein: each supporting sentence is kept only if both proteins are mapped to the right concept (family/complex rule; per-pair mapping check by Jev) and it says the regulator raises or lowers the target in the edge's direction. Kept edges lose their other sentences (tmkp_gene_gene_pruned_sentences.txt.gz, 22,538)."
-      rationale: "93% of protein -> protein pilot sentences don't support their edge as mapped: wrong protein mappings, family names mapped to one member, and sentences that state no regulation. On that labeled sample, not keeping a sentence on its edge had 0.99 precision and 0.97 recall. Methodology and scripts in jev/regulation/."
+      rationale: "93% of protein -> protein pilot sentences don't support their edge as mapped: wrong protein mappings, family names mapped to one member, and sentences that state no regulation. On that labeled sample, not keeping a sentence on its edge had 0.99 precision and 0.97 recall. Methodology, scripts and validation: https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation"
   transformed_content:
     - file_name: edges.tsv.gz
       transformation: "Predicate remap: 'biolink:treats' → 'biolink:treats_or_applied_or_studied_to_treat'"
@@ -224,7 +224,7 @@ target_info:
           source edge has a direction qualifier (qualified_predicate='biolink:causes',
           object_aspect_qualifier and object_direction_qualifier passed through); otherwise
           GeneToGeneAssociation with 'biolink:affects'. Edges are filtered and repaired as described
-          in jev/regulation/README.md.
+          in https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation.
 
     - subject_categories:
         - "biolink:SmallMolecule"
