@@ -32,6 +32,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     GeneToDiseaseAssociation,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     GeneToGeneAssociation,
+    GeneRegulatesGeneAssociation,
     Study,
     TextMiningStudyResult,
     KnowledgeLevelEnum,
@@ -64,6 +65,17 @@ JEV_DROPPED_EDGES_FILE = "tmkp_treats_jev_v3_dropped_edges.txt.gz"
 # TMKP edge ids aren't unique: a treats edge and a contributes_to edge for the same chemical and condition share an
 # id. The list only judges treats edges, so it applies only to these predicates.
 JEV_FILTERED_PREDICATES = frozenset({"biolink:treats_or_applied_or_studied_to_treat", "biolink:treats"})
+
+# Chemical -> protein edges (https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation). TMKP's edge id also ignores the direction
+# qualifier (an increased and a decreased edge for the same pair share one), so these lists are keyed on
+# (id, direction).
+# - dropped: edges none of whose sentences support them as mapped
+# - pruned: sentences removed from kept edges' evidence (dropped, or moved to a repaired edge)
+# - repaired: new edges for sentences whose chemical or protein was mapped wrongly, read as their own reader
+CHEM_GENE_RELATION = "biolink:ChemicalToGeneAssociation"
+CHEM_GENE_DROPPED_EDGES_FILE = "tmkp_chem_gene_dropped_edges.txt.gz"
+CHEM_GENE_PRUNED_SENTENCES_FILE = "tmkp_chem_gene_pruned_sentences.txt.gz"
+REGULATES = "biolink:regulates"
 
 # Map TMKP attribute names to Biolink slot names.
 TMKP_TO_BIOLINK_SLOT_MAP = {
@@ -293,10 +305,45 @@ def load_dropped_edge_ids(path: Path) -> frozenset[str]:
         return frozenset(line.strip() for line in f if line.strip())
 
 
+def load_id_direction_pairs(path: Path) -> frozenset[tuple[str, str]]:
+    """
+    Load chemical -> protein edges to drop: a gzipped file of "edge id<TAB>direction" lines.
+
+    Args:
+        path: Path to the gzipped list.
+
+    Returns:
+        Frozen set of (edge id, object direction qualifier) pairs.
+    """
+    with gzip.open(path, "rt") as f:
+        return frozenset(tuple(line.rstrip("\n").split("\t")) for line in f if line.strip())
+
+
+def load_pruned_sentences(path: Path) -> dict[tuple[str, str], frozenset[str]]:
+    """
+    Load the sentences to remove from kept chemical -> protein edges: a gzipped file of
+    "edge id<TAB>direction<TAB>sentence id" lines.
+
+    Args:
+        path: Path to the gzipped list.
+
+    Returns:
+        (edge id, direction) -> the supporting study result ids to leave out.
+    """
+    pruned: dict[tuple[str, str], set[str]] = {}
+    with gzip.open(path, "rt") as f:
+        for line in f:
+            if line.strip():
+                edge_id, direction, sentence_id = line.rstrip("\n").split("\t")
+                pruned.setdefault((edge_id, direction), set()).add(sentence_id)
+    return {k: frozenset(v) for k, v in pruned.items()}
+
+
 def parse_attributes(
     attributes: List[Dict[str, Any]],
     association: Association,
     protected_slots: frozenset[str] = frozenset(),
+    excluded_results: frozenset[str] = frozenset(),
 ) -> None:
     """
     Parse attribute objects and populate the association with supporting studies and knowledge sources.
@@ -313,6 +360,8 @@ def parse_attributes(
     :param association: The association to mutate in place.
     :param protected_slots: Slot names the caller has already determined. Source attributes
         of the same name are ignored rather than overwriting the computed value.
+    :param excluded_results: Supporting study result ids to leave out (sentences that don't support the edge as
+        mapped). When any are left out, the edge's publications are rebuilt from the results that remain.
     """
     text_mining_results: List[TextMiningStudyResult] = []
     primary_source = None
@@ -324,6 +373,9 @@ def parse_attributes(
 
         # Strip "biolink:" prefix if present to get the actual slot name
         slot_name = attr_type.replace("biolink:", "") if attr_type.startswith("biolink:") else attr_type
+
+        if slot_name == "has_supporting_study_result" and value in excluded_results:
+            continue
 
         if slot_name == "has_supporting_study_result":
             # Create TextMiningStudyResult object
@@ -401,6 +453,9 @@ def parse_attributes(
             )
             _warned_unmapped_attrs.add(attr_type)
 
+    if excluded_results:
+        association.publications = sorted({x for r in text_mining_results for x in (r.xref or [])}) or None
+
     # Build has_supporting_studies from collected TextMiningStudyResult objects
     if text_mining_results:
         study = Study(
@@ -443,22 +498,32 @@ def transform_tmkp_node(koza_transform: koza.KozaTransform, record: Dict[str, An
 
 @koza.on_data_begin(tag="edges")
 def on_data_begin_edges(koza_transform: koza.KozaTransform) -> None:
-    """Load the ids of treats edges whose supporting text doesn't support them, and start the drop count."""
-    path = Path(koza_transform.input_files_dir) / JEV_DROPPED_EDGES_FILE
-    koza_transform.state["jev_dropped_edge_ids"] = load_dropped_edge_ids(path)
-    koza_transform.state["jev_dropped_edge_count"] = 0
-    logger.info(f"Loaded {len(koza_transform.state['jev_dropped_edge_ids'])} TMKP edge ids to drop from {path}")
+    """Load the Jev filter lists (treats ids to drop; chemical -> protein edges to drop and sentences to prune)."""
+    input_dir = Path(koza_transform.input_files_dir)
+    state = koza_transform.state
+    state["jev_dropped_edge_ids"] = load_dropped_edge_ids(input_dir / JEV_DROPPED_EDGES_FILE)
+    state["chem_gene_dropped_edges"] = load_id_direction_pairs(input_dir / CHEM_GENE_DROPPED_EDGES_FILE)
+    state["chem_gene_pruned_sentences"] = load_pruned_sentences(input_dir / CHEM_GENE_PRUNED_SENTENCES_FILE)
+    state["jev_dropped_edge_count"] = 0
+    state["chem_gene_dropped_edge_count"] = 0
+    state["chem_gene_pruned_sentence_count"] = 0
+    logger.info(f"Loaded {len(state['jev_dropped_edge_ids'])} treats edge ids, "
+                f"{len(state['chem_gene_dropped_edges'])} chemical -> protein edges to drop and "
+                f"{sum(map(len, state['chem_gene_pruned_sentences'].values()))} sentences to prune from {input_dir}")
 
 
 @koza.on_data_end(tag="edges")
 def on_data_end_edges(koza_transform: koza.KozaTransform) -> None:
-    """Report how many edges the Jev filter dropped."""
-    logger.info(f"Dropped {koza_transform.state['jev_dropped_edge_count']} TMKP edges listed in {JEV_DROPPED_EDGES_FILE}")
+    """Report what the Jev filter lists removed."""
+    state = koza_transform.state
+    logger.info(f"Dropped {state['jev_dropped_edge_count']} treats edges and {state['chem_gene_dropped_edge_count']} "
+                f"chemical -> protein edges; pruned {state['chem_gene_pruned_sentence_count']} sentences from kept "
+                f"chemical -> protein edges")
 
 
 @koza.transform_record(tag="edges")
 def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph | None:
-    """Transform TMKP-edge records with attribute parsing."""
+    """Transform TMKP-edge records with attribute parsing, after the Jev filter lists."""
     subject_id = record.get("subject")
     predicate = record.get("predicate")
     object_id = record.get("object")
@@ -467,21 +532,76 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     if not all([subject_id, predicate, object_id]):
         return None
 
+    state = koza_transform.state
     # Drop treats edges that none of their supporting sentences support (see JEV_DROPPED_EDGES_FILE)
-    if predicate in JEV_FILTERED_PREDICATES and record.get("id") in koza_transform.state["jev_dropped_edge_ids"]:
-        koza_transform.state["jev_dropped_edge_count"] += 1
+    if predicate in JEV_FILTERED_PREDICATES and record.get("id") in state["jev_dropped_edge_ids"]:
+        state["jev_dropped_edge_count"] += 1
         return None
+
+    # Chemical -> protein edges: drop unsupported ones, prune the sentences that don't support kept ones
+    # (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
+    excluded_results: frozenset[str] = frozenset()
+    if relation == CHEM_GENE_RELATION and predicate not in JEV_FILTERED_PREDICATES:
+        key = (record.get("id"), record.get("object_direction_qualifier"))
+        if key in state["chem_gene_dropped_edges"]:
+            state["chem_gene_dropped_edge_count"] += 1
+            return None
+        excluded_results = state["chem_gene_pruned_sentences"].get(key, frozenset())
+        state["chem_gene_pruned_sentence_count"] += len(excluded_results)
 
     # Validate subject/object prefixes match predicate domain/range constraints
     if not _validate_edge_prefixes(subject_id, object_id, predicate):
         _skipped_edges_by_prefix.add((subject_id, predicate, object_id, relation))
         return None
 
-    # Remap predicates from source to canonical Biolink form
-    predicate = PREDICATE_REMAP.get(predicate, predicate)
+    return _edge_graph(record, excluded_results)
 
-    # Get association class
-    assoc_class = ASSOCIATION_MAP.get(relation, Association)
+
+@koza.transform_record(tag="repaired_edges")
+def transform_tmkp_repaired_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph:
+    """
+    Transform a repaired chemical -> protein edge: TMKP sentences whose chemical or protein was mapped to the
+    wrong concept, regrouped under the right one (https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation). A gene product as regulator makes a
+    biolink:regulates gene -> gene edge; a chemical regulator stays biolink:affects.
+
+    These edges are built offline, so a subject or object outside the association's Biolink range is a build error
+    and fails the ingest rather than being skipped.
+    """
+    _validate_repaired_edge(record)
+    return _edge_graph(record)
+
+
+def _validate_repaired_edge(record: Dict[str, Any]) -> None:
+    """
+    Raise if a repaired edge's subject or object prefix is outside its association's range: a chemical or gene
+    product as subject, a gene product as object (Protein Ontology ids are processed peptides).
+
+    >>> _validate_repaired_edge({"subject": "UniProtKB:P05112", "object": "PR:000036009"})
+    >>> _validate_repaired_edge({"subject": "MONDO:0005301", "object": "UniProtKB:P05112"})
+    Traceback (most recent call last):
+    ...
+    ValueError: repaired TMKP edge MONDO:0005301 -> UniProtKB:P05112 has an id outside the association's range
+    """
+    subject_ok = _get_id_prefix(record["subject"]) in _get_valid_prefixes_for_class("ChemicalEntityOrGeneOrGeneProduct")
+    object_ok = _get_id_prefix(record["object"]) in _get_valid_prefixes_for_class("GeneOrGeneProduct")
+    if not (subject_ok and object_ok):
+        raise ValueError(f"repaired TMKP edge {record['subject']} -> {record['object']} has an id outside the "
+                         f"association's range")
+
+
+def _edge_graph(record: Dict[str, Any], excluded_results: frozenset[str] = frozenset()) -> KnowledgeGraph:
+    """Build the association and its two endpoint nodes for a TMKP edge record."""
+    subject_id = record["subject"]
+    object_id = record["object"]
+
+    # Remap predicates from source to canonical Biolink form
+    predicate = PREDICATE_REMAP.get(record["predicate"], record["predicate"])
+
+    # Get association class: gene -> gene regulation (repaired edges) is the SIGNOR-style association
+    if predicate == REGULATES:
+        assoc_class = GeneRegulatesGeneAssociation
+    else:
+        assoc_class = ASSOCIATION_MAP.get(record.get("relation"), Association)
 
     # Knowledge level: 'treats_or_applied_or_studied_to_treat' is broad enough to warrant
     # 'knowledge_assertion' (the predicate semantics already account for uncertainty).
@@ -521,21 +641,13 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
     # Parse attributes JSON - this populates has_supporting_studies and sources on the association
     if attributes_json := record.get("_attributes"):
         attributes = json.loads(attributes_json)
-        parse_attributes(attributes, association, frozenset(assoc_kwargs))
+        parse_attributes(attributes, association, frozenset(assoc_kwargs), excluded_results)
     else:
         # No attributes - set default sources
         association.sources = TMKP_DEFAULT_SOURCES
 
-    # Create nodes for subject and object
-    nodes = []
-
-    # Create subject node (we don't have name info in edges, so minimal node)
-    subject_node = NamedThing(id=subject_id)
-    nodes.append(subject_node)
-
-    # Create object node
-    object_node = NamedThing(id=object_id)
-    nodes.append(object_node)
+    # Endpoint nodes (edges carry no names, so minimal nodes)
+    nodes = [NamedThing(id=subject_id), NamedThing(id=object_id)]
 
     # Return graph with nodes and edges
     return KnowledgeGraph(nodes=nodes, edges=[association])
