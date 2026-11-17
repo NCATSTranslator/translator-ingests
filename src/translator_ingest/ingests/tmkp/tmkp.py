@@ -60,23 +60,27 @@ MODIFIED_FORM = ChemicalOrGeneOrGeneProductFormOrVariantEnum.modified_form
 
 # Source edge ids of text-mined treats edges that none of their supporting sentences support, as judged by a
 # typed-decision model (Jev) over every supporting sentence. How the list was made:
-# https://github.com/cbizon/tmkp-cleanup/tree/v1/treats
+# https://github.com/cbizon/tmkp-cleanup/tree/v2/treats
 JEV_DROPPED_EDGES_FILE = "tmkp_treats_jev_v3_dropped_edges.txt.gz"
 # TMKP edge ids aren't unique: a treats edge and a contributes_to edge for the same chemical and condition share an
 # id. The list only judges treats edges, so it applies only to these predicates.
 JEV_FILTERED_PREDICATES = frozenset({"biolink:treats_or_applied_or_studied_to_treat", "biolink:treats"})
 
-# Regulation edges, chemical -> protein and protein -> protein (https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation).
-# TMKP's edge id also ignores the direction qualifier (an increased and a decreased edge for the same pair share one),
-# so these lists are keyed on (id, direction), per relation.
+# Edges judged sentence by sentence (https://github.com/cbizon/tmkp-cleanup/tree/v2/pipeline): chemical -> protein and protein -> protein
+# regulation, and chemical -> disease or phenotype contributes_to. TMKP's edge id also ignores the direction
+# qualifier (an increased and a decreased edge for the same pair share one), so these lists are keyed on
+# (id, direction), per relation; contributes_to edges have no direction, so theirs is "".
 # - dropped: edges none of whose sentences support them as mapped
 # - pruned: sentences removed from kept edges' evidence (dropped, or moved to a repaired edge)
-# - repaired: new edges for sentences whose regulator or target was mapped wrongly, read as their own reader
+# - repaired: new edges for sentences whose subject or object was mapped wrongly, read as their own reader
+# The treats edges share chem_disease's relation; the predicate check in transform_tmkp_edge keeps them apart.
 CHEM_GENE_RELATION = "biolink:ChemicalToGeneAssociation"
 GENE_GENE_RELATION = "biolink:GeneRegulatoryRelationship"
-REGULATION_FILTER_FILES = {
+CHEM_DISEASE_RELATION = "biolink:ChemicalToDiseaseOrPhenotypicFeatureAssociation"
+SENTENCE_FILTER_FILES = {
     CHEM_GENE_RELATION: ("tmkp_chem_gene_dropped_edges.txt.gz", "tmkp_chem_gene_pruned_sentences.txt.gz"),
     GENE_GENE_RELATION: ("tmkp_gene_gene_dropped_edges.txt.gz", "tmkp_gene_gene_pruned_sentences.txt.gz"),
+    CHEM_DISEASE_RELATION: ("tmkp_chem_disease_dropped_edges.txt.gz", "tmkp_chem_disease_pruned_sentences.txt.gz"),
 }
 REGULATES = "biolink:regulates"
 
@@ -502,20 +506,20 @@ def transform_tmkp_node(koza_transform: koza.KozaTransform, record: Dict[str, An
 
 @koza.on_data_begin(tag="edges")
 def on_data_begin_edges(koza_transform: koza.KozaTransform) -> None:
-    """Load the Jev filter lists (treats ids to drop; chemical -> protein edges to drop and sentences to prune)."""
+    """Load the Jev filter lists (treats ids to drop; per-sentence families' edges to drop and sentences to prune)."""
     input_dir = Path(koza_transform.input_files_dir)
     state = koza_transform.state
     state["jev_dropped_edge_ids"] = load_dropped_edge_ids(input_dir / JEV_DROPPED_EDGES_FILE)
-    state["regulation_dropped_edges"] = {relation: load_id_direction_pairs(input_dir / dropped)
-                                         for relation, (dropped, _) in REGULATION_FILTER_FILES.items()}
-    state["regulation_pruned_sentences"] = {relation: load_pruned_sentences(input_dir / pruned)
-                                            for relation, (_, pruned) in REGULATION_FILTER_FILES.items()}
+    state["sentence_filter_dropped_edges"] = {relation: load_id_direction_pairs(input_dir / dropped)
+                                         for relation, (dropped, _) in SENTENCE_FILTER_FILES.items()}
+    state["sentence_filter_pruned_sentences"] = {relation: load_pruned_sentences(input_dir / pruned)
+                                            for relation, (_, pruned) in SENTENCE_FILTER_FILES.items()}
     state["jev_dropped_edge_count"] = 0
-    state["regulation_dropped_edge_count"] = 0
-    state["regulation_pruned_sentence_count"] = 0
+    state["sentence_filter_dropped_edge_count"] = 0
+    state["sentence_filter_pruned_sentence_count"] = 0
     logger.info(f"Loaded {len(state['jev_dropped_edge_ids'])} treats edge ids, "
-                f"{sum(map(len, state['regulation_dropped_edges'].values()))} regulation edges to drop and "
-                f"{sum(len(v) for p in state['regulation_pruned_sentences'].values() for v in p.values())} sentences "
+                f"{sum(map(len, state['sentence_filter_dropped_edges'].values()))} other edges to drop and "
+                f"{sum(len(v) for p in state['sentence_filter_pruned_sentences'].values() for v in p.values())} sentences "
                 f"to prune from {input_dir}")
 
 
@@ -523,9 +527,9 @@ def on_data_begin_edges(koza_transform: koza.KozaTransform) -> None:
 def on_data_end_edges(koza_transform: koza.KozaTransform) -> None:
     """Report what the Jev filter lists removed."""
     state = koza_transform.state
-    logger.info(f"Dropped {state['jev_dropped_edge_count']} treats edges and {state['regulation_dropped_edge_count']} "
-                f"regulation edges; pruned {state['regulation_pruned_sentence_count']} sentences from kept regulation "
-                f"edges")
+    logger.info(f"Dropped {state['jev_dropped_edge_count']} treats edges and "
+                f"{state['sentence_filter_dropped_edge_count']} other edges; pruned "
+                f"{state['sentence_filter_pruned_sentence_count']} sentences from kept edges")
 
 
 @koza.transform_record(tag="edges")
@@ -545,16 +549,16 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
         state["jev_dropped_edge_count"] += 1
         return None
 
-    # Regulation edges (chemical -> protein, protein -> protein): drop unsupported ones, prune the sentences that don't
-    # support kept ones (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
+    # Regulation and contributes_to edges: drop unsupported ones, prune the sentences that don't support kept ones
+    # (see SENTENCE_FILTER_FILES)
     excluded_results: frozenset[str] = frozenset()
-    if relation in REGULATION_FILTER_FILES and predicate not in JEV_FILTERED_PREDICATES:
-        key = (record.get("id"), record.get("object_direction_qualifier"))
-        if key in state["regulation_dropped_edges"][relation]:
-            state["regulation_dropped_edge_count"] += 1
+    if relation in SENTENCE_FILTER_FILES and predicate not in JEV_FILTERED_PREDICATES:
+        key = (record.get("id"), record.get("object_direction_qualifier") or "")
+        if key in state["sentence_filter_dropped_edges"][relation]:
+            state["sentence_filter_dropped_edge_count"] += 1
             return None
-        excluded_results = state["regulation_pruned_sentences"][relation].get(key, frozenset())
-        state["regulation_pruned_sentence_count"] += len(excluded_results)
+        excluded_results = state["sentence_filter_pruned_sentences"][relation].get(key, frozenset())
+        state["sentence_filter_pruned_sentence_count"] += len(excluded_results)
 
     # Validate subject/object prefixes match predicate domain/range constraints
     if not _validate_edge_prefixes(subject_id, object_id, predicate):
@@ -567,9 +571,10 @@ def transform_tmkp_edge(koza_transform: koza.KozaTransform, record: Dict[str, An
 @koza.transform_record(tag="repaired_edges")
 def transform_tmkp_repaired_edge(koza_transform: koza.KozaTransform, record: Dict[str, Any]) -> KnowledgeGraph:
     """
-    Transform a repaired regulation edge: TMKP sentences whose regulator or target was mapped to the wrong concept,
-    regrouped under the right one (https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation). A gene product as regulator makes a
-    biolink:regulates gene -> gene edge; a chemical regulator stays biolink:affects.
+    Transform a repaired edge: TMKP sentences whose subject or object was mapped to the wrong concept, regrouped
+    under the right one (https://github.com/cbizon/tmkp-cleanup/tree/v2/pipeline). In regulation, a gene product as regulator makes a
+    biolink:regulates gene -> gene edge and a chemical regulator stays biolink:affects; repaired chemical -> disease
+    edges stay biolink:contributes_to.
 
     These edges are built offline, so a subject or object outside the association's Biolink range is a build error
     and fails the ingest rather than being skipped.
@@ -578,19 +583,28 @@ def transform_tmkp_repaired_edge(koza_transform: koza.KozaTransform, record: Dic
     return _edge_graph(record)
 
 
+# Allowed subject and object classes of a repaired edge, by relation (Protein Ontology ids are processed peptides)
+REPAIRED_EDGE_RANGES = {
+    CHEM_GENE_RELATION: ("ChemicalEntityOrGeneOrGeneProduct", "GeneOrGeneProduct"),
+    GENE_GENE_RELATION: ("ChemicalEntityOrGeneOrGeneProduct", "GeneOrGeneProduct"),
+    CHEM_DISEASE_RELATION: ("ChemicalEntity", "DiseaseOrPhenotypicFeature"),
+}
+
+
 def _validate_repaired_edge(record: Dict[str, Any]) -> None:
     """
-    Raise if a repaired edge's subject or object prefix is outside its association's range: a chemical or gene
-    product as subject, a gene product as object (Protein Ontology ids are processed peptides).
+    Raise if a repaired edge's subject or object prefix is outside its association's range (REPAIRED_EDGE_RANGES).
 
-    >>> _validate_repaired_edge({"subject": "UniProtKB:P05112", "object": "PR:000036009"})
-    >>> _validate_repaired_edge({"subject": "MONDO:0005301", "object": "UniProtKB:P05112"})
+    >>> _validate_repaired_edge({"subject": "UniProtKB:P05112", "object": "PR:000036009", "relation": GENE_GENE_RELATION})
+    >>> _validate_repaired_edge({"subject": "CHEBI:15846", "object": "MONDO:0005148", "relation": CHEM_DISEASE_RELATION})
+    >>> _validate_repaired_edge({"subject": "MONDO:0005301", "object": "UniProtKB:P05112", "relation": CHEM_GENE_RELATION})
     Traceback (most recent call last):
     ...
     ValueError: repaired TMKP edge MONDO:0005301 -> UniProtKB:P05112 has an id outside the association's range
     """
-    subject_ok = _get_id_prefix(record["subject"]) in _get_valid_prefixes_for_class("ChemicalEntityOrGeneOrGeneProduct")
-    object_ok = _get_id_prefix(record["object"]) in _get_valid_prefixes_for_class("GeneOrGeneProduct")
+    subject_class, object_class = REPAIRED_EDGE_RANGES[record["relation"]]
+    subject_ok = _get_id_prefix(record["subject"]) in _get_valid_prefixes_for_class(subject_class)
+    object_ok = _get_id_prefix(record["object"]) in _get_valid_prefixes_for_class(object_class)
     if not (subject_ok and object_ok):
         raise ValueError(f"repaired TMKP edge {record['subject']} -> {record['object']} has an id outside the "
                          f"association's range")
