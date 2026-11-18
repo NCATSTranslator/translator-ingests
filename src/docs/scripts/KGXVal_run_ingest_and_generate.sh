@@ -57,6 +57,6 @@ cp "$TRANSFORMED_EDGES" "$KGXVALDIR"/$INGEST/normed
 (cd $KGXVALDIR && uvx --python 3.13 --from 'git+https://github.com/monarch-initiative/kgxval' ingest_summary "$KGXVALDIR")
 
 xlsx="$(find "$KGXVALDIR/data/output" -name '*.xlsx' | head -1)"
-KGX_SUMMARY_FILE="${REPO_DIR/}data/${INGEST}/${INGEST}_kgxval_summary.xlsx"
+KGX_SUMMARY_FILE="${REPO_DIR}/data/${INGEST}/${INGEST}_kgxval_summary.xlsx"
 cp "$xlsx" $KGX_SUMMARY_FILE
 echo "Wrote $KGX_SUMMARY_FILE"
