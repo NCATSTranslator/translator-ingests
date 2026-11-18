@@ -6,8 +6,8 @@
 #These two variables need to be set for this script
 # to work correctly, but default to the template ingest
 
-"${GIT_BRANCH:=main}"
-"${INGEST:=_ingest_template}"
+GIT_BRANCH="${GIT_BRANCH:-main}"
+INGEST="${INGEST:-_ingest_template}"
 
 #Clone the translator-ingests repo only for the branch we're changing.
 git clone --single-branch --branch $GIT_BRANCH "https://github.com/NCATSTranslator/translator-ingests"
