@@ -5,6 +5,26 @@ Captures the *why*, not the *what* — code reflects the current state; this fil
 records what we considered and rejected, so the next iteration can pick up
 without re-deriving the reasoning.
 
+## 2026-11-19 — `functionally_associated_with` replaces `associated_with` + qualifier, final cutoffs
+
+The always-emitted functional edge now uses `biolink:functionally_associated_with` with no
+`association_basis_qualifier`. This follows [Sierra's comment on #398](https://github.com/NCATSTranslator/translator-ingests/pull/398#issuecomment-6930537930)
+(2026-11-16, from her discussion with Matt) and the 2026-11-17 Data Ingest WG decision. The
+`association_basis_qualifier` pattern is rolled back and may be revisited after the Biolink
+predicate hierarchy refactor. This supersedes the 2026-07-17 reasoning below for preferring the
+qualifier over a new predicate.
+
+The new predicate sits under `associated_with`, as proposed on the 2026-07-10 call. It is not yet in
+a Biolink release. Biolink 4.4.4 pydantic models accept the predicate string, but KGX and Biolink
+validation will flag these edges until a release adds it. The same Biolink change restores
+`genetically_associated_with` (deprecated since 4.4.4) and does not add `statistically_associated_with`.
+Neither affects this ingest.
+
+The experiments and coexpression cutoffs (both `> 750`) are final. They are no longer placeholders
+awaiting Vlado's recommendation.
+
+KL/AT, the combined-score gate, the conditional edges and the source record URLs are unchanged.
+
 ## 2026-10-26 — Functional association knowledge level and agent type
 
 Functional `associated_with` edges now carry `knowledge_assertion` / `automated_agent`,

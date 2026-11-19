@@ -6,7 +6,6 @@ import pytest
 import koza
 
 from biolink_model.datamodel.pydanticmodel_v2 import Protein
-from biolink_model.datamodel.pydanticmodel_v2 import AssociationBasisEnum as ABE
 
 from tests.unit.ingests import MockKozaWriter, MockKozaTransform
 
@@ -135,7 +134,7 @@ def test_sorted_pair_key_distinguishes_predicates():
     """Different predicates produce different keys for the same pair."""
     a, b = "ENSEMBL:A", "ENSEMBL:B"
     assert sorted_pair_key(a, b, "biolink:coexpressed_with") != \
-           sorted_pair_key(a, b, "biolink:associated_with")
+           sorted_pair_key(a, b, "biolink:functionally_associated_with")
 
 
 # Network-dependent: hits https://string-db.org/api/json/version.
@@ -161,8 +160,8 @@ R2 = "10116.ENSRNOP00000000002"
 # ──── edges_for_row tests ─────────────────────────────────────────────────────
 
 
-def test_edges_for_row_always_emits_associated_with():
-    """Every row above the combined_score gate yields an associated_with edge."""
+def test_edges_for_row_always_emits_functionally_associated_with():
+    """Every row above the combined_score gate yields an functionally_associated_with edge."""
     row = {"combined_score": "800", "experiments": "0", "coexpression": "0"}
     result = edges_for_row(row)
     assert len(result) >= 1
@@ -187,7 +186,7 @@ def test_edges_for_row_at_threshold_does_not_fire():
     """At exactly the threshold is not above it — no conditional edge fires."""
     row = {"combined_score": "800", "experiments": "750", "coexpression": "750"}
     result = edges_for_row(row)
-    assert len(result) == 1  # associated_with only
+    assert len(result) == 1  # functionally_associated_with only
     assert result[0][0] == ALWAYS_PREDICATE
 
 
@@ -196,7 +195,7 @@ def test_edges_for_row_both_channels_fire():
     row = {"combined_score": "900", "experiments": "800", "coexpression": "800"}
     predicates = [p for p, _ in edges_for_row(row)]
     assert set(predicates) == {
-        "biolink:associated_with",
+        "biolink:functionally_associated_with",
         "biolink:directly_physically_interacts_with",
         "biolink:coexpressed_with",
     }
@@ -207,7 +206,7 @@ def test_edges_for_row_carries_channel_score():
     row = {"combined_score": "850", "experiments": "820", "coexpression": "0"}
     result = edges_for_row(row)
     by_pred = {p: s for p, s in result}
-    assert by_pred["biolink:associated_with"] == 850
+    assert by_pred["biolink:functionally_associated_with"] == 850
     assert by_pred["biolink:directly_physically_interacts_with"] == 820
 
 
@@ -238,8 +237,8 @@ def test_edges_for_row_non_predicate_channels_never_fire():
         (R1, R2, "NCBITaxon:10116"),
     ],
 )
-def test_transform_emits_associated_with_above_threshold(mock_koza, p1, p2, expected_taxon):
-    """Every above-threshold row emits at least one associated_with edge.
+def test_transform_emits_functionally_associated_with_above_threshold(mock_koza, p1, p2, expected_taxon):
+    """Every above-threshold row emits at least one functionally_associated_with edge.
     Nodes are Protein with correct taxon."""
     result = transform_string_ppi(
         mock_koza,
@@ -250,8 +249,8 @@ def test_transform_emits_associated_with_above_threshold(mock_koza, p1, p2, expe
     assert len(list(result.nodes)) == 2
     edges = list(result.edges)
     assert len(edges) >= 1
-    assert edges[0].predicate == "biolink:associated_with"
-    assert edges[0].association_basis_qualifier == ABE.functional
+    assert edges[0].predicate == "biolink:functionally_associated_with"
+    assert "association_basis_qualifier" not in edges[0].model_dump(exclude_none=True)
     assert edges[0].stringdb_combined_score == 750
 
     for node in result.nodes:
@@ -265,12 +264,12 @@ def test_transform_emits_associated_with_above_threshold(mock_koza, p1, p2, expe
     [{}, {"textmining": 800}, {"experiments": 800}, {"coexpression": 800}],
     ids=["combined-only", "textmining", "experiments", "coexpression"],
 )
-def test_transform_associated_with_kl_at(mock_koza: koza.KozaTransform, channel_scores: dict[str, int]) -> None:
+def test_transform_functionally_associated_with_kl_at(mock_koza: koza.KozaTransform, channel_scores: dict[str, int]) -> None:
     """Functional KL/AT describes STRING's assertion regardless of its evidence channels."""
     result = transform_string_ppi(mock_koza, _full_row(H1, H2, combined_score=900, **channel_scores))
     assert result is not None and result.edges is not None
     edges = list(result.edges)
-    assoc = next(e for e in edges if e.predicate == "biolink:associated_with")
+    assoc = next(e for e in edges if e.predicate == "biolink:functionally_associated_with")
     assert assoc.knowledge_level == "knowledge_assertion"
     assert assoc.agent_type == "automated_agent"
 
@@ -284,7 +283,7 @@ def test_transform_experiments_fires_directly_physically_interacts_with(mock_koz
     assert result is not None and result.edges is not None
     predicates = {e.predicate for e in result.edges}
     assert "biolink:directly_physically_interacts_with" in predicates
-    assert "biolink:associated_with" in predicates
+    assert "biolink:functionally_associated_with" in predicates
     stringdb_experimental_scores = [
          e.stringdb_experimental_score for e in result.edges
          if e.predicate == "biolink:directly_physically_interacts_with"
@@ -301,7 +300,7 @@ def test_transform_coexpression_fires_coexpressed_with(mock_koza):
     assert result is not None and result.edges is not None
     predicates = {e.predicate for e in result.edges}
     assert "biolink:coexpressed_with" in predicates
-    assert "biolink:associated_with" in predicates
+    assert "biolink:functionally_associated_with" in predicates
     stringdb_coexpression_scores = [
                      e.stringdb_coexpression_score for e in result.edges
                      if e.predicate == "biolink:coexpressed_with"
@@ -317,7 +316,7 @@ def test_transform_both_channels_fire(mock_koza):
     assert result is not None and result.edges is not None
     predicates = {e.predicate for e in result.edges}
     assert predicates == {
-        "biolink:associated_with",
+        "biolink:functionally_associated_with",
         "biolink:directly_physically_interacts_with",
         "biolink:coexpressed_with",
     }
@@ -334,14 +333,14 @@ def test_transform_conditional_edges_carry_correct_kl_at(mock_koza: koza.KozaTra
         edge.predicate: (edge.knowledge_level, edge.agent_type)
         for edge in result.edges
     } == {
-        "biolink:associated_with": ("knowledge_assertion", "automated_agent"),
+        "biolink:functionally_associated_with": ("knowledge_assertion", "automated_agent"),
         "biolink:directly_physically_interacts_with": ("observation", "automated_agent"),
         "biolink:coexpressed_with": ("prediction", "computational_model"),
     }
 
 
 def test_transform_non_predicate_channels_do_not_add_edges(mock_koza):
-    """textmining, fusion, cooccurence, homology at high scores yield only associated_with."""
+    """textmining, fusion, cooccurence, homology at high scores yield only functionally_associated_with."""
     result = transform_string_ppi(
         mock_koza,
         _full_row(H1, H2, combined_score=900,
@@ -349,7 +348,7 @@ def test_transform_non_predicate_channels_do_not_add_edges(mock_koza):
     )
     assert result is not None and result.edges is not None
     predicates = [e.predicate for e in result.edges]
-    assert predicates == ["biolink:associated_with"]
+    assert predicates == ["biolink:functionally_associated_with"]
 
 
 def test_transform_dedupes_per_pair_per_predicate(mock_koza):
@@ -367,7 +366,7 @@ def test_transform_dedupes_per_pair_per_predicate(mock_koza):
         mock_koza, _full_row(H2, H1, combined_score=900, coexpression=800),
     )
     assert first is not None and first.edges is not None
-    assert second is None  # full dup (associated_with and directly_physically already seen)
+    assert second is None  # full dup (functionally_associated_with and directly_physically already seen)
     assert third is not None and third.edges is not None
     assert list(third.edges)[0].predicate == "biolink:coexpressed_with"
 
@@ -436,12 +435,12 @@ def test_transform_rejects_cross_species_pair(mock_koza):
 
 def test_transform_default_thresholds_no_channel_fire(mock_koza):
     """With channel scores at 0 and combined_score just above 700, only
-    associated_with is emitted (no conditional channel fires)."""
+    functionally_associated_with is emitted (no conditional channel fires)."""
     result = transform_string_ppi(
         mock_koza, _full_row(H1, H2, combined_score=750)
     )
     assert result is not None and result.edges is not None
-    assert [e.predicate for e in result.edges] == ["biolink:associated_with"]
+    assert [e.predicate for e in result.edges] == ["biolink:functionally_associated_with"]
 
 
 # ──── Entrez mapping tests ────────────────────────────────────────────────────

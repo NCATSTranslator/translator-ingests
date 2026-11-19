@@ -36,7 +36,7 @@ def test_serialized_pair_links(tmp_path: Path, protein1: str, protein2: str, tax
     graph = transform_string_ppi(context, record)
     assert graph is not None
     assert {edge.predicate for edge in graph.edges} == {
-        "biolink:associated_with",
+        "biolink:functionally_associated_with",
         "biolink:directly_physically_interacts_with",
         "biolink:coexpressed_with",
     }

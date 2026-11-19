@@ -13,7 +13,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum,
 )
-from biolink_model.datamodel.pydanticmodel_v2 import AssociationBasisEnum as ABE
 
 from translator_ingest.util.biolink import build_association_knowledge_sources, INFORES_STRING
 from translator_ingest.util.transform_utils import entity_id
@@ -34,18 +33,17 @@ SUPPORTED_TAXA: dict[str, str] = {
 COMBINED_SCORE_THRESHOLD = 700
 
 # Per-channel thresholds for the conditional edges. A channel-specific edge fires only
-# when the channel score exceeds the corresponding threshold.
-# TODO: replace EXPERIMENTS_THRESHOLD and COEXPRESSION_THRESHOLD with Vlado's recommendations
-# (pending the 2026-07-17 call AI action: Vlado to recommend cutoffs for
-# directly_physically_interacts_with and coexpressed_with edges).
+# when the channel score exceeds the corresponding threshold. Both cutoffs are final
+# as of 2026-11-19.
 EXPERIMENTS_THRESHOLD = 750
 COEXPRESSION_THRESHOLD = 750
 
 # Always-emitted edge: functional association for every pair clearing the combined_score gate.
 # Encodes STRING's core claim: these proteins participate in a shared biological program
 # (process, pathway, reaction, complex, or expression program).
-#
-ALWAYS_PREDICATE = "biolink:associated_with"
+# The predicate replaces "associated_with + association_basis_qualifier: functional"
+# (2026-11-17 Data Ingest WG decision). It is not yet in a Biolink release.
+ALWAYS_PREDICATE = "biolink:functionally_associated_with"
 
 # Channel-specific conditional edges. Each fires independently when its channel score
 # clears the per-channel threshold. See string.yaml channel_thresholds for values.
@@ -64,7 +62,7 @@ DEFAULT_THRESHOLDS: dict[str, int] = {
 # Functional KL/AT describes STRING's automated assertion of a functional
 # relationship, rather than the analysis methods used by its evidence channels.
 EDGE_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
-    "biolink:associated_with": (
+    "biolink:functionally_associated_with": (
         KnowledgeLevelEnum.knowledge_assertion,
         AgentTypeEnum.automated_agent,
     ),
@@ -79,13 +77,13 @@ EDGE_KL_AT: dict[str, tuple[KnowledgeLevelEnum, AgentTypeEnum]] = {
 }
 
 # Association class to instantiate per predicate.
-# `associated_with` uses the base `Association` class (no Protein-specific functional
-# association class exists in the current biolink model).
+# `functionally_associated_with` uses the base `Association` class (no Protein-specific
+# functional association class exists in the current biolink model).
 # `directly_physically_interacts_with` uses PairwiseMolecularInteraction.
 # `coexpressed_with` uses GeneToGeneCoexpressionAssociation (biolink rejects
 # coexpressed_with on PairwiseMolecularInteraction).
 PREDICATE_TO_ASSOCIATION_CLASS: dict[str, type[Association]] = {
-    "biolink:associated_with":                    Association,
+    "biolink:functionally_associated_with":       Association,
     "biolink:directly_physically_interacts_with": PairwiseMolecularInteraction,
     "biolink:coexpressed_with":                   GeneToGeneCoexpressionAssociation,
 }
@@ -183,27 +181,27 @@ def edges_for_row(record: dict[str, Any]) -> list[tuple[str, int]]:
 
     >>> row = {"combined_score": "800", "experiments": "0", "coexpression": "0"}
     >>> edges_for_row(row)
-    [('biolink:associated_with', 800)]
+    [('biolink:functionally_associated_with', 800)]
 
     >>> row = {"combined_score": "800", "experiments": "800", "coexpression": "0"}
     >>> edges_for_row(row)
-    [('biolink:associated_with', 800), ('biolink:directly_physically_interacts_with', 800)]
+    [('biolink:functionally_associated_with', 800), ('biolink:directly_physically_interacts_with', 800)]
 
     >>> row = {"combined_score": "800", "experiments": "0", "coexpression": "800"}
     >>> edges_for_row(row)
-    [('biolink:associated_with', 800), ('biolink:coexpressed_with', 800)]
+    [('biolink:functionally_associated_with', 800), ('biolink:coexpressed_with', 800)]
 
     Both conditional channels fire when both exceed the threshold.
 
     >>> row = {"combined_score": "900", "experiments": "800", "coexpression": "800"}
     >>> edges_for_row(row)
-    [('biolink:associated_with', 900), ('biolink:directly_physically_interacts_with', 800), ('biolink:coexpressed_with', 800)]
+    [('biolink:functionally_associated_with', 900), ('biolink:directly_physically_interacts_with', 800), ('biolink:coexpressed_with', 800)]
 
     At the threshold is not above it — no conditional edge fires.
 
     >>> row = {"combined_score": "800", "experiments": "750", "coexpression": "750"}
     >>> edges_for_row(row)
-    [('biolink:associated_with', 800)]
+    [('biolink:functionally_associated_with', 800)]
     """
     combined = int(str(record.get("combined_score", 0)))
     result: list[tuple[str, int]] = [(ALWAYS_PREDICATE, combined)]
@@ -244,8 +242,7 @@ def make_string_ppi_edge(
         subject=subject_id,
         predicate=predicate,
         object=object_id,
-        association_basis_qualifier=ABE.functional if predicate == "biolink:associated_with" else None,
-        stringdb_combined_score = score if predicate == "biolink:associated_with" else None,
+        stringdb_combined_score = score if predicate == "biolink:functionally_associated_with" else None,
         stringdb_experimental_score = score if predicate == "biolink:directly_physically_interacts_with" else None,
         stringdb_coexpression_score = score if predicate == "biolink:coexpressed_with" else None,
         sources=build_association_knowledge_sources(primary=(INFORES_STRING, [source_record_url])),

@@ -3,11 +3,12 @@ STRING protein–protein interaction ingest (human, mouse, rat).
 
 Reads STRING's '{taxon}.protein.links.full.v12.0.txt.gz' (16 columns: 7
 evidence channels + 6 orthology-transferred variants + combined_score) and emits
-three edge types per qualifying protein pair, following the 2026-07-17 call decisions:
+up to three edge types per qualifying protein pair, following the 2026-07-17 call
+decisions as revised on 2026-11-17:
 
-  1. biolink:associated_with + association_basis_qualifier:Functional (always, combined_score > 700)
-  2. biolink:directly_physically_interacts_with (conditional on experiments channel, TBD threshold)
-  3. biolink:coexpressed_with (conditional on coexpression channel, TBD threshold)
+  1. biolink:functionally_associated_with (always, combined_score > 700)
+  2. biolink:directly_physically_interacts_with (conditional, experiments > 750)
+  3. biolink:coexpressed_with (conditional, coexpression > 750)
 
 See CHANGELOG.md for full design rationale. See string_rig.yaml for the graph specification.
 
@@ -93,7 +94,7 @@ def transform_string_ppi(
     'Protein' nodes and one to three edges per the 2026-07-17 edge model.
 
     Edge emission:
-      - always: biolink:associated_with (combined_score > 700)
+      - always: biolink:functionally_associated_with (combined_score > 700)
       - conditional: biolink:directly_physically_interacts_with (experiments > threshold)
       - conditional: biolink:coexpressed_with (coexpression > threshold)
 
@@ -118,7 +119,7 @@ def transform_string_ppi(
         )
 
     # Collect (predicate, channel_score) pairs for this row. Always has at
-    # least the associated_with entry; may add directly_physically_interacts_with
+    # least the functionally_associated_with entry; may add directly_physically_interacts_with
     # and/or coexpressed_with when the corresponding channels fire.
     # Always includes at least one ALWAYS edge, with the STRING combined score
     row_edges = edges_for_row(record)

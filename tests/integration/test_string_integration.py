@@ -138,13 +138,13 @@ ENSEMBL_PROTEIN_PREFIXES = ("ENSEMBL:ENSP", "ENSEMBL:ENSMUSP", "ENSEMBL:ENSRNOP"
 
 # Edge types that may appear in PPI output under the 2026-07-17 edge model.
 PPI_PREDICATES = {
-    "biolink:associated_with",                    # always-emitted functional association
+    "biolink:functionally_associated_with",                    # always-emitted functional association
     "biolink:directly_physically_interacts_with", # experiments channel
     "biolink:coexpressed_with",                   # coexpression channel
 }
 
 # Association classes that may appear per predicate.
-# associated_with → Association (base class)
+# functionally_associated_with → Association (base class)
 # directly_physically_interacts_with → PairwiseMolecularInteraction
 # coexpressed_with → GeneToGeneCoexpressionAssociation
 PPI_CATEGORIES = {
@@ -154,7 +154,7 @@ PPI_CATEGORIES = {
 }
 
 PPI_KL_AT = {
-    "biolink:associated_with": ("knowledge_assertion", "automated_agent"),
+    "biolink:functionally_associated_with": ("knowledge_assertion", "automated_agent"),
     "biolink:directly_physically_interacts_with": ("observation", "automated_agent"),
     "biolink:coexpressed_with": ("prediction", "computational_model"),
 }
@@ -169,10 +169,10 @@ def test_ppi_produces_nodes_and_edges(koza_output):
 
 
 def test_ppi_always_predicate_present(koza_output):
-    """Every row above the threshold emits at least one associated_with edge."""
+    """Every row above the threshold emits at least one functionally_associated_with edge."""
     _, edges = _ppi_partition(*_load_all(koza_output))
-    assert any(e["predicate"] == "biolink:associated_with" for e in edges), \
-        "no associated_with edges found"
+    assert any(e["predicate"] == "biolink:functionally_associated_with" for e in edges), \
+        "no functionally_associated_with edges found"
 
 
 def test_ppi_node_shape(koza_output):
@@ -216,7 +216,7 @@ def test_ppi_no_duplicate_edges_by_pair_and_predicate(koza_output):
 def test_ppi_functional_kl_at(koza_output: Path) -> None:
     """Serialized functional associations carry STRING's assertion and automated-agent classification."""
     _, edges = _ppi_partition(*_load_all(koza_output))
-    functional_edges = [e for e in edges if e["predicate"] == "biolink:associated_with"]
+    functional_edges = [e for e in edges if e["predicate"] == "biolink:functionally_associated_with"]
     assert functional_edges, "no functional associations produced"
     for edge in functional_edges:
         assert edge["knowledge_level"] == "knowledge_assertion"

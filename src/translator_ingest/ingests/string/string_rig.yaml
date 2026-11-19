@@ -68,15 +68,14 @@ ingest_info:
       mouse (NCBITaxon:10090), and rat (NCBITaxon:10116). Protein identifiers are kept in their native
       ENSEMBL forms (ENSP / ENSMUSP / ENSRNOP); NCBIGene equivalents are attached via "equivalent_identifiers".
       Three edge types are emitted per qualifying protein pair:
-        (1) an always-present "biolink:associated_with + association_basis_qualifier:Functional" edge for every pair
+        (1) an always-present "biolink:functionally_associated_with" edge for every pair
             with combined_score > 700, carrying the calibrated combined score as "stringdb_combined_score";
         (2) an additional "biolink:directly_physically_interacts_with" edge when the experiments channel score
-            exceeds the experimental evidence threshold (cutoff TBD, pending Vlado's recommendation),
-            carrying the experiments score as "stringdb_experimental_score";
-        (3) an additional "biolink:coexpressed_with" edge when the coexpression channel score exceeds the
-            coexpression threshold (cutoff TBD, pending Vlado's recommendation),
+            exceeds 750, carrying the experiments score as "stringdb_experimental_score";
+        (3) an additional "biolink:coexpressed_with" edge when the coexpression channel score exceeds 750,
             carrying the coexpression score as "stringdb_coexpression_score".
-      (B) attributes.yaml PR for the three stringdb_* edge properties; (C) Vlado's threshold recommendations.
+      Open dependencies: (A) a Biolink release that adds "functionally_associated_with" (2026-11-17 Data
+      Ingest WG decision); (B) attributes.yaml PR for the three stringdb_* edge properties.
 
       Each emitted edge carries a pair-focused URL in the infores:string RetrievalSource.source_record_urls.
       The URL uses both raw taxon-prefixed protein identifiers in canonical order, separated by encoded
@@ -126,7 +125,7 @@ ingest_info:
         fields_used: >-
           protein1, protein2 (parsed into ENSEMBL protein CURIEs — ENSP for human, ENSMUSP for mouse, ENSRNOP for rat
           after stripping the "{NCBI Taxon ID}." taxon prefix); combined_score filters row inclusion and is stored
-          as "stringdb_combined_score" on the associated_with edge; experiments channel score drives the conditional
+          as "stringdb_combined_score" on the functionally_associated_with edge; experiments channel score drives the conditional
           directly_physically_interacts_with edge and is stored as "stringdb_experimental_score";
           coexpression channel score drives the conditional coexpressed_with edge and is stored as
           "stringdb_coexpression_score".
@@ -155,7 +154,7 @@ ingest_info:
           absent from the Automat STRING-DB meta_knowledge_graph.
           homology, database: aggregated into the combined_score but do not drive distinct edge semantics
           under the new model.
-          textmining: co-mention evidence is retained in the combined_score (which drives the associated_with edge)
+          textmining: co-mention evidence is retained in the combined_score (which drives the functionally_associated_with edge)
           but does not warrant a separate edge claim in the current iteration. The calibration note in source_info
           explains why high textmining scores can be meaningful even when raw co-mention frequency is unimpressive;
           the ongoing investigation into re-weighting its contribution to combined_score (see future_considerations)
@@ -196,35 +195,34 @@ ingest_info:
     additional_notes:
       - >
         Current scope: STRING protein–protein functional associations for human, mouse, and rat. Three edge types
-        are emitted per qualifying pair: (1) always-present "associated_with + association_basis_qualifier:Functional"
+        are emitted per qualifying pair: (1) always-present "functionally_associated_with"
         for all pairs with combined_score > 700, carrying stringdb_combined_score; (2) conditional
-        "directly_physically_interacts_with" when the experiments channel exceeds a threshold (TBD, Vlado's
-        recommendation pending), carrying stringdb_experimental_score; (3) conditional "coexpressed_with" when
-        the coexpression channel exceeds a threshold (TBD), carrying stringdb_coexpression_score.
+        "directly_physically_interacts_with" when the experiments channel exceeds 750, carrying
+        stringdb_experimental_score; (3) conditional "coexpressed_with" when the coexpression channel
+        exceeds 750, carrying stringdb_coexpression_score. The functional edge previously used
+        "associated_with + association_basis_qualifier:Functional"; see CHANGELOG 2026-11-19.
         Prior predicate model (ORION-aligned per-channel predicates: physically_interacts_with, coexpressed_with,
         interacts_with, gene_fusion_with, genetically_interacts_with, related_to) is superseded; see
         CHANGELOG 2026-07-17. STITCH protein–chemical edges developed alongside this ingest but split out for a
         later effort; preserved on the stitch-ingest branch (see CHANGELOG 2026-05-28).
 target_info:
     edge_type_info:
-      # Decisions from 2026-07-10 and 2026-07-17 Biolink/STRING calls. See CHANGELOG 2026-07-17.
+      # Decisions from 2026-07-10 and 2026-07-17 Biolink/STRING calls, revised by the 2026-11-17
+      # Data Ingest WG decision. See CHANGELOG 2026-07-17 and 2026-11-19.
       #
       # New model: 3 edge types.
-      #   1. associated_with + association_basis_qualifier:Functional (always, combined_score > 700)
-      #   2. directly_physically_interacts_with (conditional on experiments channel threshold, TBD)
-      #   3. coexpressed_with (conditional on coexpression channel threshold, TBD)
+      #   1. functionally_associated_with (always, combined_score > 700)
+      #   2. directly_physically_interacts_with (conditional, experiments > 750)
+      #   3. coexpressed_with (conditional, coexpression > 750)
       #
       # Prior ORION-aligned per-channel predicate model (5 edge types, combined_score > 500) superseded.
       - subject_categories:
           - biolink:Protein
         predicates:
-          - biolink:associated_with
+          - biolink:functionally_associated_with
         object_categories:
           - biolink:Protein
         qualifiers:
-          - property: biolink:association_basis_qualifier
-            value_enumeration:
-              - functional
           - property: biolink:species_context_qualifier
             value_enumeration:
               - NCBITaxon:9606
@@ -246,7 +244,7 @@ target_info:
           - "infores:go"
         ui_explanation: >-
           Emitted for every protein pair whose STRING combined_score exceeds 700 (high-confidence cutoff).
-          The association_basis_qualifier:Functional qualifier encodes STRING's core claim: these proteins
+          The functionally_associated_with predicate encodes STRING's core claim: these proteins
           contribute to some shared biological program — a process, pathway, reaction, complex, or expression
           program — without asserting a specific mechanistic relationship. The stringdb_combined_score edge
           property captures the calibrated aggregate evidence score. The knowledge level and agent type
@@ -288,8 +286,8 @@ target_info:
           - "infores:pdb"
           - "infores:kegg"
         ui_explanation: >-
-          Emitted in addition to the 'associated_with' edge when STRING's experiments channel score exceeds
-          the experimental evidence threshold (cutoff TBD: Vlado's recommendation pending). The experiments
+          Emitted in addition to the 'functionally_associated_with' edge when STRING's experiments channel
+          score exceeds 750. The experiments
           channel aggregates wet-lab assays — yeast two-hybrid, co-immunoprecipitation, AP-MS, protein
           complementation — curated from BioGRID, IntAct, MINT, and DIP. A high experiments score indicates
           direct physical binding between the two proteins has been demonstrated experimentally.
@@ -324,8 +322,8 @@ target_info:
           - "infores:hpa"        # https://www.proteinatlas.org/
           - "infores:ebi-pride"  # https://www.ebi.ac.uk/pride/
         ui_explanation: >-
-          Emitted in addition to the 'associated_with' edge when STRING's coexpression channel score exceeds
-          the coexpression threshold (cutoff TBD: Vlado's recommendation pending). The coexpression channel
+          Emitted in addition to the 'functionally_associated_with' edge when STRING's coexpression channel
+          score exceeds 750. The coexpression channel
           is derived from correlation analyses of large transcriptomic datasets (microarray and RNA-seq),
           calibrated by STRING against curated pathway co-membership. A high coexpression score indicates
           the two proteins' coding genes show consistently correlated expression across biological conditions.
