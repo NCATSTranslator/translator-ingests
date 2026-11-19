@@ -11,11 +11,13 @@ The always-emitted functional edge now uses `biolink:functionally_associated_wit
 `association_basis_qualifier`. This follows [Sierra's comment on #398](https://github.com/NCATSTranslator/translator-ingests/pull/398#issuecomment-6930537930)
 (2026-11-16, from her discussion with Matt) and the 2026-11-17 Data Ingest WG decision. The
 `association_basis_qualifier` pattern is rolled back and may be revisited after the Biolink
-predicate hierarchy refactor. This supersedes the 2026-07-17 reasoning below for preferring the
-qualifier over a new predicate.
+predicate hierarchy refactor. Part of the reason is that a qualifier form, or a
+`qualified_predicate` form, would require a larger refactor of the Biolink Model. The new term is
+therefore the edge's main `predicate`, not a `qualified_predicate` on `associated_with`. This
+supersedes the 2026-07-17 reasoning below for preferring the qualifier over a new predicate.
 
 The new predicate sits under `associated_with`, as proposed on the 2026-07-10 call. It is not yet in
-a Biolink release. Biolink 4.4.4 pydantic models accept the predicate string, but KGX and Biolink
+a Biolink release. Biolink 4.4.6 pydantic models accept the predicate string, but KGX and Biolink
 validation will flag these edges until a release adds it. The same Biolink change restores
 `genetically_associated_with` (deprecated since 4.4.4) and does not add `statistically_associated_with`.
 Neither affects this ingest.
