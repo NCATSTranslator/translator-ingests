@@ -43,7 +43,10 @@ INGESTS_RELEASES_URL = os.environ.get("INGESTS_RELEASES_URL", "https://kgx-stora
 # Set the default node normalization endpoint for translator-ingests.
 # ORION has its own defaults. Setting it here happens before any ORION import so this takes precedence.
 # Still possible/recommended to override with an env var when appropriate.
-os.environ.setdefault("NODE_NORMALIZATION_URL", "https://nodenorm-es.ci.transltr.io/")
+# ORION appends "/<endpoint>" to this URL, so a trailing slash would make it request e.g. "//status", which 404s.
+os.environ["NODE_NORMALIZATION_URL"] = os.environ.get(
+    "NODE_NORMALIZATION_URL", "https://nodenorm-es.ci.transltr.io"
+).rstrip("/")
 
 # BL_VERSION is an env var used by ORION to set the default version
 # of the biolink model, used by various operations such as checking

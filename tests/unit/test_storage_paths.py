@@ -26,6 +26,7 @@ def test_existing_directory_is_used(monkeypatch, tmp_path):
     monkeypatch.setenv(ENV_VAR, str(tmp_path))
     assert resolve_storage_path(ENV_VAR, DEFAULT) == tmp_path.absolute()
 
+
 @pytest.mark.skipif(
     platform.system() == "Windows",
     reason="Not supported on Windows"
