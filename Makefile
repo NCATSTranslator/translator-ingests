@@ -11,7 +11,12 @@ SOURCES := $(sources)
 endif
 ifeq ($(origin SOURCES), undefined)
 SOURCES := $(shell $(RUN) python -m translator_ingest.graphs sources $(GRAPH_ID))
+# Remembered so that kgxval-summary can refuse to run on every source in the graph
+SOURCES_DEFAULTED := true
 endif
+
+# Existing git branch for kgxval-summary to run on (empty: the currently checked out branch)
+GIT_BRANCH ?=
 
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
@@ -62,6 +67,8 @@ define HELP
 │     transform           Run only download and transform                      │
 │     validate            Validate all sources in data/                        │
 │     validate-single     Validate only specified sources                      │
+│     kgxval-summary      Run pipeline + KGXVal summary .xlsx for SOURCES      │
+│                         on GIT_BRANCH (interactive; see example below)       │
 │     release             Generate releases for the specified sources          │
 │     merge               Merge released sources into one KG                   │
 │     merge-all           Merge every graph declared in graphs.yaml            │
@@ -90,6 +97,9 @@ define HELP
 │                         Default: translator_kg                               │
 │     SOURCES             Space-separated list of sources                      │
 │                         Default: resolved from graphs.yaml using GRAPH_ID    │
+│                         (kgxval-summary requires SOURCES to be given)        │
+│     GIT_BRANCH          Existing branch for kgxval-summary to run on         │
+│                         Default: the currently checked out branch            │
 │                                                                              │
 │ Examples:                                                                    │
 │     # Run pipeline for all sources                                           │
@@ -101,6 +111,11 @@ define HELP
 │     make validate                                                            │
 │     # Validate only specified sources                                        │
 │     make validate SOURCES="go_cam"                                           │
+│                                                                              │
+│     # Run go_cam on branch my-branch, writing its KGXVal summary to          │
+│     # data/go_cam/go_cam_kgxval_summary.xlsx (asks before switching branch   │
+│     # and before running the pipeline; switches back to the current branch)  │
+│     make kgxval-summary SOURCES="go_cam" GIT_BRANCH=my-branch                │
 │                                                                              │
 │     # Make releases for all sources                                          │
 │     make release                                                             │
@@ -189,6 +204,18 @@ validate-%:
 	echo "Using nodes file: $$NODES_FILE"; \
 	echo "Using edges file: $$EDGES_FILE"; \
 	$(RUN) python src/translator_ingest/util/validate_biolink_kgx.py --files "$$NODES_FILE" --files "$$EDGES_FILE"
+
+# Runs the pipeline and writes a KGXVal summary .xlsx per source, on GIT_BRANCH.
+# Interactive (yes/no prompts), so sources run one after another, never in parallel.
+.PHONY: kgxval-summary
+kgxval-summary:
+ifdef SOURCES_DEFAULTED
+	$(error kgxval-summary needs SOURCES to be given explicitly, e.g. make kgxval-summary SOURCES="go_cam")
+endif
+	@for source in $(SOURCES); do \
+		echo "KGXVal summary for $$source..."; \
+		INGEST="$$source" GIT_BRANCH="$(GIT_BRANCH)" bash "$(ROOTDIR)/src/docs/scripts/KGXVal_run_ingest_and_generate.sh" || exit 1; \
+	done
 
 .PHONY: merge
 merge:
