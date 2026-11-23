@@ -67,7 +67,8 @@ main() {
   GIT_BRANCH="${GIT_BRANCH:-$ORIGINAL_REF}"
   INGEST="${INGEST:-_ingest_template}"
 
-  echo "Project: '$REPO_DIR'\n\tCurrently on Git branch: '$ORIGINAL_REF'\n\tRequesting KGX summary of target INGEST: '$INGEST'\n\tusing the code on GIT_BRANCH: '$GIT_BRANCH'.\n"
+  printf "Project: '%s'\n\tCurrently on Git branch: '%s'\n\tRequesting KGX summary of target INGEST: '%s'\n\tusing the code on GIT_BRANCH: '%s'.\n\n" \
+    "$REPO_DIR" "$ORIGINAL_REF" "$INGEST" "$GIT_BRANCH"
 
   #Switch to GIT_BRANCH if we're not already on it. The branch must already exist,
   # locally or as origin/GIT_BRANCH: nothing is cloned, fetched, pulled or reset.
