@@ -12,6 +12,12 @@
 #               current branch, the script switches to it (after confirmation) and
 #               switches back to the original branch when it exits.
 #  INGEST     - the ingest (source) to run; defaults to "_ingest_template".
+#  GDRIVE_REMOTE - optional rclone Google Drive destination, as "remote:" or
+#               "remote:folder/path" (e.g. "gdrive:KGX_Summaries"). If given, the
+#               summary is also uploaded there and converted into a Google Sheet,
+#               in the Google account that the rclone remote is authorized for.
+#               Requires rclone (https://rclone.org) with that remote configured
+#               once beforehand, via 'rclone config' (storage type "drive").
 #
 # The summary is written to <project root>/data/<INGEST>/<INGEST>_kgxval_summary.xlsx
 
@@ -69,6 +75,20 @@ main() {
 
   printf "Project: '%s'\n\tCurrently on Git branch: '%s'\n\tRequesting KGX summary of target INGEST: '%s'\n\tusing the code on GIT_BRANCH: '%s'.\n\n" \
     "$REPO_DIR" "$ORIGINAL_REF" "$INGEST" "$GIT_BRANCH"
+
+  #If a Google Drive upload is requested, check that it can be done now, rather
+  # than failing only after the (possibly long) pipeline and KGXVal runs.
+  if [ -n "$GDRIVE_REMOTE" ]; then
+    command -v rclone >/dev/null \
+      || { echo "Error: GDRIVE_REMOTE is set, but rclone is not installed (see https://rclone.org/install/)." >&2; exit 1; }
+    case "$GDRIVE_REMOTE" in
+      *:*) ;;
+      *) echo "Error: GDRIVE_REMOTE '$GDRIVE_REMOTE' must be of the form 'remote:' or 'remote:folder/path'." >&2; exit 1 ;;
+    esac
+    rclone listremotes | grep -qxF "${GDRIVE_REMOTE%%:*}:" \
+      || { echo "Error: rclone remote '${GDRIVE_REMOTE%%:*}:' is not configured; set it up with 'rclone config'." >&2; exit 1; }
+    echo "The KGX summary will also be uploaded to '$GDRIVE_REMOTE' as a Google Sheet."
+  fi
 
   #Switch to GIT_BRANCH if we're not already on it. The branch must already exist,
   # locally or as origin/GIT_BRANCH: nothing is cloned, fetched, pulled or reset.
@@ -128,6 +148,14 @@ main() {
   KGX_SUMMARY_FILE="${REPO_DIR}/data/${INGEST}/${INGEST}_kgxval_summary.xlsx"
   mv -f "$xlsx" "$KGX_SUMMARY_FILE" || exit 1
   echo "Wrote $KGX_SUMMARY_FILE"
+
+  #Optionally upload the summary to Google Drive; '--drive-import-formats xlsx' makes
+  # Drive convert it into a Google Sheet (named without the .xlsx extension).
+  if [ -n "$GDRIVE_REMOTE" ]; then
+    rclone copy --drive-import-formats xlsx "$KGX_SUMMARY_FILE" "$GDRIVE_REMOTE" \
+      || { echo "Error: uploading '$KGX_SUMMARY_FILE' to '$GDRIVE_REMOTE' failed." >&2; exit 1; }
+    echo "Uploaded $KGX_SUMMARY_FILE to '$GDRIVE_REMOTE' as Google Sheet '${INGEST}_kgxval_summary'"
+  fi
 }
 
 #Keep 'exit' on the same line, so nothing after it is read from a possibly rewritten file

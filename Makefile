@@ -18,6 +18,10 @@ endif
 # Existing git branch for kgxval-summary to run on (empty: the currently checked out branch)
 GIT_BRANCH ?=
 
+# rclone Google Drive destination ("remote:" or "remote:folder/path") to which
+# kgxval-summary also uploads each summary, as a Google Sheet (empty: no upload)
+GDRIVE_REMOTE ?=
+
 # Set to any non-empty value to overwrite previously generated files
 OVERWRITE ?=
 # Clear OVERWRITE if explicitly set to "false" or "False"
@@ -100,6 +104,10 @@ define HELP
 │                         (kgxval-summary requires SOURCES to be given)        │
 │     GIT_BRANCH          Existing branch for kgxval-summary to run on         │
 │                         Default: the currently checked out branch            │
+│     GDRIVE_REMOTE       rclone Google Drive destination (remote:folder) to   │
+│                         which kgxval-summary also uploads each summary,      │
+│                         as a Google Sheet (needs rclone; see 'rclone config')│
+│                         Default: none (no upload)                            │
 │                                                                              │
 │ Examples:                                                                    │
 │     # Run pipeline for all sources                                           │
@@ -116,6 +124,10 @@ define HELP
 │     # data/go_cam/go_cam_kgxval_summary.xlsx (asks before switching branch   │
 │     # and before running the pipeline; switches back to the current branch)  │
 │     make kgxval-summary SOURCES="go_cam" GIT_BRANCH=my-branch                │
+│                                                                              │
+│     # As above, on the current branch, also uploading the summary as a       │
+│     # Google Sheet into folder KGX_Summaries of rclone remote 'gdrive'       │
+│     make kgxval-summary SOURCES="go_cam" GDRIVE_REMOTE=gdrive:KGX_Summaries  │
 │                                                                              │
 │     # Make releases for all sources                                          │
 │     make release                                                             │
@@ -214,7 +226,7 @@ ifdef SOURCES_DEFAULTED
 endif
 	@for source in $(SOURCES); do \
 		echo "KGXVal summary for $$source..."; \
-		INGEST="$$source" GIT_BRANCH="$(GIT_BRANCH)" bash "$(ROOTDIR)/src/docs/scripts/KGXVal_run_ingest_and_generate.sh" || exit 1; \
+		INGEST="$$source" GIT_BRANCH="$(GIT_BRANCH)" GDRIVE_REMOTE="$(GDRIVE_REMOTE)" bash "$(ROOTDIR)/src/docs/scripts/KGXVal_run_ingest_and_generate.sh" || exit 1; \
 	done
 
 .PHONY: merge

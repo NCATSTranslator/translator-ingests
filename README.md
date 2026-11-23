@@ -88,6 +88,10 @@ Here, we apply a [koza](https://koza.monarchinitiative.org/) transform of data f
     │                         (kgxval-summary requires SOURCES to be given)        │
     │     GIT_BRANCH          Existing branch for kgxval-summary to run on         │
     │                         Default: the currently checked out branch            │
+    │     GDRIVE_REMOTE       rclone Google Drive destination (remote:folder) to   │
+    │                         which kgxval-summary also uploads each summary,      │
+    │                         as a Google Sheet (needs rclone; see 'rclone config')│
+    │                         Default: none (no upload)                            │
     │                                                                              │
     │ Examples:                                                                    │
     │     # Run pipeline for all sources                                           │
@@ -104,6 +108,10 @@ Here, we apply a [koza](https://koza.monarchinitiative.org/) transform of data f
     │     # data/go_cam/go_cam_kgxval_summary.xlsx (asks before switching branch   │
     │     # and before running the pipeline; switches back to the current branch)  │
     │     make kgxval-summary SOURCES="go_cam" GIT_BRANCH=my-branch                │
+    │                                                                              │
+    │     # As above, on the current branch, also uploading the summary as a       │
+    │     # Google Sheet into folder KGX_Summaries of rclone remote 'gdrive'       │
+    │     make kgxval-summary SOURCES="go_cam" GDRIVE_REMOTE=gdrive:KGX_Summaries  │
     │                                                                              │
     │     # Make releases for all sources                                          │
     │     make release                                                             │
