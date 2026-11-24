@@ -107,17 +107,17 @@ def web_string(s: str) -> str:
     return s
 
 SCHEMA_OVERRIDES = {
-    MONOMER_ID: pl.Utf8,
-    PUBCHEM_CID: pl.Utf8,
-    TARGET_NAME: pl.Utf8,
-    UNIPROT_ID: pl.Utf8,
-    CURATION_DATASOURCE: pl.Utf8,
-    ARTICLE_DOI: pl.Utf8,
-    PMID: pl.Utf8,
-    PATENT_NUMBER: pl.Utf8,
+    MONOMER_ID: pl.String,
+    PUBCHEM_CID: pl.String,
+    TARGET_NAME: pl.String,
+    UNIPROT_ID: pl.String,
+    CURATION_DATASOURCE: pl.String,
+    ARTICLE_DOI: pl.String,
+    PMID: pl.String,
+    PATENT_NUMBER: pl.String,
 }
 SCHEMA_OVERRIDES.update(
-    {label: pl.Utf8 for label in AFFINITY_PARAMETERS.values()}
+    {label: pl.String for label in AFFINITY_PARAMETERS.values()}
 )
 
 def extract_bindingdb_columns_polars(
