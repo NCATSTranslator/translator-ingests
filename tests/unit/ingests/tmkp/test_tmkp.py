@@ -11,6 +11,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     GeneToDiseaseAssociation,
     GeneToGeneAssociation,
+    GeneRegulatesGeneAssociation,
     KnowledgeLevelEnum,
     AgentTypeEnum,
     NamedThing,
@@ -35,10 +36,15 @@ from translator_ingest.ingests.tmkp.tmkp import (
     _skipped_edges_by_prefix,
     parse_attributes,
     load_dropped_edge_ids,
+    load_id_direction_pairs,
+    load_pruned_sentences,
     on_data_begin_edges,
     on_data_end_edges,
     transform_tmkp_edge,
+    transform_tmkp_repaired_edge,
     JEV_DROPPED_EDGES_FILE,
+    CHEM_GENE_DROPPED_EDGES_FILE,
+    CHEM_GENE_PRUNED_SENTENCES_FILE,
     TMKP_TO_BIOLINK_SLOT_MAP,
     INFORES_TEXT_MINING_KP,
     PREDICATE_REMAP,
@@ -602,6 +608,113 @@ def test_jev_filter_keeps_contributes_to_edge_sharing_a_dropped_treats_id():
     }
     associations = [i for i in _run_edge_transform(record) if isinstance(i, Association)]
     assert len(associations) == 1
+
+
+def test_load_chem_gene_lists():
+    assert load_id_direction_pairs(TEST_DATA_DIR / CHEM_GENE_DROPPED_EDGES_FILE) == frozenset(
+        {("tmkp-test-chem-edge-1", "decreased")}
+    )
+    assert load_pruned_sentences(TEST_DATA_DIR / CHEM_GENE_PRUNED_SENTENCES_FILE) == {
+        ("tmkp-test-chem-edge-2", "increased"): frozenset({"tmkp:test-unsupported-sentence"})
+    }
+
+
+def _chem_gene_record(edge_id: str, direction: str, attributes: list | None = None) -> dict:
+    """A TMKP chemical -> protein edge record."""
+    return {
+        "id": edge_id,
+        "subject": "CHEBI:15422",
+        "predicate": "biolink:affects",
+        "object": "UniProtKB:Q02413",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity_or_abundance",
+        "object_direction_qualifier": direction,
+        "relation": "biolink:ChemicalToGeneAssociation",
+        "_attributes": json.dumps(attributes or []),
+    }
+
+
+@pytest.mark.parametrize("direction,kept", [("decreased", False), ("increased", True)])
+def test_chem_gene_edge_dropped_by_id_and_direction(direction: str, kept: bool):
+    """TMKP gives an increased and a decreased edge for the same pair one id; the list names the direction."""
+    associations = [i for i in _run_edge_transform(_chem_gene_record("tmkp-test-chem-edge-1", direction))
+                    if isinstance(i, Association)]
+    assert len(associations) == (1 if kept else 0)
+
+
+def _study_result(sentence_id: str, publication: str) -> dict:
+    """A TMKP supporting study result attribute."""
+    return {
+        "attribute_type_id": "biolink:has_supporting_study_result",
+        "value": sentence_id,
+        "attributes": [
+            {"attribute_type_id": "biolink:supporting_text", "value": f"Sentence {sentence_id}."},
+            {"attribute_type_id": "biolink:publications", "value": publication},
+        ],
+    }
+
+
+def test_chem_gene_pruning_removes_unsupported_sentence_and_its_publication():
+    attributes = [
+        {"attribute_type_id": "biolink:publications", "value": ["PMID:1", "PMID:2"]},
+        _study_result("tmkp:test-unsupported-sentence", "PMID:1"),
+        _study_result("tmkp:test-supported-sentence", "PMID:2"),
+    ]
+    associations = [i for i in _run_edge_transform(_chem_gene_record("tmkp-test-chem-edge-2", "increased", attributes))
+                    if isinstance(i, Association)]
+    assert len(associations) == 1
+    (study,) = associations[0].has_supporting_studies.values()
+    assert [r.id for r in study.has_study_results] == ["tmkp:test-supported-sentence"]
+    assert associations[0].publications == ["PMID:2"]
+
+
+def test_chem_gene_pruning_only_applies_to_the_listed_direction():
+    attributes = [_study_result("tmkp:test-unsupported-sentence", "PMID:1")]
+    associations = [i for i in _run_edge_transform(_chem_gene_record("tmkp-test-chem-edge-2", "decreased", attributes))
+                    if isinstance(i, Association)]
+    (study,) = associations[0].has_supporting_studies.values()
+    assert [r.id for r in study.has_study_results] == ["tmkp:test-unsupported-sentence"]
+
+
+def _run_repaired_edge_transform(record: dict) -> list:
+    """Helper: run transform_tmkp_repaired_edge through KozaRunner, return collected items."""
+    writer = MockKozaWriter()
+    KozaRunner(data=[record], writer=writer,
+               hooks=KozaTransformHooks(transform_record=[transform_tmkp_repaired_edge])).run()
+    return writer.items
+
+
+def test_repaired_gene_regulator_edge_is_gene_regulates_gene():
+    record = {
+        "id": "tmkp-repair:test",
+        "subject": "UniProtKB:P05112",
+        "predicate": "biolink:regulates",
+        "object": "UniProtKB:Q02413",
+        "qualified_predicate": "biolink:causes",
+        "object_aspect_qualifier": "activity_or_abundance",
+        "object_direction_qualifier": "decreased",
+        "relation": "biolink:GeneRegulatoryRelationship",
+        "_attributes": json.dumps([_study_result("tmkp:test-supported-sentence", "PMID:2")]),
+    }
+    (association,) = [i for i in _run_repaired_edge_transform(record) if isinstance(i, Association)]
+    assert isinstance(association, GeneRegulatesGeneAssociation)
+    assert association.predicate == "biolink:regulates"
+    assert association.qualified_predicate == "biolink:causes"
+    assert association.object_direction_qualifier == "decreased"
+    assert association.knowledge_level == KnowledgeLevelEnum.not_provided
+
+
+def test_repaired_chemical_edge_to_peptide_is_chemical_affects_gene():
+    record = _chem_gene_record("tmkp-repair:test-2", "decreased") | {"object": "PR:000036009"}
+    (association,) = [i for i in _run_repaired_edge_transform(record) if isinstance(i, Association)]
+    assert isinstance(association, ChemicalAffectsGeneAssociation)
+    assert association.object == "PR:000036009"
+
+
+def test_repaired_edge_outside_association_range_fails():
+    record = _chem_gene_record("tmkp-repair:test-3", "decreased") | {"object": "MONDO:0005301"}
+    with pytest.raises(ValueError, match="outside the association's range"):
+        _run_repaired_edge_transform(record)
 
 
 class TestTransformTmkpEdge:
