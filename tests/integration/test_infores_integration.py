@@ -1,5 +1,6 @@
-"""Integration tests for infores validation against the real Information Resource Registry release."""
+"""Integration tests for infores validation against the real packaged Information Resource Registry catalog."""
 
+import importlib.metadata
 import json
 import warnings
 from pathlib import Path
@@ -45,10 +46,9 @@ def run_validation(tmp_path: Path, edges: list[dict]) -> tuple[bool, dict]:
     return passed, report["sources"]["single_validation"]
 
 
-def test_get_infores_catalog_reads_a_release():
+def test_get_infores_catalog_reads_the_packaged_catalog():
     catalog = get_infores_catalog()
-    assert catalog.version[0].isdigit()
-    assert f"/v{catalog.version}/" in catalog.url
+    assert catalog.version == importlib.metadata.version("information-resource-registry")
     assert len(catalog.statuses) > 100
 
 

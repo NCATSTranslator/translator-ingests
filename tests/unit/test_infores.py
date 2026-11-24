@@ -17,7 +17,6 @@ from translator_ingest.util.infores import (
 def catalog() -> InforesCatalog:
     return InforesCatalog(
         version="1.0.0",
-        url="https://example.org/infores_catalog.yaml",
         statuses={
             "infores:bgee": "released",
             "infores:medlineplus": "released",
@@ -146,7 +145,6 @@ def test_check_infores_ids_counts_across_edges(catalog: InforesCatalog):
 
 def test_provenance(catalog: InforesCatalog):
     assert catalog.provenance() == {
-        "repository": "biolink/information-resource-registry",
+        "package": "information-resource-registry",
         "version": "1.0.0",
-        "url": "https://example.org/infores_catalog.yaml",
     }

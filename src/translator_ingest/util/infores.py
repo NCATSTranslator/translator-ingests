@@ -5,16 +5,14 @@ from dataclasses import dataclass
 from enum import StrEnum
 from functools import lru_cache
 
-import yaml
+from information_resource_registry import __version__ as INFORES_REGISTRY_VERSION
+from information_resource_registry import load_catalog_dict
 
-from translator_ingest.util.github import GITHUB_TIMEOUT_SECONDS, GitHubReleases, retrying_session
 from translator_ingest.util.logging_utils import get_logger
 
 logger = get_logger(__name__)
 
-INFORES_REGISTRY_ORG = "biolink"
-INFORES_REGISTRY_REPO = "information-resource-registry"
-INFORES_CATALOG_PATH = "infores_catalog.yaml"
+INFORES_REGISTRY_PACKAGE = "information-resource-registry"
 
 
 class InforesStatus(StrEnum):
@@ -27,15 +25,13 @@ class InforesStatus(StrEnum):
 
 @dataclass(frozen=True)
 class InforesCatalog:
-    """The infores registry catalog, with the registry release it was read from.
+    """The infores registry catalog, with the registry version it was read from.
 
-    :param version: registry release version the catalog was read from, e.g. '1.1.14'
-    :param url: URL the catalog file was downloaded from
+    :param version: version of the information-resource-registry package the catalog was read from, e.g. '1.2.2'
     :param statuses: maps each infores id in the catalog to its catalog ``status`` value
     """
 
     version: str
-    url: str
     statuses: dict[str, str]
 
     def get_infores_status(self, infores_id: str) -> InforesStatus:
@@ -49,29 +45,24 @@ class InforesCatalog:
     def provenance(self) -> dict[str, str]:
         """Describe which catalog this is, for recording in validation reports.
 
-        >>> InforesCatalog(version="1.0.0", url="u", statuses={}).provenance()
-        {'repository': 'biolink/information-resource-registry', 'version': '1.0.0', 'url': 'u'}
+        >>> InforesCatalog(version="1.0.0", statuses={}).provenance()
+        {'package': 'information-resource-registry', 'version': '1.0.0'}
         """
         return {
-            "repository": f"{INFORES_REGISTRY_ORG}/{INFORES_REGISTRY_REPO}",
+            "package": INFORES_REGISTRY_PACKAGE,
             "version": self.version,
-            "url": self.url,
         }
 
 
 @lru_cache(maxsize=1)
 def get_infores_catalog() -> InforesCatalog:
-    """Fetch the infores catalog from the registry's latest GitHub release."""
-    tag = GitHubReleases(git_org=INFORES_REGISTRY_ORG, git_repo=INFORES_REGISTRY_REPO).get_latest_tag()
-    version = tag.removeprefix("v")
-    url = f"https://raw.githubusercontent.com/{INFORES_REGISTRY_ORG}/{INFORES_REGISTRY_REPO}/{tag}/{INFORES_CATALOG_PATH}"
-    response = retrying_session().get(url, timeout=GITHUB_TIMEOUT_SECONDS)
-    response.raise_for_status()
-    catalog = yaml.safe_load(response.text)
-
+    """Load the infores catalog bundled with the information-resource-registry package."""
+    catalog = load_catalog_dict()
     statuses = {resource["id"]: resource["status"] for resource in catalog["information_resources"]}
-    logger.info(f"Loaded {len(statuses)} infores ids from {INFORES_REGISTRY_REPO} release {version}")
-    return InforesCatalog(version=version, url=url, statuses=statuses)
+    logger.info(
+        f"Loaded {len(statuses)} infores ids from {INFORES_REGISTRY_PACKAGE} {INFORES_REGISTRY_VERSION}"
+    )
+    return InforesCatalog(version=INFORES_REGISTRY_VERSION, statuses=statuses)
 
 
 def get_edge_infores_ids(edge: dict) -> set[str]:
