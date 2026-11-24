@@ -155,14 +155,9 @@ def test_ppi_produces_nodes_and_edges(koza_output):
 
 def test_ppi_node_shape(koza_output):
     nodes, _ = _ppi_partition(*_load_all(koza_output))
-    seen_taxa = set()
     for node in nodes:
         assert node["id"].startswith(ENSEMBL_PROTEIN_PREFIXES), node["id"]
         assert node["category"] == ["biolink:Protein"]
-        assert len(node["in_taxon"]) == 1 and node["in_taxon"][0] in EXPECTED_TAXA, node["in_taxon"]
-        seen_taxa.add(node["in_taxon"][0])
-    # All three taxa should appear at least once in the output.
-    assert seen_taxa == EXPECTED_TAXA, f"missing taxa: {EXPECTED_TAXA - seen_taxa}"
 
 
 def test_ppi_equivalent_identifiers_populated_from_mapping_fixture(koza_output):

@@ -7,8 +7,9 @@ from pathlib import Path
 
 from translator_ingest import INGESTS_RELEASES_PATH, INGESTS_RELEASES_URL
 from translator_ingest.util.metadata import PipelineMetadata, next_release_version, current_iso_date
-from translator_ingest.util.storage.local import (get_versioned_file_paths, IngestFileName, IngestFileType,
-                                                  write_ingest_file)
+from translator_ingest.util.storage.local import (get_existing_release_build_version,
+                                                  get_versioned_file_paths, IngestFileType,
+                                                  release_dir_holds_release, write_ingest_file)
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
 logger = get_logger(__name__)
@@ -89,8 +90,9 @@ def extract_compressed_tar(tar_path: Path, output_directory: Path):
 
 def update_graph_metadata_for_release(source_graph_metadata_path: Path,
                                       release_dir: Path,
-                                      release_url: str) -> Path:
-    """Update graph-metadata.json with release URL for id and url fields.
+                                      release_url: str,
+                                      release_version: str) -> Path:
+    """Update graph-metadata.json with the release URL and version.
 
     Reads the existing graph metadata, updates the id and url fields to use
     the release versioning, and writes the updated version to the release directory.
@@ -99,6 +101,7 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
         source_graph_metadata_path: Path to the original graph-metadata.json
         release_dir: Directory where the release files are being created
         release_url: The release URL to use for id and url fields
+        release_version: The release version to record as the graph's version
 
     Returns:
         Path to the updated graph-metadata.json in the release directory
@@ -108,6 +111,9 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
 
     graph_metadata['@id'] = release_url
     graph_metadata['url'] = release_url
+    # Builds metadata is generated before a release version exists, so the version is only filled in here.
+    # The build version is recorded separately and is left alone.
+    graph_metadata['version'] = release_version
 
     output_path = release_dir / "graph-metadata.json"
     with open(output_path, 'w') as f:
@@ -115,26 +121,6 @@ def update_graph_metadata_for_release(source_graph_metadata_path: Path,
 
     logger.info(f"Updated graph-metadata.json with release URL: {release_url}")
     return output_path
-
-
-def get_existing_release_build_version(release_dir: Path) -> str | None:
-    """Return the build version an existing release was made from, or None if there is no release in release_dir.
-
-    Releases made before release-metadata.json was written to every release directory recorded their build version 
-    as the "version" of their graph-metadata.json.
-
-    Args:
-        release_dir: Directory of a single release, which may or may not exist yet
-    """
-    release_metadata_path = release_dir / IngestFileName.RELEASE_METADATA_FILE
-    if release_metadata_path.exists():
-        with release_metadata_path.open() as release_metadata_file:
-            return PipelineMetadata.from_dict(json.load(release_metadata_file)).build_version
-    graph_metadata_path = release_dir / RELEASE_GRAPH_METADATA_FILENAME
-    if graph_metadata_path.exists():
-        with graph_metadata_path.open() as graph_metadata_file:
-            return json.load(graph_metadata_file).get("version")
-    return None
 
 
 def release_ingest(source: str):
@@ -187,12 +173,16 @@ def release_ingest(source: str):
     # This prevents issues that could be caused by previous crashes or file manipulation, such as missing or
     # misleading latest-release metadata, or half completed releases. Here we check that if a release directory 
     # already exists where we are about to write to that it contains or was supposed to contain the same build.
+    # A release whose metadata records no build is still a release, so only a build known to match may be
+    # written over: anything else would label the existing archive as the new build.
     existing_build_version = get_existing_release_build_version(release_dir)
-    if existing_build_version is not None and existing_build_version != release_metadata.build_version:
+    if release_dir_holds_release(release_dir) and existing_build_version != release_metadata.build_version:
+        existing_build = (f"build {existing_build_version}" if existing_build_version
+                          else "a build its metadata does not record")
         raise ValueError(
-            f"Release {release_version} of {source} already exists and was made from build "
-            f"{existing_build_version}, but build {release_metadata.build_version} is being released. The latest "
-            f"release metadata ({latest_release_metadata_file_path}) is probably missing or out of date."
+            f"Release {release_version} of {source} already exists and was made from {existing_build}, "
+            f"but build {release_metadata.build_version} is being released. The latest release "
+            f"metadata ({latest_release_metadata_file_path}) is probably missing or out of date."
         )
 
     create_release(release_metadata,
@@ -239,7 +229,8 @@ def create_release(release_metadata: PipelineMetadata,
         release_graph_metadata_path = update_graph_metadata_for_release(
             source_graph_metadata_path=graph_metadata_file,
             release_dir=release_dir,
-            release_url=release_url
+            release_url=release_url,
+            release_version=release_metadata.release_version
         )
 
     # Check if release files already exist

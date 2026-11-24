@@ -98,8 +98,6 @@ ingest_info:
       consideration: "Consider ingesting associations between two GO Terms, per the Annotation Extension Relations specification at https://wiki.geneontology.org/index.php/Annotation_Relations#Standard_Annotation:_Annotation_Extension_Relations"
     - category: node_property_content
       consideration: "GOA generally adds curatorial value (id mapping, quality checking, and often more) when pulling annotations from sources like MODs, PANTHER, etc. This is why infores:goa is treated as the primary source; the upstream provider (from the Assigned_By field) is attributed as a supporting_data_source when it maps to a known infores (implemented for MGI, RGD, Reactome, IntAct, and GO-CAM/GO_Central/GOC)."
-    - category: node_property_content
-      consideration: "To be decided whether to bring in taxon info about gene/gene-product nodes from GOA, or rely on other gene property authorities for this information (e.g. ncbigene). Currently in_taxon is set on subject nodes from the GAF Taxon column."
 
 # Information about the Graph Output by the ingest
 target_info:
@@ -471,7 +469,6 @@ target_info:
         - "RGD"
       node_properties:
         - biolink:name
-        - biolink:in_taxon
         - biolink:description
       additional_notes:
         - "Gene subjects come from model organism databases (MGI for mouse, RGD for rat) as identified by the GAF DB column."
@@ -480,7 +477,6 @@ target_info:
         - "UniProtKB"
       node_properties:
         - biolink:name
-        - biolink:in_taxon
         - biolink:description
       additional_notes:
         - "Protein subjects (primarily human) are identified by UniProtKB accession from the GAF DB/DB_Object_ID columns."
@@ -489,14 +485,12 @@ target_info:
         - "ComplexPortal"
       node_properties:
         - biolink:name
-        - biolink:in_taxon
         - biolink:description
     - node_category: biolink:RNAProduct
       source_identifier_types:
         - "RNAcentral"
       node_properties:
         - biolink:name
-        - biolink:in_taxon
         - biolink:description
     - node_category: biolink:BiologicalProcess
       source_identifier_types:
@@ -517,7 +511,7 @@ target_info:
     - category: qualifiers
       consideration: "Introduce qualifier-based representation if/when we decide to ingest any qualifying context on GO annotations (e.g. from Annotation Extension or With_Or_From columns)."
     - category: node_properties
-      consideration: "If we ingest taxon info for gene nodes, we may need Biolink Model updates: in_taxon is currently modeled as a predicate and species_context_qualifier as an edge property, but there is no dedicated taxon node property."
+      consideration: "We may need Biolink Model updates: in_taxon is currently modeled as a predicate and species_context_qualifier as an edge property, but there is no dedicated taxon node property."
     - category: spoq_pattern
       consideration: "The six upstream-effect predicates are consolidated into one edge type because acts_upstream_of is their common ancestor, while the cellular-component relations are split into separate active_in, located_in, and colocalizes_with edge types because they are siblings across different Biolink branches rather than a predicate plus its descendants. Monitor whether further consolidation is warranted if the Biolink predicate hierarchy changes."
 

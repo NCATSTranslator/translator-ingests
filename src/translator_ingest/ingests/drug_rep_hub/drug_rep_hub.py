@@ -9,6 +9,7 @@ from translator_ingest import INGESTS_PARSER_PATH
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
+    ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation,
     ChemicalEntityToChemicalEntityAssociation,
     ChemicalAffectsGeneAssociation,
     DiseaseOrPhenotypicFeature,
@@ -17,7 +18,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     AgentTypeEnum,
 )
 from koza.model.graphs import KnowledgeGraph
-from translator_ingest.util.biolink import build_association_knowledge_sources
+from translator_ingest.util.biolink import build_association_knowledge_sources, get_treatment_indication_predicates
 from translator_ingest.util.transform_utils import entity_id
 
 
@@ -117,6 +118,9 @@ def transform_drug_rep_hub_samples(
 def create_disease_association(chemical, indication, indication_info, predicate, clinical_phase, disease_area):
     """
     Create a disease association between a chemical and a disease/phenotypic feature.
+    Treatment predicates yield a ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation carrying the
+    clinical approval status and research phase of clinical_phase; any other predicate (e.g. diagnoses) yields a
+    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation, which cannot carry them.
     """
     disease = DiseaseOrPhenotypicFeature(
         id=indication_info['xref'],
@@ -124,21 +128,25 @@ def create_disease_association(chemical, indication, indication_info, predicate,
     )
     if predicate is None:
         return disease, None
-    #TODO: clinical_approval_status = clinical_approval_map.get(clinical_phase, None)
-    #TODO: max_research_phase = research_phase_map.get(clinical_phase, None)
-    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
-        id = entity_id(),
-        subject=chemical.id,
-        object=disease.id,
-        predicate=predicate,
-        knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        agent_type=AgentTypeEnum.manual_agent,
-        sources=DRUG_REP_HUB_SOURCES,
-        original_object = indication,
-        #TODO: clinical_approval_status=clinical_approval_status,
-        #TODO: max_research_phase=max_research_phase,
+    edge_props = {
+        "id": entity_id(),
+        "subject": chemical.id,
+        "object": disease.id,
+        "predicate": predicate,
+        "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+        "agent_type": AgentTypeEnum.manual_agent,
+        "sources": DRUG_REP_HUB_SOURCES,
+        "original_object": indication,
         #TODO: disease_area=disease_area,
-    )
+    }
+    if predicate in get_treatment_indication_predicates():
+        association = ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation(
+            **edge_props,
+            clinical_approval_status=clinical_approval_map.get(clinical_phase),
+            max_research_phase=research_phase_map.get(clinical_phase),
+        )
+    else:
+        association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(**edge_props)
     return disease, association
 
 

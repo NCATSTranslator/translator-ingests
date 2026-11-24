@@ -45,6 +45,14 @@ EXTRACTED_ONTOLOGY_PREFIXES = [
 
 EXTRACTED_ONTOLOGY_PREFIXES_SET = set(EXTRACTED_ONTOLOGY_PREFIXES)
 
+# Node CURIEs excluded (along with all of their edges) because they normalize incorrectly,
+# e.g. NCIT:C184960 normalizes to "UniProtKB:P0DTC1|P0DTD1". Temporary workaround until the
+# normalizer is fixed; remove entries once they normalize correctly.
+EXCLUDED_NODE_CURIES = {
+    "NCIT:C184960",
+    "NCIT:C16375",
+}
+
 # Source predicate IRIs mapped directly to their Biolink predicate. Only edges whose
 # predicate IRI appears here are ingested; add entries to support more predicates.
 PREDICATE_IRI_TO_BIOLINK = {
@@ -141,7 +149,7 @@ def prepare_ontology_data(koza: koza.KozaTransform, data: Iterable[dict[str, Any
                     node_mapping_failures.append(node_iri)
                     continue
                 node_prefix = node_curie.split(":", 1)[0]
-                if node_prefix in EXTRACTED_ONTOLOGY_PREFIXES_SET:
+                if node_prefix in EXTRACTED_ONTOLOGY_PREFIXES_SET and node_curie not in EXCLUDED_NODE_CURIES:
                     node_curies[node_id] = node_curie
 
         koza.log(f"Nodes: {len(node_curies):,} successfully converted, {len(node_mapping_failures):,} failures.", level="INFO")

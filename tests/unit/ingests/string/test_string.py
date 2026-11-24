@@ -210,7 +210,7 @@ def test_transform_emits_protein_pair_above_threshold(mock_koza, p1, p2, expecte
 
     for node in result.nodes:
         assert node.category == ["biolink:Protein"]
-        assert isinstance(node,Protein) and node.in_taxon == [expected_taxon]
+        assert isinstance(node,Protein)
         assert node.equivalent_identifiers
         for eq in node.equivalent_identifiers:
             assert eq.startswith("NCBIGene:")

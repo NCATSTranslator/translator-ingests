@@ -633,7 +633,6 @@ def transform_go_cam_models(koza: koza.KozaTransform, data: Iterable[dict[str, A
                         id=gene_info["id"],
                         name=gene_info["name"],
                         category=["biolink:Gene"],
-                        in_taxon=[gene_info["taxon"]] if gene_info["taxon"] else None,
                     )
                     nodes_created[gene_info["id"]] = gene_node
 

@@ -149,13 +149,11 @@ def transform_string_ppi(
     subject_node = Protein(
         id=subject_id,
         category=["biolink:Protein"],
-        in_taxon=[subject_taxon],
         equivalent_identifiers=subject_equivalents,
     )
     object_node = Protein(
         id=object_id,
         category=["biolink:Protein"],
-        in_taxon=[object_taxon],
         equivalent_identifiers=object_equivalents,
     )
 

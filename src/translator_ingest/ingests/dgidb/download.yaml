@@ -1,6 +1,6 @@
 # Files are saved as `local_name` which must match the file name used in the main ingest yaml
 ## updates 1-2 times a year since 2021
-## this url will change with new versions! Will need to update based on manual review of https://dgidb.org/downloads
+## data releases in Github repo: pull latest version tag from Github API (see .py get_latest_version)
 ---
-- url: https://dgidb.org/data/2024-Dec/interactions.tsv
+- url: https://github.com/dgidb/dgidb-data/releases/download/{version}/interactions.tsv
   local_name: interactions.tsv

@@ -17,7 +17,7 @@ INFORES_MONARCHINITIATIVE = "infores:monarchinitiative"
 INFORES_OMIM = "infores:omim"
 INFORES_ORPHANET = "infores:orphanet"
 INFORES_MEDGEN = "infores:medgen"
-INFORES_DECIFER = "infores:decifer"
+INFORES_DECIPHER = "infores:decipher"
 INFORES_HPOA = "infores:hpo-annotations"
 INFORES_CTD = "infores:ctd"
 INFORES_GOA = "infores:goa"
@@ -39,6 +39,10 @@ INFORES_DRUGMATRIX = "infores:drugmatrix"
 INFORES_PDSP_KI = "infores:pdsp-ki"
 INFORES_WOMBAT_PK = "infores:wombat-pk"
 INFORES_PUBTATOR = "infores:pubtator"
+INFORES_PHARMGKB = "infores:pharmgkb"
+INFORES_STRING = "infores:string"
+INFORES_STITCH = "infores:stitch"
+INFORES_CUREID = "infores:cureid"
 ## from dgidb ingest, can move above if others use it
 INFORES_CGI = "infores:cgi"
 INFORES_CIVIC = "infores:civic"
@@ -48,19 +52,18 @@ INFORES_CANCERCOMMONS = "infores:cancercommons"
 INFORES_CHEMBL = "infores:chembl"
 INFORES_CLEARITY_BIOMARKERS = "infores:clearity-biomarkers"
 INFORES_CLEARITY_CLINICAL = "infores:clearity-clinical-trial"
+INFORES_CLINPGX = "infores:clinpgx"
 INFORES_DTC = "infores:dtc"
 INFORES_DOCM = "infores:docm"
+INFORES_DRUG_REPURPOSING_HUB = "infores:drug-repurposing-hub"
 INFORES_FDA_PGX = "infores:fda-pgx"
 INFORES_GTOPDB = "infores:gtopdb"
+INFORES_MOALMANAC = "infores:moalmanac"
 INFORES_MYCANCERGENOME = "infores:mycancergenome"
 INFORES_MYCANCERGENOME_TRIALS = "infores:mycancergenome-trials"
 INFORES_NCIT = "infores:ncit"
 INFORES_ONCOKB = "infores:oncokb"
-INFORES_PHARMGKB = "infores:pharmgkb"
-INFORES_STRING = "infores:string"
-INFORES_STITCH = "infores:stitch"
-INFORES_CUREID = "infores:cureid"
-
+## end dgidb ingest section
 
 @lru_cache(maxsize=1)
 def get_biolink_schema() -> SchemaView:
@@ -88,6 +91,23 @@ def get_current_biolink_version() -> str:
 def get_biolink_model_toolkit() -> Toolkit:
     """Get a Biolink Model Toolkit configured with the expected project Biolink Model schema."""
     return Toolkit(schema=get_biolink_schema().schema)
+
+
+@lru_cache(maxsize=1)
+def get_treatment_indication_predicates() -> frozenset[str]:
+    """
+    The predicates permitted on a ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation, namely
+    'biolink:treats_or_applied_or_studied_to_treat' and its descendants. Only that association class carries
+    clinical_approval_status and max_research_phase, so edges with any other predicate cannot carry them.
+
+    >>> "biolink:in_clinical_trials_for" in get_treatment_indication_predicates()
+    True
+    >>> "biolink:contraindicated_in" in get_treatment_indication_predicates()
+    False
+    """
+    return frozenset(get_biolink_model_toolkit().get_descendants(
+        "treats or applied or studied to treat", reflexive=True, formatted=True
+    ))
 
 
 def parse_attributes(attributes: Optional[dict]) -> Optional[dict]:

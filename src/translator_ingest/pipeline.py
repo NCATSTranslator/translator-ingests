@@ -17,13 +17,14 @@ from kghub_downloader.main import main as kghub_download
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
 
-from orion import KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, MERGING_CODE_VERSION
-from orion.normalization import get_current_node_norm_version, get_current_babel_version, NORMALIZATION_CODE_VERSION
+from orion import (KGXGraphMetadata, generate_schema, MetaKnowledgeGraphBuilder, MERGING_CODE_VERSION,
+                   get_current_node_norm_version, get_current_babel_version, NORMALIZATION_CODE_VERSION)
 
 from translator_ingest import INGESTS_PARSER_PATH, INGESTS_STORAGE_URL
 from translator_ingest.merging import merge_single
 from translator_ingest.normalize import normalize_kgx_files
-from translator_ingest.util.metadata import PipelineMetadata, get_kgx_source_from_rig, current_iso_date
+from translator_ingest.util.metadata import (PipelineMetadata, get_kgx_source_from_rig, current_iso_date,
+                                             to_translator_graph_metadata)
 from translator_ingest.util.storage.local import (
     get_output_directory,
     get_source_data_directory,
@@ -94,7 +95,16 @@ def get_ingest_module(source: str) -> ModuleType:
         raise NotImplementedError(error_message)
 
 # Determine the latest available version for the source using the function from the ingest module
-def get_latest_source_version(source):
+def get_latest_source_version(source: str) -> str:
+    """Determine the latest source version, falling back to the last successful build's version.
+
+    A lookup fails if the ingest's get_latest_version() raises or returns anything other than a
+    non-empty string. On failure, the source_version from the source's latest build file is used
+    if one exists; otherwise the failure is raised.
+
+    :param source: Source name
+    :return: The source version to build
+    """
     ingest_module = get_ingest_module(source)
     try:
         # Get a reference to the get_latest_source_version function
@@ -112,17 +122,21 @@ def get_latest_source_version(source):
         # Call it and return the latest version
         logger.info(f"Determining latest version for {source}...")
         latest_version = latest_version_fn()
+        # Reject empty or non-string versions here, so they take the same fallback path as a raised error.
+        if not isinstance(latest_version, str) or not latest_version.strip():
+            raise ValueError(f"get_latest_version() for {source} returned {latest_version!r}, "
+                             f"expected a non-empty string.")
+        latest_version = latest_version.strip()
         logger.info(f"Latest version for {source} established: {latest_version}")
         return latest_version
-    except Exception as e:
-        logger.error(f'Failed to retrieve latest version for {source}, attempting fallback to current version. '
-                     f'Error: {e}.')
+    except Exception:
         last_version = get_last_successful_source_version(source)
-        if last_version is not None:
-            logger.info(f'Fallback version identified for {source}: {last_version}.')
-            return last_version
-        logger.error(f'Fallback version could not be identified for {source}.')
-        raise e
+        if last_version is None:
+            logger.error(f"Version lookup failed for {source} and there is no previous build to fall back to.")
+            raise
+        logger.error(f"Version lookup failed for {source}; building last successful version {last_version} instead.",
+                     exc_info=True)
+        return last_version
 
 def get_transform_version(source: str) -> str:
     """Compute a content hash of the ingest's source files.
@@ -389,13 +403,19 @@ def merge(pipeline_metadata: PipelineMetadata):
         logger.info(f"Merge complete for {pipeline_metadata.source} (nodes-only, copied without merging).")
         return
 
+    # This stage only runs when the merge is incomplete or an OVERWRITE was requested. ORION's
+    # KGXFileMerger refuses to write over existing merged files and reports that as a merge error
+    # instead of raising, so stale output from an earlier run would otherwise survive an OVERWRITE
+    # and flow into validation and release unnoticed. Clear the outputs first.
+    for stale_output in (output_nodes_file, output_edges_file, output_metadata_file):
+        stale_output.unlink(missing_ok=True)
+
     merge_single(
         source_id=pipeline_metadata.source,
         input_nodes_file=normalized_nodes_file,
         input_edges_file=normalized_edges_file,
         output_nodes_file=output_nodes_file,
         output_edges_file=output_edges_file,
-        output_metadata_file=output_metadata_file,
         source_version=pipeline_metadata.source_version
     )
 
@@ -527,7 +547,9 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
                     ", Biolink Model, and Node Normalizer.",
         license="",
         url=storage_url,
-        version=pipeline_metadata.build_version,
+        # An ingest build has no release version yet, release_ingest() assigns one later.
+        version=pipeline_metadata.release_version or "",
+        build_version=pipeline_metadata.build_version,
         date_created=current_iso_date(),
         biolink_version=pipeline_metadata.biolink_version,
         babel_version=pipeline_metadata.babel_version,
@@ -542,19 +564,17 @@ def generate_graph_metadata(pipeline_metadata: PipelineMetadata):
     # Check if this is a nodes-only ingest
     max_edge_count = pipeline_metadata.koza_config.get('max_edge_count')
     if max_edge_count == 0 and (graph_edges_file_path is None or not Path(graph_edges_file_path).exists()):
-        logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
         # For nodes-only ingests, use the source_metadata as is without analysis
         # TODO get generate_schema working for nodes-only
-        graph_metadata = asdict(source_metadata)
+        logger.info(f"Skipping graph analysis for nodes-only ingest {pipeline_metadata.source}")
     else:
-        # construct the full graph_metadata by combining source_metadata from translator-ingests with an ORION analysis
+        # complete the source_metadata from translator-ingests with an ORION analysis of the KGX files
         source_metadata.schema = generate_schema(nodes_file_path=graph_nodes_file_path,
                                                  edges_file_path=graph_edges_file_path,
                                                  biolink_version=pipeline_metadata.biolink_version)
-        graph_metadata = source_metadata.to_json()
     write_ingest_file(file_type=IngestFileType.GRAPH_METADATA_FILE,
                       pipeline_metadata=pipeline_metadata,
-                      data=graph_metadata)
+                      data=to_translator_graph_metadata(source_metadata))
     logger.info(f"Graph metadata complete for {pipeline_metadata.source}. Preparing ingest metadata...")
 
     transform_metadata_file_path = get_versioned_file_paths(

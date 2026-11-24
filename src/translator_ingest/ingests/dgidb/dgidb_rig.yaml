@@ -21,7 +21,7 @@ source_info:
     - other    ## the Github code for recreating the database locally
   data_formats:
     - tsv
-  data_versioning_and_releases: "DGIdb updates 1-2 times a year since 2021 (based on the raw data dump table in https://dgidb.org/downloads). Versioning is by date (year-month abbrev.) but 2024-Dec also has a semantic version number in its header."
+  data_versioning_and_releases: "DGIdb updates 1-2 times a year since 2021 (based on the raw data dump table in https://dgidb.org/downloads). Data versioning is by date (year-month)."
   source_status: maintained_as_needed_updates
   # additional_notes:  # (optional, multivalued, range = string)
 
@@ -40,7 +40,7 @@ ingest_info:
 
   included_content:  # (required, multivalued, range = IncludedContent) Records from the relevant files which are included, and optionally a list of fields in the data that are part of or inform the ingest.
     - file_name: "interactions.tsv"
-      included_records: "(1) Have a value in gene_concept_id and drug_concept_id columns. (2) Drug ID is from a namespace that NodeNorm uses for ChemicalEntities (currently: rxcui, chembl (compound), drugbank)."
+      included_records: "(1) Have a value in gene_concept_id and drug_concept_id columns. (2) Drug ID is from a namespace that NodeNorm uses for ChemicalEntities (currently: rxcui, chembl (compound), drugbank, chemidplus/cas)."
       # fields_used:  # (optional, range = string)
 
   # filtered_content:  # (optional, multivalued, range = FilteredContent) Records from relevant files that are not included in the ingest, and why.
@@ -59,7 +59,7 @@ ingest_info:
       consideration: "DGIdb raw files for gene and drug claims could be sources of node properties. However, we may want to use a different resource that's updated more frequently or has more coverage."
       relevant_files: "genes.tsv, drugs.tsv"
     - category: other
-      consideration: "According to others that worked with DGIdb in the past, there's a way to load a local database that has more information. However, I looked at the Github instructions for recreating the database locally, and I don't think this can be easily/automatically done by the Translator ingest pipeline."
+      consideration: "SQL database dumps are now available for data releases (wasn't shown on downloads page previously). According to others that worked with DGIdb in the past, the local database (probably this sql) has more information. It would be nice to evaluate this dump to see if there are more edges or edge properties that would be helpful to ingest (particularly reference publications, which are included in DGIdb interaction webpages)."
   # additional_notes:  # (optional, multivalued, range = string)
 
 # Information about the Graph Output by the ingest
@@ -90,16 +90,18 @@ target_info:
         - infores:ckb-core
         - infores:clearity-biomarkers
         - infores:clearity-clinical-trial
+        - infores:clinpgx
         - infores:cosmic
         - infores:docm
+        - infores:drug-repurposing-hub
         - infores:dtc
         - infores:fda-pgx
         - infores:gtopdb
+        - infores:moalmanac
         - infores:mycancergenome
         - infores:mycancergenome-trials
         - infores:ncit
         - infores:oncokb
-        - infores:pharmgkb
         - infores:ttd
       edge_properties:
         - biolink:publications    ## for specific underlying sources
@@ -140,17 +142,19 @@ target_info:
         - infores:ckb-core
         - infores:clearity-biomarkers
         - infores:clearity-clinical-trial
+        - infores:clinpgx
         - infores:cosmic
         - infores:docm
+        - infores:drug-repurposing-hub
         - infores:dtc
         - infores:fda-pgx
         - infores:gtopdb
+        - infores:moalmanac
         - infores:mycancergenome
         - infores:mycancergenome-trials
         - infores:ncit
         - infores:oncokb
-        - infores:pharmgkb
-        - infores:ttd    
+        - infores:ttd
       edge_properties:
         - biolink:publications    ## for specific underlying sources
         - biolink:dgidb_interaction_score    ## temp attribute! currently not on inferred edges
@@ -203,16 +207,18 @@ target_info:
         - infores:ckb-core
         - infores:clearity-biomarkers
         - infores:clearity-clinical-trial
+        - infores:clinpgx
         - infores:cosmic
         - infores:docm
+        - infores:drug-repurposing-hub
         - infores:dtc
         - infores:fda-pgx
         - infores:gtopdb
+        - infores:moalmanac
         - infores:mycancergenome
         - infores:mycancergenome-trials
         - infores:ncit
         - infores:oncokb
-        - infores:pharmgkb
         - infores:ttd
       edge_properties:
         - biolink:publications    ## for specific underlying sources
@@ -230,6 +236,7 @@ target_info:
         - "RXCUI"
         - "CHEMBL.COMPOUND"
         - "DRUGBANK"
+        - "CAS"
     - node_category: biolink:Gene
       source_identifier_types:
         - "HGNC"
@@ -243,7 +250,9 @@ target_info:
     - category: spoq_pattern
       consideration: "'immunotherapy' interaction_type: its full meaning isn't captured in the current qualifier-pattern because there were some concerns with using causal_mechanism_qualifier. In the future, we could try representing this using existing or new qualifiers (therapeutic context?)."
     - category: other
-      consideration: "It's unclear what the 'NCI' value in the interaction_source_db_name column stands for (not mentioned in the current DGIdb website and the 2024 paper is unclear). We think it refers to NCIt, so we mapped it to NCIt's infores. Notes: (1) NCI is an organization, not an information resource; (2) Matt suggested that we could instead map it to 'NCI enterprise vocabulary services' to cover 'the more expansive suite of terminologies / knowledgebases / services NCI provides'."
+      consideration: >-
+        It's unclear what the 'NCI' value in the interaction_source_db_name column stands for. DGIdb's sources webpage includes a link to a broken webpage https://wiki.nci.nih.gov/spaces/cageneindex/overview. I think 'cageneindex' stands for Cancer Gene Index from the National Cancer Institute, which may be a defunct resource?  
+        Right now, it's mapped to NCIt's infores. Previous notes: (1) NCI is an organization, not an information resource; (2) Matt suggested that we could instead map it to 'NCI enterprise vocabulary services' to cover 'the more expansive suite of terminologies / knowledgebases / services NCI provides'.
     - category: other
       consideration: "Matt said underlying-source licensing and data overlap with 'directly-ingested' resources are not concerns because DGIdb is an 'interpreter' and can be set as the primary source (with the underlying sources set to supporting data providers or publications). HOWEVER, if we are directly ingesting all underlying sources for an edge, the DGIdb edge then seems like extraneous duplication."
 

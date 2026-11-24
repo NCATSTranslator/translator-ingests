@@ -22,6 +22,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 
 from tests.unit.ingests import MockKozaTransform, MockKozaWriter, validate_transform_result
 from translator_ingest.ingests.hpoa.hpoa import (
+    on_data_begin_ingest_gene_to_disease_record,
     prepare_gene_to_phenotype_data,
     transform_disease_to_phenotype_edge_record,
     transform_disease_to_phenotype_node_record,
@@ -221,7 +222,11 @@ def test_disease_to_phenotype_node_transform(
                 # is 'Present in 30% to 79% of the cases'.
                 "frequency_qualifier": "HP:0040282",
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/disease/OMIM%3A117650"]
+                    },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
@@ -299,12 +304,55 @@ def test_disease_to_phenotype_node_transform(
                 "has_quotient": None,
                 "frequency_qualifier": None,
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
-                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/disease/OMIM%3A117650"]
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"}
                 ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
+            }
+        ),
+        (   # Query 4 - Sample DECIPHER record
+            {
+                "database_id": "DECIPHER:16",
+                "disease_name": "22q11 deletion syndrome (Velocardiofacial / DiGeorge syndrome)",
+                "qualifier": "",
+                "hpo_id": "HP:0005403",
+                "reference": "DECIPHER:16",
+                "evidence": "IEA",
+                "onset": "",
+                "frequency": "",
+                "sex": "",
+                "modifier": "",
+                "aspect": "P",
+                "biocuration": "HPO:skoehler[2013-05-29]",
             },
+            {
+                "category": ["biolink:DiseaseToPhenotypicFeatureAssociation"],
+                "subject": "DECIPHER:16",
+                "predicate": "biolink:has_phenotype",
+                "object": "HP:0005403",
+                "publications": [],
+                "has_evidence_of_type": ["ECO:0000501"],
+                "sex_qualifier": None,
+                "onset_qualifier": None,
+                "has_percentage": None,
+                "has_quotient": None,
+                "frequency_qualifier": None,
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/disease/DECIPHER%3A16"]
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:decipher"},
+                ],
+                "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
+                "agent_type": AgentTypeEnum.text_mining_agent,
+            }
         )
     ],
 )
@@ -335,10 +383,42 @@ def test_predicate(association: str, expected_predicate: str | None):
     assert predicate == expected_predicate
 
 
+@pytest.fixture(scope="package")
+def mock_koza_transform_gene_to_disease() -> koza.KozaTransform:
+    """
+    MockKozaTransform reading the HPOA sample data files, with its state
+    initialized by the gene_to_disease on_data_begin hook, as in a real run.
+    """
+    writer: KozaWriter = MockKozaWriter()
+    koza_transform = MockKozaTransform(writer=writer,
+                                       mappings={},
+                                       extra_fields={},
+                                       input_files_dir=Path(HPOA_TEST_DATA_PATH))
+    on_data_begin_ingest_gene_to_disease_record(koza_transform)
+    return koza_transform
+
+
+def test_on_data_begin_gene_to_disease(mock_koza_transform_gene_to_disease: koza.KozaTransform):
+    """
+    Diseases having phenotypic ('P' aspect) annotation in phenotype.hpoa,
+    or listed in genes_to_phenotype.txt, as raw (un-normalized) identifiers.
+    """
+    assert mock_koza_transform_gene_to_disease.state["diseases_with_phenotypes"] == {
+        # from phenotype.hpoa (and genes_to_phenotype.txt, for OMIM:301310, OMIM:601718 and ORPHA:791)
+        "OMIM:212050",
+        "OMIM:301310",
+        "OMIM:601718",
+        "ORPHA:791",
+        # only from genes_to_phenotype.txt
+        "OMIM:153800",
+        "OMIM:248200",
+    }
+
+
 @pytest.mark.parametrize(
     "test_record,result_nodes,result_edge",
     [
-        (  # Query 0 - Sample Mendelian disease
+        (  # Query 0 - Sample Mendelian disease, with phenotypic annotation in phenotype.hpoa
             {
                 "association_type": "MENDELIAN",
                 "disease_id": "OMIM:212050",
@@ -348,7 +428,7 @@ def test_predicate(association: str, expected_predicate: str | None):
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:64170", "name": "CARD9", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:64170", "name": "CARD9", "symbol": "CARD9", "category": ["biolink:Gene"]},
                 {"id": "OMIM:212050", "category": ["biolink:Disease"]},
             ],
             # Captured edge contents
@@ -360,7 +440,11 @@ def test_predicate(association: str, expected_predicate: str | None):
                 "qualified_predicate": "biolink:causes",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A64170"]
+                    },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:medgen"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
@@ -368,7 +452,7 @@ def test_predicate(association: str, expected_predicate: str | None):
                 "agent_type": AgentTypeEnum.manual_agent,
             },
         ),
-        (   # Query 1 - Sample Polygenic disease
+        (   # Query 1 - Sample Polygenic disease, without any phenotypic annotation
             {
                 "association_type": "POLYGENIC",
                 "disease_id": "OMIM:615232",
@@ -378,7 +462,7 @@ def test_predicate(association: str, expected_predicate: str | None):
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:6505", "name": "SLC1A1", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:6505", "name": "SLC1A1", "symbol": "SLC1A1", "category": ["biolink:Gene"]},
                 {"id": "OMIM:615232", "category": ["biolink:Disease"]},
             ],
             # Captured edge contents
@@ -390,7 +474,12 @@ def test_predicate(association: str, expected_predicate: str | None):
                 "qualified_predicate": "biolink:contributes_to",
                 "subject_form_or_variant_qualifier": "genetic_variant_form",
                 "sources": [
-                    {"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"},
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        # OMIM:615232 has no phenotypic annotation, hence the MedGen fallback
+                        "source_record_urls": ["https://www.ncbi.nlm.nih.gov/medgen/?term=OMIM%3A615232"]
+                    },
                     {"resource_role": "supporting_data_source", "resource_id": "infores:medgen"},
                     {"resource_role": "supporting_data_source", "resource_id": "infores:omim"},
                 ],
@@ -415,13 +504,13 @@ def test_predicate(association: str, expected_predicate: str | None):
     ],
 )
 def test_gene_to_disease_transform(
-    mock_koza_transform_1: koza.KozaTransform,
+    mock_koza_transform_gene_to_disease: koza.KozaTransform,
     test_record: dict,
     result_nodes: list | None,
     result_edge: dict | None,
 ):
     validate_transform_result(
-        result=transform_gene_to_disease_record(mock_koza_transform_1, test_record),
+        result=transform_gene_to_disease_record(mock_koza_transform_gene_to_disease, test_record),
         expected_nodes=result_nodes,
         expected_edges=result_edge,
         node_test_slots=NODE_TEST_SLOTS,
@@ -449,7 +538,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         "publications": "PMID:26242992;PMID:4045952;PMID:11050011",
         "frequency": "11/11",
         "disease_id": "OMIM:301310",
-        "gene_to_disease_association_types": "MENDELIAN",
+        "gene_to_disease_association_types": "MENDELIAN"
     }
     # Find any entry with the expected fields in the result list
     assert any(
@@ -457,6 +546,64 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
         all(key in expected_entry and expected_entry[key] == value for key, value in entry.items())
         for entry in result
     )
+
+
+# The gene_to_phenotype ingest keeps only rows whose underlying gene-disease association
+# asserts MENDELIAN inheritance: HPO infers G-P from G-D plus D-P, and that inference only
+# holds where a single gene is causal. See hpoa_rig.yaml included_content/filtered_content.
+# Regression test for https://github.com/NCATSTranslator/translator-ingests/issues/537, where
+# this filter lived in hpoa.yaml as a reader filter and therefore never ran: the reader filter
+# was applied to raw rows that prepare_gene_to_phenotype_data discards, so every Orphanet
+# (UNKNOWN) and OMIM POLYGENIC row was emitted as a 'causes' edge anyway.
+@pytest.mark.parametrize(
+    "hpo_id,disease_id,association_types,kept",
+    [
+        # MENDELIAN - the inference holds, row is kept
+        ("HP:0002463", "OMIM:301310", "MENDELIAN", True),
+        ("HP:0002470", "OMIM:301310", "MENDELIAN", True),
+        ("HP:0001133", "OMIM:601718", "MENDELIAN", True),
+        # the gene-disease pair carries both a MENDELIAN and a POLYGENIC assertion; a MENDELIAN
+        # assertion exists, so the inference holds and the row is kept
+        ("HP:0000548", "OMIM:248200", "MENDELIAN;POLYGENIC", True),
+        # POLYGENIC only - the gene may be one of many contributing factors, row is dropped
+        ("HP:0000510", "OMIM:153800", "POLYGENIC", False),
+        # UNKNOWN (every Orphanet gene-disease row is UNKNOWN), row is dropped
+        ("HP:0001105", "ORPHA:791", "UNKNOWN", False),
+    ],
+)
+def test_gene_to_phenotype_mendelian_filter(
+    mock_koza_transform_2: koza.KozaTransform,
+    hpo_id: str,
+    disease_id: str,
+    association_types: str,
+    kept: bool,
+):
+    """
+    Check that prepare_gene_to_phenotype_data keeps only gene-phenotype rows inferred over a
+    MENDELIAN gene-disease association, whatever the disease source.
+    """
+    result = prepare_gene_to_phenotype_data(mock_koza_transform_2, [])
+    assert result is not None
+    matches = [row for row in result if row["hpo_id"] == hpo_id and row["disease_id"] == disease_id]
+    if kept:
+        assert len(matches) == 1, f"expected {hpo_id}/{disease_id} ({association_types}) to be kept"
+        assert matches[0]["gene_to_disease_association_types"] == association_types
+    else:
+        assert not matches, f"expected {hpo_id}/{disease_id} ({association_types}) to be filtered out"
+
+
+def test_gene_to_phenotype_prepared_data_is_all_mendelian(mock_koza_transform_2: koza.KozaTransform):
+    """
+    Check that no non-MENDELIAN gene-disease association type survives preparation. Guards the
+    whole prepared set rather than the specific sample rows above, so a filter that regresses
+    for an association type not represented in the sample data still fails here.
+    """
+    result = prepare_gene_to_phenotype_data(mock_koza_transform_2, [])
+    assert result is not None
+    rows = list(result)
+    assert rows, "expected at least one prepared gene_to_phenotype row"
+    non_mendelian = [row["gene_to_disease_association_types"] for row in rows if "MENDELIAN" not in row["gene_to_disease_association_types"]]
+    assert not non_mendelian, f"non-MENDELIAN association types survived preparation: {sorted(set(non_mendelian))}"
 
 
 @pytest.mark.parametrize(
@@ -476,7 +623,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8086", "name": "AAAS", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8086", "name": "AAAS", "symbol": "AAAS", "category": ["biolink:Gene"]},
                 {"id": "HP:0000252", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -494,7 +641,14 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "has_total": None,
                 "disease_context_qualifier": "MONDO:0009279",
                 "publications": ["PMID:11062474"],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8086"]
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"}
+                ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.text_mining_agent,
             },
@@ -513,7 +667,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8120", "name": "AP3B2", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8120", "name": "AP3B2", "symbol": "AP3B2", "category": ["biolink:Gene"]},
                 {"id": "HP:0001298", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -531,7 +685,14 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "has_total": None,
                 "disease_context_qualifier": "MONDO:0018614",
                 "publications": [],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8120"]
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:orphanet"}
+                ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_agent,
             },
@@ -550,7 +711,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8192", "name": "CLPP", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8192", "name": "CLPP", "symbol": "CLPP", "category": ["biolink:Gene"]},
                 {"id": "HP:0000013", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -568,7 +729,14 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "has_total": 9,
                 "disease_context_qualifier": "MONDO:0013588",
                 "publications": ["PMID:23541340"],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8192"]
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"}
+                ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_validation_of_automated_agent,
             },
@@ -588,7 +756,7 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
             },
             # Captured node contents
             [
-                {"id": "NCBIGene:8929", "name": "PHOX2B", "category": ["biolink:Gene"]},
+                {"id": "NCBIGene:8929", "name": "PHOX2B", "symbol": "PHOX2B", "category": ["biolink:Gene"]},
                 {"id": "HP:0003005", "category": ["biolink:PhenotypicFeature"]},
             ],
             # Captured edge contents
@@ -606,7 +774,14 @@ def test_transform_record_disease_to_phenotype(mock_koza_transform_2: koza.KozaT
                 "has_total": None,
                 "disease_context_qualifier": "MONDO:0700041",
                 "publications": ["PMID:23541340", "PMID:12345678"],
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:hpo-annotations"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:hpo-annotations",
+                        "source_record_urls": ["https://hpo.jax.org/browse/gene/NCBIGene%3A8929"]
+                    },
+                    {"resource_role": "supporting_data_source", "resource_id": "infores:omim"}
+                ],
                 "knowledge_level": KnowledgeLevelEnum.logical_entailment,
                 "agent_type": AgentTypeEnum.manual_agent,
             },
