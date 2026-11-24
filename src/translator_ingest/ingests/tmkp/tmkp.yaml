@@ -37,12 +37,14 @@ readers:
       - 'supporting_study_results'
       - 'supporting_publications'
       - '_attributes'
-  # Chemical -> protein edges rebuilt under corrected concepts, in the same column layout
-  # (https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
+  # Regulation and contributes_to edges rebuilt under corrected concepts, in the same column layout
+  # (https://github.com/cbizon/tmkp-cleanup/tree/v2/pipeline)
   repaired_edges:
     format: csv
     delimiter: '\t'
     header_mode: none
     files:
       - tmkp_chem_gene_repaired_edges.tsv.gz
+      - tmkp_gene_gene_repaired_edges.tsv.gz
+      - tmkp_chem_disease_repaired_edges.tsv.gz
     columns: *edge_columns

@@ -3,14 +3,26 @@
   local_name: nodes.tsv.gz
 - url: https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/edges.tsv.gz
   local_name: edges.tsv.gz
-# Treats edges to drop; made with a typed-decision model over every supporting sentence (see https://github.com/cbizon/tmkp-cleanup/tree/v1/treats)
+# Treats edges to drop; made with a typed-decision model over every supporting sentence (see https://github.com/cbizon/tmkp-cleanup/tree/v2/treats)
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_treats_jev_v3_dropped_edges.txt.gz
   local_name: tmkp_treats_jev_v3_dropped_edges.txt.gz
-# Chemical -> protein edges: (id, direction) to drop, sentences to prune from kept edges, and repaired edges
-# (see https://github.com/cbizon/tmkp-cleanup/tree/v1/regulation)
+# Edges judged sentence by sentence (chemical -> protein, protein -> protein, chemical -> disease contributes_to):
+# (id, direction) to drop, sentences to prune from kept edges, and repaired edges (see https://github.com/cbizon/tmkp-cleanup/tree/v2/pipeline)
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_gene_dropped_edges.txt.gz
   local_name: tmkp_chem_gene_dropped_edges.txt.gz
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_gene_pruned_sentences.txt.gz
   local_name: tmkp_chem_gene_pruned_sentences.txt.gz
 - url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_gene_repaired_edges.tsv.gz
   local_name: tmkp_chem_gene_repaired_edges.tsv.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_gene_gene_dropped_edges.txt.gz
+  local_name: tmkp_gene_gene_dropped_edges.txt.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_gene_gene_pruned_sentences.txt.gz
+  local_name: tmkp_gene_gene_pruned_sentences.txt.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_gene_gene_repaired_edges.tsv.gz
+  local_name: tmkp_gene_gene_repaired_edges.tsv.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_disease_dropped_edges.txt.gz
+  local_name: tmkp_chem_disease_dropped_edges.txt.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_disease_pruned_sentences.txt.gz
+  local_name: tmkp_chem_disease_pruned_sentences.txt.gz
+- url: https://stars.renci.org/var/translator/ingests/tmkp/tmkp_chem_disease_repaired_edges.tsv.gz
+  local_name: tmkp_chem_disease_repaired_edges.tsv.gz
