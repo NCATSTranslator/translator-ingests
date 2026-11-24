@@ -32,7 +32,8 @@ dependencies = [
     "robokop-orion==2.0.9",
     "uv-dynamic-versioning>=0.11.2",
     "xmltodict>=1.0.2",
-    "zstandard>=0.25.0"
+    "zstandard>=0.25.0",
+    "information-resource-registry>=1.2.2",
 ]
 
 [project.scripts]

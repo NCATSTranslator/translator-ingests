@@ -3,10 +3,10 @@ revision = 3
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version >= '3.13' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version >= '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -286,6 +286,7 @@ dependencies = [
     { name = "deepdiff" },
     { name = "duckdb" },
     { name = "hatchling" },
+    { name = "information-resource-registry" },
     { name = "kghub-downloader" },
     { name = "koza" },
     { name = "mkdocs-minify-plugin" },
@@ -325,6 +326,7 @@ requires-dist = [
     { name = "deepdiff", specifier = ">=8.6.1" },
     { name = "duckdb", specifier = ">=1.4.4" },
     { name = "hatchling" },
+    { name = "information-resource-registry", specifier = ">=1.2.2" },
     { name = "kghub-downloader", specifier = ">=0.5.0" },
     { name = "koza", specifier = ">=2.6.1" },
     { name = "mkdocs-minify-plugin", specifier = ">=0.8.0" },
@@ -1060,6 +1062,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cf/8c/f834fbf984f691b4f7ff60f50b514cc3de5cc08abfc3295564dd89c5e2e7/importlib_resources-6.5.2.tar.gz", hash = "sha256:185f87adef5bcc288449d98fb4fba07cea78bc036455dd44c5fc4a2fe78fed2c", size = 44693, upload-time = "2025-01-03T18:51:56.698Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/ed/1f1afb2e9e7f38a545d628f864d562a5ae64fe6f7a10e28ffb9b185b4e89/importlib_resources-6.5.2-py3-none-any.whl", hash = "sha256:789cfdc3ed28c78b67a06acb8126751ced69a3d5f79c095a98298cd8a760ccec", size = 37461, upload-time = "2025-01-03T18:51:54.306Z" },
+]
+
+[[package]]
+name = "information-resource-registry"
+version = "1.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "linkml-runtime" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/75/ec/cd55d8ca0d872c2fba761ca28fbbfc63171dd4ad6dfdb63bb1853f310923/information_resource_registry-1.2.2.tar.gz", hash = "sha256:5b8d2bd8f181b6a312311fc8f2bc26c0a14caf9fc0b165ca2551dd2bc15e53f8", size = 119452, upload-time = "2026-11-12T01:09:22.036Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/dc/c6321f3150b0516918a29c783d3050d597ae7a8644fb7026ef2ff5811841/information_resource_registry-1.2.2-py3-none-any.whl", hash = "sha256:0e026552eaaa30f73efbe1495189fccf5f3dd6cf9aae62981b7246f0cca99ffe", size = 102486, upload-time = "2026-11-12T01:09:20.707Z" },
 ]
 
 [[package]]
@@ -2217,7 +2232,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
