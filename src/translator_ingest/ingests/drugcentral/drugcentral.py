@@ -14,7 +14,6 @@ from translator_ingest.util.biolink import (
 from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalEntity,
     DiseaseOrPhenotypicFeature,
-    ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation,
     Protein,  ## because drugcentral uses uniprotkb IDs
     ## ONLY for affects, currently works w/ Protein (inherits object:Biological Entity)
     ChemicalAffectsGeneAssociation,
@@ -174,10 +173,10 @@ def omop_transform(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledg
     chemical = ChemicalEntity(id=f"DrugCentral:{record["struct_id"]}")
     dop = DiseaseOrPhenotypicFeature(id=f"UMLS:{record["umls_cui"]}")
 
-    ## get mapped predicate/edge attribute for relationship_name
+    ## get mapped association class/predicate/edge attribute for relationship_name
     data_modeling = OMOP_RELATION_MAPPING[record["relationship_name"]]
 
-    association = ChemicalEntityToDiseaseOrPhenotypicFeatureAssociation(
+    association = data_modeling["association_class"](
         id=entity_id(),
         subject=chemical.id,
         predicate=data_modeling["predicate"],

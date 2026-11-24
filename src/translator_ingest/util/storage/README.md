@@ -39,7 +39,11 @@ make upload     # Upload to S3 and cleanup old EBS versions
 
 Releases are generated before merging because multi-source KGs are built from the source releases.
 
-When you run upload, the entire data and releases directories for each source are uploaded to S3. The upload always overwrites existing files (rsync-like behavior), so it's safe to re-run multiple times.
+When you run upload, the data and releases directories for each source are synced to S3 (rsync-like behavior), so it's safe to re-run multiple times. A file is only uploaded if S3 does not already have the same content (same size and ETag), so files keep the S3 LastModified of when they were really uploaded. Without this, every build re-uploaded the previous release still on disk, and each release on S3 showed the date of the build after it.
+
+Release versions on S3 are never overwritten. Before uploading anything, the upload checks every local release version against S3. If S3 already has that version from a different build (its `release-metadata.json` has another `build_version`), the upload stops with an error. This happens when the local `latest-release.json` of a source is lost, for example on a new disk, so release numbering starts again at 1.0.0.
+
+Release files are uploaded in an order that keeps S3 consistent: each release version directory first, with its `release-metadata.json` last, then `latest/`, then `latest-release.json`, and `latest-release-summary.json` after all sources. So `latest-release.json` never points at a release that is not completely on S3. A release counts as published once its `release-metadata.json` is on S3.
 
 After a successful upload, old versions are automatically removed from EBS to free up disk space. Only the latest version is kept locally. If any upload fails, cleanup is skipped for safety.
 
@@ -108,7 +112,7 @@ This setup is portable and not tied to any specific AWS account. To run on a new
 
 ## Error Handling
 
-Upload failures are logged but don't stop other sources from being processed. EBS cleanup is automatically skipped if any upload errors occurred. Failed uploads can be retried safely since the upload always overwrites.
+Upload failures are logged but don't stop other sources from being processed. Within a source, the upload stops at the first file that fails, so nothing that points at a release is uploaded without that release. The release summary is not uploaded if any release failed. EBS cleanup is automatically skipped if any upload errors occurred. Failed uploads can be retried safely, files that already made it to S3 are not uploaded again.
 
 ## Troubleshooting
 
