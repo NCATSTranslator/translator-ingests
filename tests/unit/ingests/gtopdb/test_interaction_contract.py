@@ -81,7 +81,7 @@ ACTION_LABELS = (
     float("nan"),
     pd.NA,
 )
-ENDOGENOUS_VALUES = ("TRUE", "FALSE", "", None, True, False, "true", "TRUE ", float("nan"))
+ENDOGENOUS_VALUES = ("TRUE", "FALSE", "", None, True, False, "true", "TRUE ", float("nan"), pd.NA)
 RECORD: dict[str, Any] = {
     "Ligand ID": "1",
     "subject_id": "2244",
@@ -118,7 +118,7 @@ def context(tmp_path: Path) -> Iterator[KozaTransform]:
 
 def expected_edges(type_value: str, action: Any, endogenous: Any) -> list[dict[str, Any]]:
     """Look up literal expectations, with the two independently specified defaults."""
-    context_label = "TRUE" if endogenous == "TRUE" else "FALSE"
+    context_label = "TRUE" if str(endogenous).strip().lower() == "true" else "FALSE"
     key = (type_value, action, context_label)
     if key in EXPECTED_EDGES:
         return EXPECTED_EDGES[key]
@@ -159,7 +159,7 @@ def graph_signature(graph: KnowledgeGraph) -> dict[str, list[dict[str, Any]]]:
 @pytest.mark.parametrize("action", ACTION_LABELS)
 @pytest.mark.parametrize("endogenous", ENDOGENOUS_VALUES)
 def test_type_action_context_matrix(context: KozaTransform, type_value: str, action: Any, endogenous: Any) -> None:
-    """Characterize exact pairs, skips, fallbacks, and non-TRUE endogenous values."""
+    """Characterize exact pairs, skips, fallbacks, and case-insensitive true-like endogenous values."""
     graphs = list(
         transform_ingest_all(
             context,
@@ -1231,7 +1231,6 @@ def test_missing_required_key(context: KozaTransform, missing: str) -> None:
         ({"PubMed ID": 123}, AttributeError, "split"),
         ({"PubMed ID": float("nan")}, AttributeError, "split"),
         ({"PubMed ID": pd.NA}, TypeError, "boolean value of NA is ambiguous"),
-        ({"Endogenous": pd.NA}, TypeError, "boolean value of NA is ambiguous"),
     ],
 )
 def test_malformed_emitted_record(

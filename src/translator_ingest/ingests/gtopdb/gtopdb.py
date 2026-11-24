@@ -491,19 +491,25 @@ def _endogenous_projection(
     endogenous: Any,
     rule: PrimaryAssociationRule,
 ) -> tuple[str, DirectionQualifierEnum | None]:
-    """Select endogenous context using the exact source string, including nulls.
+    """Select endogenous context from any true-like source value, including bools.
+
+    GtoPdb and the Koza pipeline deliver the flag as the lowercase string
+    "true"/"false", so matching is case-insensitive.
 
     >>> rule = PrimaryAssociationRule(polarity="positive")
-    >>> predicate, direction = _endogenous_projection("TRUE", rule)
+    >>> predicate, direction = _endogenous_projection("true", rule)
     >>> predicate, direction.value
     ('biolink:regulates', 'upregulated')
     >>> predicate, direction = _endogenous_projection(True, rule)
+    >>> predicate, direction.value
+    ('biolink:regulates', 'upregulated')
+    >>> predicate, direction = _endogenous_projection("FALSE", rule)
     >>> predicate, direction.value
     ('biolink:affects', 'increased')
     >>> _endogenous_projection(None, PrimaryAssociationRule())
     ('biolink:affects', None)
     """
-    if endogenous == "TRUE":
+    if str(endogenous).strip().lower() == "true":
         predicate = BIOLINK_REGULATES
         directions = {
             "positive": DirectionQualifierEnum.upregulated,
