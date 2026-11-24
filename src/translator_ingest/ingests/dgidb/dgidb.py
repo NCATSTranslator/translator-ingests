@@ -48,16 +48,9 @@ DRUG_GENE_COLS = ["drug_concept_id", "gene_concept_id"]
 def get_latest_version() -> str:
     ## queries Github repo with data releases: should be public, able to access w/o access tokens
     dgidb_request = "https://api.github.com/repos/dgidb/dgidb-data/releases/latest"
-
-    try:
-        response = requests.get(dgidb_request, timeout=5)
-        if response.status_code == 200:
-            temp = response.json()
-            return temp["tag_name"]  ## should be the data release version in YYYY-MM format
-        else:
-            print(f"Error encountered: {response.status_code}.")
-    except requests.RequestException as e:
-        print(f"Request exemption encountered: {e}.")
+    response = requests.get(dgidb_request, timeout=5)
+    response.raise_for_status()
+    return response.json()["tag_name"]  ## should be the data release version in YYYY-MM format
 
 
 @koza.prepare_data()
