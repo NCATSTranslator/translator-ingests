@@ -74,7 +74,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
         )
         .with_columns(
             ## add PMID prefix
-            pl.concat_str([pl.lit("PMID:"), pl.col("pmid").cast(pl.Utf8)]).alias("pmid"),
+            pl.concat_str([pl.lit("PMID:"), pl.col("pmid").cast(pl.String)]).alias("pmid"),
         ## entity cols are "Type|ID", split
             pl.col("entity1").str.split_exact("|", 1).alias("entity1_parts"),
             pl.col("entity2").str.split_exact("|", 1).alias("entity2_parts"),
