@@ -138,4 +138,6 @@ The task involves the following steps/components:
 - [CTD transform documentation](./src/translator_ingest/ingests/ctd/README.md)
 - Unit tests: [test_ctd.py](./tests/unit/ctd/test_ctd.py)
 
-Alternately, there is a **justfile** upon which the cross-platform **just** command tool may be used on functionally equivalent targets. [**Install just**](https://just.systems/man/en/introduction.html) then type **`just help`** for usage (Note that the **justfile** version only contains a strict subset of the Makefile targets)
+Alternately, there is a **justfile** upon which the cross-platform **just** command tool
+may be used on functionally equivalent targets. [**Install just**](https://just.systems/man/en/introduction.html) then type **`just help`**
+for usage (Note that the **justfile** version only contains a strict subset of the Makefile targets)
