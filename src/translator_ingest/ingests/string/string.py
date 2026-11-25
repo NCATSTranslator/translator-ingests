@@ -90,7 +90,7 @@ def transform_string_ppi(
     koza_transform: koza.KozaTransform, record: dict[str, Any]
 ) -> KnowledgeGraph | None:
     """
-    Transform one row of STRING's 'protein.links.full.v12.0.txt.gz' file into two
+    Transform one row of STRING's 'protein.links.full.txt.gz' file into two
     'Protein' nodes and one to three edges per the 2026-07-17 edge model.
 
     Edge emission:
