@@ -5,7 +5,11 @@
 #
 # Usage, from any directory, within a bash shell (e.g. Git Bash on Windows):
 #
-#    GIT_BRANCH=my-ingest-dev-branch INGEST=my-ingest-name path/to/KGXVal_run_ingest_and_generate.sh
+#      GIT_BRANCH=my-ingest-dev-branch INGEST=my-ingest-name GDRIVE_REMOTE="remote:folder/path" \
+#                   path/to/KGXVal_run_ingest_and_generate.sh
+#
+# (Note: see the Makefile of the repository, which also contains a
+#        target 'kgxval-summary' for conveniently running this)
 #
 #  GIT_BRANCH - an existing branch (local, or as origin/GIT_BRANCH) of this project;
 #               defaults to the currently checked out branch. If it differs from the
@@ -18,8 +22,18 @@
 #               in the Google account that the rclone remote is authorized for.
 #               Requires rclone (https://rclone.org) with that remote configured
 #               once beforehand, via 'rclone config' (storage type "drive").
+#               [Configuration of 'rclone' for Google GDRIVE](https://rclone.org/drive/)
+#               is a bit complex, and includes the need to first obtain your own
+#               [Google Application Client ID](https://rclone.org/drive/#making-your-own-client-id)
+#               and its associated 'Client Secret' code, using the
+#               [Google Cloud Console](https://console.cloud.google.com/auth).
+#               For production app publication, this is a complex task.
+#               As the rclone config narrative suggests, though, you can likely keep your declared
+#               client app in 'Test' mode, with just a bit of token renewal prompt inconvenience,
+#               for casual use of this KGX Summary script. When running the 'rclone config' task,
+#               make sure that the name of the remote matches the prefix you use in GDRIVE_REMOTE (i.e., 'gdrive').
 #
-# The summary is written to <project root>/data/<INGEST>/<INGEST>_kgxval_summary.xlsx
+# The KGX summary is written to <project root>/data/<INGEST>/<INGEST>_kgxval_summary.xlsx
 
 #Ask the user a yes/no question, repeating it until a valid answer is given.
 # Arguments: $1 - the question to display.
