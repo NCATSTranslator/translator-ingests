@@ -194,11 +194,9 @@ def test_type_action_context_matrix(context: KozaTransform, type_value: str, act
         assert edge.knowledge_level == "knowledge_assertion"
         assert edge.agent_type == "manual_agent"
         if edge.predicate == "biolink:related_to":
-            # Biolink's base Association has no species-context slot.
-            assert "species_context_qualifier" not in type(edge).model_fields
-            assert not hasattr(edge, "species_context_qualifier")
+            # Related-to edges stay unqualified: no species context is asserted.
+            assert edge.species_context_qualifier is None
         else:
-            assert "species_context_qualifier" in type(edge).model_fields
             assert edge.species_context_qualifier == "NCBITaxon:9606"
     if expected:
         assert graph.nodes[1].in_taxon == ["NCBITaxon:9606"]
