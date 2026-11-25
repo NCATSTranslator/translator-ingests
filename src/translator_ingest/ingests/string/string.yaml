@@ -23,9 +23,9 @@ readers:
     # Uses the ``.full.`` variant (16 columns) so per-channel subscores drive
     # per-channel predicate emission. See string.py CHANNEL_PREDICATES.
     files:
-      - '9606.protein.links.full.v12.0.txt.gz'
-      - '10090.protein.links.full.v12.0.txt.gz'
-      - '10116.protein.links.full.v12.0.txt.gz'
+      - '9606.protein.links.full.v{version}.txt.gz'
+      - '10090.protein.links.full.v{version}.txt.gz'
+      - '10116.protein.links.full.v{version}.txt.gz'
     columns:
       - protein1
       - protein2
