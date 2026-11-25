@@ -40,27 +40,95 @@ Follow the steps and use / generate the artifacts described below, to perform a 
 
 Here, we apply a [koza](https://koza.monarchinitiative.org/) transform of data from the [Comparative Toxicology Database](https://ctdbase.org/), writing the knowledge graph output out to jsonlines (jsonl) files. The project is built and executed using targets in a conventional (unix-like) **make** command, operating on a **Makefile** in the repository.
 
-Alternately, there is a **justfile** upon which the cross-platform **just** command tool may be used on functionally equivalent targets. [**Install just**](https://just.systems/man/en/introduction.html) then type **`just help`** for usage.
-
-    │ Usage:
-    │     make <target>  # or just <target>
-    │
-    │ Targets:
-    │     help                Print this help message
-    │ 
-    │     all                 Install everything and test
-    │     fresh               Clean and install everything
-    │     clean               Clean up build artifacts
-    │     clobber             Clean up generated files
-    │
-    │     install             install python requirements
-    │     download            Download data
-    │     run                 Run the transform
-    │
-    │     test                Run all tests
-    │
-    │     lint                Lint all code
-    │     format              Format all code  running the following steps.
+    │ Targets:                                                                     │
+    │     help                Print this help message                              │
+    │                                                                              │
+    │     all                 Install everything and test                          │
+    │     fresh               Clean and install everything                         │
+    │     clean               Clean up build artifacts                             │
+    │     clean-reports       Clean up validation reports                          │
+    │     clobber             Clean up generated files                             │
+    │                                                                              │
+    │     install             Install python requirements                          │
+    │     run                 Run the full ingest pipeline for specified sources   │
+    │                         (download → transform → normalize → merge → validate)│
+    │     transform           Run only download and transform                      │
+    │     validate            Validate all sources in data/                        │
+    │     validate-single     Validate only specified sources                      │
+    │     kgxval-summary      Run pipeline + KGXVal summary .xlsx for SOURCES      │
+    │                         on GIT_BRANCH (interactive; see example below)       │
+    │     release             Generate releases for the specified sources          │
+    │     merge               Merge released sources into one KG                   │
+    │     merge-all           Merge every graph declared in graphs.yaml            │
+    │                                                                              │
+    │     test                Run all tests                                        │
+    │                                                                              │
+    │     upload              Upload data and releases to S3                       │
+    │     upload-all          Upload all sources to S3                             │
+    │     cleanup-ebs         Clean up old EBS versions                            │
+    │     cleanup-s3          Delete all objects from S3 bucket (DANGEROUS)        │
+    │     cleanup-s3-source   Delete specific source from S3 (DANGEROUS)           │
+    │                                                                              │
+    │     lint                Lint all code                                        │
+    │     lint-fix            Fix linting errors automatically                     │
+    │     format              Format all code                                      │
+    │     spell-fix           Fix spelling errors interactively                    │
+    │     new-rig             Create RIG from template (requires INFORES and NAME) │
+    │     validate-rigs       Validate all RIG files against the schema            │
+    │                                                                              │
+    │     docs                Build documentation locally                          │
+    │     docs-serve          Build and serve docs on port 8000                    │
+    │     docs-clean          Clean documentation build                            │
+    │                                                                              │
+    │ Configuration:                                                               │
+    │     GRAPH_ID            Graph ID for multisource graphs (see graphs.yaml)    │
+    │                         Default: translator_kg                               │
+    │     SOURCES             Space-separated list of sources                      │
+    │                         Default: resolved from graphs.yaml using GRAPH_ID    │
+    │                         (kgxval-summary requires SOURCES to be given)        │
+    │     GIT_BRANCH          Existing branch for kgxval-summary to run on         │
+    │                         Default: the currently checked out branch            │
+    │     GDRIVE_REMOTE       rclone Google Drive destination (remote:folder) to   │
+    │                         which kgxval-summary also uploads each summary,      │
+    │                         as a Google Sheet (needs rclone; see 'rclone config')│
+    │                         Default: none (no upload)                            │
+    │                                                                              │
+    │ Examples:                                                                    │
+    │     # Run pipeline for all sources                                           │
+    │     make run                                                                 │
+    │     # Run pipeline only for specified sources                                │
+    │     make run SOURCES="go_cam"                                                │
+    │                                                                              │
+    │     # Validate all sources                                                   │
+    │     make validate                                                            │
+    │     # Validate only specified sources                                        │
+    │     make validate SOURCES="go_cam"                                           │
+    │                                                                              │
+    │     # Run go_cam on branch my-branch, writing its KGXVal summary to          │
+    │     # data/go_cam/go_cam_kgxval_summary.xlsx (asks before switching branch   │
+    │     # and before running the pipeline; switches back to the current branch)  │
+    │     make kgxval-summary SOURCES="go_cam" GIT_BRANCH=my-branch                │
+    │                                                                              │
+    │     # As above, on the current branch, also uploading the summary as a       │
+    │     # Google Sheet into folder KGX_Summaries of rclone remote 'gdrive'       │
+    │     make kgxval-summary SOURCES="go_cam" GDRIVE_REMOTE=gdrive:KGX_Summaries  │
+    │                                                                              │
+    │     # Make releases for all sources                                          │
+    │     make release                                                             │
+    │     # Make releases only for specified sources                               │
+    │     make release SOURCES="ctd go_cam goa"                                    │
+    │                                                                              │
+    │     # Multisource KGs are built from source releases. The following          │
+    │     # examples rely on releases already existing.                            │
+    │     #                                                                        │
+    │     # Build and release the default multisource KG (translator_kg)           │
+    │     make merge                                                               │
+    │     # Build and release the KG translator_kg_open (declared in graphs.yaml)  │
+    │     make merge GRAPH_ID=translator_kg_open                                   │
+    │     # Build and release every KG declared in graphs.yaml                     │
+    │     make merge-all                                                           │
+    │     # Build and release a custom KG that is not defined in graphs.yaml       │
+    │     make merge GRAPH_ID=example_custom_kg SOURCES="ctd go_cam goa"           │
 
 The task involves the following steps/components:
 
@@ -69,3 +137,7 @@ The task involves the following steps/components:
 - CTD transform code: [ctd.py](./src/translator_ingest/ingests/ctd/ctd.py)
 - [CTD transform documentation](./src/translator_ingest/ingests/ctd/README.md)
 - Unit tests: [test_ctd.py](./tests/unit/ctd/test_ctd.py)
+
+Alternately, there is a **justfile** upon which the cross-platform **just** command tool
+may be used on functionally equivalent targets. [**Install just**](https://just.systems/man/en/introduction.html) then type **`just help`**
+for usage (Note that the **justfile** version only contains a strict subset of the Makefile targets)
