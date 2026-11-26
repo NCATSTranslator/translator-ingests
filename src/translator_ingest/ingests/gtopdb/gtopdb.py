@@ -276,38 +276,6 @@ class TargetDescriptor:
         return SPECIES_TO_TAXON.get(species) if species else None
 
 
-def source_target_species_descriptors(
-    targets: Iterable[TargetDescriptor],
-) -> dict[str, dict[str, TargetDescriptor]]:
-    """Index source target descriptors by ID and known species.
-
-    Complex membership and multi-species coverage are independent properties:
-    a GtoPdb target can be a complex in several species.
-
-    For example, target 378 (5-HT3AB) has distinct Human and Mouse descriptors
-    in GtoPdb 2026.2, and both descriptors identify the same two source
-    subunits. It is therefore a multi-species complex, not an ambiguous list
-    of proteins to split into individual interaction edges.
-
-    >>> human = TargetDescriptor("378", "5-HT3AB", "Human", (), (), ("P46098",))
-    >>> mouse = TargetDescriptor("378", "5-HT3AB", "Mouse", (), (), ("P23979",))
-    >>> sorted(source_target_species_descriptors((human, mouse))["378"])
-    ['human', 'mouse']
-    """
-    descriptors: dict[str, dict[str, TargetDescriptor]] = {}
-    for target in targets:
-        species = _known_species(target.species)
-        if target.source_id and species:
-            descriptors.setdefault(target.source_id, {})[species] = target
-    return descriptors
-
-
-def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> frozenset[str]:
-    """Return source target IDs represented for more than one known species."""
-    descriptors = source_target_species_descriptors(targets)
-    return frozenset(source_id for source_id, species in descriptors.items() if len(species) > 1)
-
-
 def get_latest_version() -> str:
     """Determine the latest GtoPdb release version.
 
@@ -526,21 +494,14 @@ def _endogenous_projection(
     return predicate, direction
 
 
-def _transform_record(
-    record: dict[str, Any],
-    target: TargetDescriptor,
-    *,
-    emit_component_edges: bool,
-) -> KnowledgeGraph | None:
+def _transform_record(record: dict[str, Any], target: TargetDescriptor) -> KnowledgeGraph | None:
     """Skip unsupported records, then assemble nodes, interaction edges, and evidence.
 
-    All descriptors are resolved before any records are emitted. Passing that
-    context preserves validation order and accounts for other species even when
-    their interaction records are later skipped.
-
-    ``IUPHARobj:<Target ID>`` is shared by species descriptors. Component edges
-    are omitted for multi-species targets until Biolink supports taxon-qualified
-    ``has_part`` assertions; see biolink/biolink-model#1797 and translator-ingests#510.
+    ``IUPHARobj:<Target ID>`` is shared by species descriptors, so each
+    ``has_part`` edge carries the descriptor's ``species_context_qualifier``.
+    Human and mouse target 378 (5-HT3AB) therefore keep separate component
+    sets under one complex node (biolink/biolink-model#1797, Biolink 4.4.6;
+    translator-ingests#510).
     """
     if target.classification in UNSUPPORTED_TARGET_CLASSES:
         return None
@@ -561,13 +522,14 @@ def _transform_record(
         source_record_url=gtopdb_ligand_record_url(record[LIGAND_ID_COLUMN]),
     )
 
-    component_nodes = _component_nodes(target) if emit_component_edges else []
+    component_nodes = _component_nodes(target)
     edges.extend(
         Association(
             id=entity_id(),
             subject=object.id,
             predicate="biolink:has_part",
             object=component.id,
+            species_context_qualifier=target.species_context_qualifier,
             sources=_gtopdb_sources(gtopdb_target_record_url(target.source_id)),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
@@ -582,19 +544,14 @@ def _transform_record(
 
 @koza.transform(tag="gtopdb_interaction_parsing")
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    """Resolve batch species context, aggregate record graphs, and report exclusions."""
+    """Aggregate record graphs and report exclusions."""
     records = list(data)
     targets = tuple(TargetDescriptor.from_record(record) for record in records)
-    multi_species_target_ids = multi_species_source_target_ids(targets)
     nodes: list[NamedThing] = []
     edges: list[Association] = []
 
     for record, target in zip(records, targets, strict=True):
-        graph = _transform_record(
-            record,
-            target,
-            emit_component_edges=target.source_id not in multi_species_target_ids,
-        )
+        graph = _transform_record(record, target)
         if graph is not None:
             nodes.extend(graph.nodes)
             edges.extend(graph.edges)

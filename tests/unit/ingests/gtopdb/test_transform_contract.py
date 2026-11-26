@@ -24,6 +24,7 @@ from koza import KozaTransform
 from koza.io.writer.jsonl_writer import JSONLWriter
 from koza.model.graphs import KnowledgeGraph
 from koza.model.writer import WriterConfig
+from orion.merging import edge_key_function
 from pydantic import ValidationError
 
 from translator_ingest.ingests.gtopdb.gtopdb import prepare, transform_ingest_all
@@ -492,7 +493,7 @@ def test_mixed_batch_order_duplicates_and_evidence(context: KozaTransform) -> No
 def test_complex_order_and_filtered_species_context(
     context: KozaTransform, type_value: str, action: str, interaction_predicates: list[str]
 ) -> None:
-    """Even a skipped second-species record prevents unqualified component edges."""
+    """A skipped second-species record leaves the first species' qualified components intact."""
     human = RECORD | {
         "target_id": "378",
         "target_subunit_ids": "373|374",
@@ -515,8 +516,40 @@ def test_complex_order_and_filtered_species_context(
     assert len({edge.id for edge in single.edges}) == len(interaction_predicates) + 2
     mouse = human | {"target_species": "Mouse", "Type": "unknown"}
     combined = list(transform_ingest_all(context, [human, mouse]))[0]
-    assert [node.id for node in combined.nodes] == ["PUBCHEM.COMPOUND:2244", "IUPHARobj:378"]
-    assert [edge.predicate for edge in combined.edges] == interaction_predicates
+    assert [node.id for node in combined.nodes] == [node.id for node in single.nodes]
+    assert [edge.predicate for edge in combined.edges] == [edge.predicate for edge in single.edges]
+    assert {edge.species_context_qualifier for edge in combined.edges if edge.predicate == "biolink:has_part"} == {
+        "NCBITaxon:9606"
+    }
+
+
+def test_species_qualified_components_survive_jsonl_and_merge_keys(context: KozaTransform, tmp_path: Path) -> None:
+    """Written has_part edges keep species, and ORION merges per species, never across species (#510)."""
+    human = RECORD | {
+        "target_id": "378",
+        "target_name": "5-HT3AB",
+        "target_subunit_ids": "373|374",
+        "target_uniprot_ids": "P46098|O95264",
+    }
+    second_ligand = human | {"Ligand ID": "2", "subject_id": "3345"}
+    mouse = human | {"target_species": "Mouse", "target_uniprot_ids": "P23979|Q9JHJ5"}
+    graph = list(transform_ingest_all(context, [human, second_ligand, mouse]))[0]
+    context.write(*graph.nodes, *graph.edges)
+    context.writer.finalize()
+
+    written = [json.loads(line) for line in (tmp_path / "output" / "gtopdb_edges.jsonl").read_text().splitlines()]
+    components = [edge for edge in written if edge["predicate"] == "biolink:has_part"]
+    assert len(components) == 6
+    assert all("species_context_qualifier" in edge for edge in components)
+    merge_keys = {edge_key_function(edge): (edge["object"], edge["species_context_qualifier"]) for edge in components}
+    assert sorted(merge_keys.values()) == [
+        ("UniProtKB:O95264", "NCBITaxon:9606"),
+        ("UniProtKB:P23979", "NCBITaxon:10090"),
+        ("UniProtKB:P46098", "NCBITaxon:9606"),
+        ("UniProtKB:Q9JHJ5", "NCBITaxon:10090"),
+    ]
+    relabelled = components[0] | {"species_context_qualifier": "NCBITaxon:10116"}
+    assert edge_key_function(relabelled) != edge_key_function(components[0])
 
 
 def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Path) -> None:
