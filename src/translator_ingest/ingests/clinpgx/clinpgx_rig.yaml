@@ -8,13 +8,18 @@ source_info:
   citations:
     - https://www.clinpgx.org/page/citingClinpgx
   terms_of_use_info:
-    license_name: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
-    license_url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+    license_name: Creative Commons Attribution-ShareAlike 4.0 International
+    license_url: https://creativecommons.org/licenses/by-sa/4.0/
     terms_of_use_url: https://www.clinpgx.org/page/dataUsagePolicy
     terms_of_use_description: >-
-      Verified from LICENSE.txt bundled with all four archives retrieved on
-      2026-10-23 (CREATED_2026-10-05). This differs from the upstream draft RIG's
-      CC BY 4.0 claim. Review compatibility before inclusion in a released graph.
+      The ClinPGx Data Usage Policy (read 2026-11-21) grants CC BY-SA 4.0 and adds
+      terms that the data is for research purposes and is not to be offered for
+      sale as a commercial item. LICENSE.txt in all four archives states CC BY-SA 4.0
+      as of CREATED_2026-11-05. The CREATED_2026-10-05 archives stated CC BY-NC-SA 4.0.
+      The upstream draft RIG's CC BY 4.0 claim does not match either. ShareAlike and
+      the added terms are under discussion in
+      https://github.com/IlyaLab/TranslatorPharcogenomicsKG/issues/17 and
+      https://github.com/NCATSTranslator/translator-ingests/issues/578.
   data_access_locations:
     - https://www.clinpgx.org/downloads
   data_provision_mechanisms:
@@ -54,7 +59,9 @@ ingest_info:
       included_records: >-
         Association equals associated, and endpoint types are Gene and Chemical
         in either order, with unambiguous supported identifier mappings.
-      fields_used: Entity1_id, Entity1_type, Entity2_id, Entity2_type, Association, Evidence, PMIDs
+      fields_used: >-
+        Entity1_id, Entity1_type, Entity2_id, Entity2_type, Association, Evidence, PMIDs.
+        The gene and chemical accessions also build each edge's source_record_urls.
   filtered_content:
     - file_name: relationships.tsv
       filtered_records: Not associated or ambiguous records.
@@ -92,6 +99,9 @@ target_info:
         - automated_agent
       primary_knowledge_sources:
         - infores:clinpgx
+      ## includes source_record_urls: https://www.clinpgx.org/combination/{gene accession},{chemical accession},
+      ## the ClinPGx page for annotations, pathways and literature that include both entities. One URL per
+      ## source accession pair, so an edge merged from several accessions carries several URLs.
       edge_properties:
         - biolink:publications
       ui_explanation: ClinPGx summarizes a positive association between this gene and chemical.

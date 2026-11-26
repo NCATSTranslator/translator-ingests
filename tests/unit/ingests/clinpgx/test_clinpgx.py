@@ -13,6 +13,7 @@ from koza.runner import KozaRunner
 from translator_ingest.ingests.clinpgx.clinpgx import (
     ACCESSION,
     RELATIONSHIP_COLUMNS,
+    combination_url,
     load_entities,
     numeric_curie,
     parse_publications,
@@ -111,12 +112,19 @@ def test_zip_to_kgx(input_dir: Path, tmp_path: Path) -> None:
     assert edge["publications"] == ["PMID:123", "PMID:456", "PMID:789"]
     assert edge["agent_type"] == "automated_agent"
     assert edge["knowledge_level"] == "knowledge_assertion"
-    assert any(
-        source["resource_id"] == "infores:clinpgx" and source["resource_role"] == "primary_knowledge_source"
-        for source in edge["sources"]
-    )
+    primary = next(source for source in edge["sources"] if source["resource_role"] == "primary_knowledge_source")
+    assert primary["resource_id"] == "infores:clinpgx"
+    # PAG1 and PAG4 both map to NCBIGene:101, so the merged edge links both pair pages.
+    assert primary["source_record_urls"] == [
+        "https://www.clinpgx.org/combination/PAG1,PAC1",
+        "https://www.clinpgx.org/combination/PAG4,PAC1",
+    ]
     no_pubs = next(edge for edge in edges if edge["object"] == "PUBCHEM.COMPOUND:203")
     assert not no_pubs.get("publications")
+    no_pubs_primary = next(
+        source for source in no_pubs["sources"] if source["resource_role"] == "primary_knowledge_source"
+    )
+    assert no_pubs_primary["source_record_urls"] == ["https://www.clinpgx.org/combination/PAG1,PAC3"]
     assert metadata["counts"] == {
         "input_rows": 12,
         "included_rows": 4,
@@ -150,6 +158,15 @@ def test_empty_scope_produces_empty_graph(input_dir: Path, tmp_path: Path) -> No
 def test_reject_invalid_or_ambiguous_ids(value: str) -> None:
     """Never silently create a malformed or multiply mapped identifier."""
     assert numeric_curie(value, "NCBIGene") is None
+
+
+@pytest.mark.parametrize(
+    ("gene", "chemical"), [("", "PA2"), ("PA1", ""), ("PA1", "PA2,PA3"), ("PA1 ", "PA2"), ("12345", "PA2")]
+)
+def test_reject_malformed_accessions_in_record_url(gene: str, chemical: str) -> None:
+    """A malformed accession must not produce a broken or misleading combination URL."""
+    with pytest.raises(ValueError, match="Invalid ClinPGx accession"):
+        combination_url(gene, chemical)
 
 
 def test_publication_normalization() -> None:

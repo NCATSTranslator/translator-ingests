@@ -28,8 +28,8 @@ from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import INFORES_CLINPGX, build_association_knowledge_sources
 
 PREDICATE = "biolink:associated_with"
-SOURCES = build_association_knowledge_sources(primary=INFORES_CLINPGX)
 ACCESSION = "PharmGKB Accession Id"
+COMBINATION_URL = "https://www.clinpgx.org/combination/{gene},{chemical}"
 RELATIONSHIP_COLUMNS = ["Entity1_id", "Entity1_type", "Entity2_id", "Entity2_type", "Evidence", "Association", "PMIDs"]
 
 
@@ -76,6 +76,22 @@ def parse_publications(value: str) -> list[str]:
             raise ValueError(f"Invalid ClinPGx PMID: {item!r}")
         publications.add(curie)
     return sorted(publications)
+
+
+def combination_url(gene_accession: str, chemical_accession: str) -> str:
+    """Link to the ClinPGx page for annotations that include both entities.
+
+    >>> combination_url('PA31751', 'PA166129564')
+    'https://www.clinpgx.org/combination/PA31751,PA166129564'
+    >>> combination_url('PA1', 'PA2,PA3')
+    Traceback (most recent call last):
+    ...
+    ValueError: Invalid ClinPGx accession: 'PA2,PA3'
+    """
+    for accession in (gene_accession, chemical_accession):
+        if not re.fullmatch(r"PA[0-9A-Za-z]+", accession):
+            raise ValueError(f"Invalid ClinPGx accession: {accession!r}")
+    return COMBINATION_URL.format(gene=gene_accession, chemical=chemical_accession)
 
 
 def load_entities(directory: Path) -> dict[tuple[str, str], NamedThing]:
@@ -126,8 +142,10 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
             continue
         gene_side = "1" if row["Entity1_type"] == "Gene" else "2"
         chemical_side = "2" if gene_side == "1" else "1"
-        gene = entities.get(("Gene", row[f"Entity{gene_side}_id"]))
-        chemical = entities.get(("Chemical", row[f"Entity{chemical_side}_id"]))
+        gene_accession = row[f"Entity{gene_side}_id"]
+        chemical_accession = row[f"Entity{chemical_side}_id"]
+        gene = entities.get(("Gene", gene_accession))
+        chemical = entities.get(("Chemical", chemical_accession))
         if gene is None or chemical is None:
             counts["excluded_unmapped_or_ambiguous_identifier"] += 1
             continue
@@ -138,13 +156,16 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterabl
                 nodes[node.id].xref = sorted(set(nodes[node.id].xref or []) | set(node.xref or []))
         key = (gene.id, chemical.id)
         if key not in pairs:
-            pairs[key] = {"subject": gene.id, "object": chemical.id, "publications": set()}
+            pairs[key] = {"subject": gene.id, "object": chemical.id, "publications": set(), "record_urls": set()}
         pairs[key]["publications"].update(parse_publications(row["PMIDs"]))
+        # Accession pairs that map to the same identifiers each have their own page.
+        pairs[key]["record_urls"].add(combination_url(gene_accession, chemical_accession))
         counts["included_rows"] += 1
         evidence.update(label.strip() for label in row["Evidence"].split(",") if label.strip())
 
     for pair in pairs.values():
         pair["publications"] = sorted(pair["publications"])
+        pair["record_urls"] = sorted(pair["record_urls"])
     counts["output_edges"] = len(pairs)
     counts["output_nodes"] = len(nodes)
     counts["merged_rows"] = counts["included_rows"] - len(pairs)
@@ -181,7 +202,7 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
         predicate=PREDICATE,
         object=record["object"],
         publications=record["publications"] or None,
-        sources=SOURCES,
+        sources=build_association_knowledge_sources(primary=(INFORES_CLINPGX, record["record_urls"])),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent,
     )

@@ -18,6 +18,10 @@ CPIC has its own RIG and source file; this module does not consume it.
 - Emit `biolink:associated_with`, `knowledge_assertion`, `automated_agent`, and
   primary source `infores:clinpgx`. Edge IDs are stable across repeated transforms.
   Preserve original PharmGKB accessions as node cross-references.
+- Attach `source_record_urls` to the primary source:
+  `https://www.clinpgx.org/combination/{gene accession},{chemical accession}`, the
+  ClinPGx page listing annotations, pathways and literature that include both
+  entities. A merged edge carries one URL per contributing accession pair.
 - Record filtering/merging counts, source evidence-label counts, and archive
   creation dates in transform metadata. Evidence counts include reciprocal source
   rows and are **not independent evidence counts**.
@@ -42,10 +46,13 @@ This is not an upstream release number. The transform records each archive's
 
 ## Decisions to review before release
 
-1. **License:** all four downloads inspected on 2026-10-23 contain a
-   `LICENSE.txt` stating **CC BY-NC-SA 4.0**, with additional redistribution wording
-   and a link to the [ClinPGx data usage policy](https://www.clinpgx.org/page/dataUsagePolicy).
-   The upstream RIG says CC BY 4.0. Resolve this discrepancy before graph inclusion.
+1. **License:** the archives created 2026-10-05 stated **CC BY-NC-SA 4.0** in
+   `LICENSE.txt`. The archives created 2026-11-05 state **CC BY-SA 4.0**, matching the
+   [ClinPGx data usage policy](https://www.clinpgx.org/page/dataUsagePolicy), which also
+   limits use to research and prohibits offering the data for sale. The upstream RIG
+   says CC BY 4.0. ShareAlike and the added terms are under discussion in
+   [IlyaLab/TranslatorPharcogenomicsKG#17](https://github.com/IlyaLab/TranslatorPharcogenomicsKG/issues/17)
+   and [#578](https://github.com/NCATSTranslator/translator-ingests/issues/578).
    This ingest is not added to `graphs.yaml`.
 2. **Source attribution:** the draft uses the existing `infores:clinpgx` constant.
    The older RIG says `infores:PharmGKB`; review attribution for the relationship
