@@ -413,19 +413,15 @@ def _transform_record(record: dict[str, Any]) -> KnowledgeGraph | None:
             "qualified_predicate": BIOLINK_CAUSES,
             "object_aspect_qualifier": aspect,
             "object_direction_qualifier": direction,
+            "causal_mechanism_qualifier": mechanism,
             "species_context_qualifier": species,
         }
-        interaction_attributes = {
-            **primary_attributes,
-            "causal_mechanism_qualifier": mechanism,
-        }
-        # Gene-regulation primaries omit mechanism and anatomy. Chemical/gene
-        # primaries include both, while their physical-interaction edges omit anatomy.
+        interaction_attributes = dict(primary_attributes)
+        # GeneRegulatesGeneAssociation has no anatomical_context_qualifier slot (Biolink 4.4.4
+        # and 4.4.6), but it does accept causal_mechanism_qualifier. Physical-interaction
+        # edges omit anatomy.
         if primary_type is not GeneRegulatesGeneAssociation:
-            primary_attributes.update(
-                causal_mechanism_qualifier=mechanism,
-                anatomical_context_qualifier=anatomy,
-            )
+            primary_attributes["anatomical_context_qualifier"] = anatomy
 
     edges = [
         primary_type(
