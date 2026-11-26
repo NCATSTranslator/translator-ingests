@@ -17,9 +17,11 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     ChemicalAffectsGeneAssociation,
     ChemicalEntity,
     DirectionQualifierEnum,
+    GeneRegulatesGeneAssociation,
     KnowledgeLevelEnum,
     MacromolecularComplex,
     NamedThing,
+    PairwiseGeneToGeneInteraction,
     PairwiseMolecularInteraction,
     Protein,
     RetrievalSource,
@@ -64,6 +66,9 @@ COMPLEX_PORTAL_PROTEIN_MEMBER = re.compile(
 
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
+LIGAND_UNIPROT_COLUMN = "UniProt ID"
+# A UniProtKB accession (https://www.uniprot.org/help/accession_numbers).
+UNIPROT_ACCESSION = re.compile(r"[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2}")
 PUBLICATIONS_COLUMN = "PubMed ID"
 
 GROUP_COLUMNS = (
@@ -372,6 +377,24 @@ def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
     return {ligand_id: cid for ligand_id, cid in mapping.items() if cid}
 
 
+def _load_peptide_uniprot_mapping(input_files_dir: Path) -> dict[str, str]:
+    """Map ligands without a real PubChem CID to their single UniProt accession.
+
+    These are peptides. Ligands with several accessions (multi-chain peptides) or
+    none (most antibodies and nucleic acids) are not mapped. The accession often
+    names the precursor protein, for example CALCA for CGRP.
+    """
+    ligands = pd.read_csv(input_files_dir / "ligands.csv", skiprows=1, dtype=str)
+    mapping = {}
+    for ligand_id, cid, accession in zip(
+        ligands[LIGAND_ID_COLUMN], ligands[PUBCHEM_ID_COLUMN], ligands[LIGAND_UNIPROT_COLUMN]
+    ):
+        accession = _source_text(accession)
+        if _pubchem_cid(cid) is None and UNIPROT_ACCESSION.fullmatch(accession):
+            mapping[_source_text(ligand_id)] = accession
+    return mapping
+
+
 def _complex_portal_protein_members(members: str) -> frozenset[str] | None:
     """Return canonical UniProt members, or None if any member is not a plain protein.
 
@@ -418,6 +441,7 @@ def _prepare_interactions(
     data: Iterable[dict[str, Any]],
     ligand_mapping: dict[str, str],
     complex_portal_index: dict[tuple[str, frozenset[str]], str],
+    peptide_mapping: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Aggregate source rows, retain target metadata, and record Complex Portal matches."""
     source = pd.DataFrame(data)[list(SOURCE_COLUMNS)].drop_duplicates()
@@ -428,8 +452,10 @@ def _prepare_interactions(
     aggregations: dict[str, Any] = {PUBLICATIONS_COLUMN: _join_publications}
     prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(aggregations)
     prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
-    prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
-    prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
+    ligand_ids = prepared[LIGAND_ID_COLUMN].astype(str).str.strip()
+    prepared["subject_id"] = ligand_ids.map(ligand_mapping)
+    prepared["ligand_uniprot_id"] = ligand_ids.map(peptide_mapping or {})
+    prepared = prepared.dropna(subset=["subject_id", "ligand_uniprot_id"], how="all").drop_duplicates()
     records = prepared.to_dict(orient="records")
     for record in records:
         key = TargetDescriptor.from_record(record).complex_member_key
@@ -442,7 +468,10 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[di
     """Prepare GtoPdb interactions for record-level graph transformation."""
     input_files_dir = Path(koza.input_files_dir)
     return _prepare_interactions(
-        data, _load_ligand_mapping(input_files_dir), _load_complex_portal_index(input_files_dir)
+        data,
+        _load_ligand_mapping(input_files_dir),
+        _load_complex_portal_index(input_files_dir),
+        _load_peptide_uniprot_mapping(input_files_dir),
     )
 
 
@@ -459,12 +488,20 @@ def _publication_list(value: str | None) -> list[str] | None:
     return [f"PMID:{pmid}" for pmid in value.split("|")]
 
 
-def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple[ChemicalEntity, NamedThing]:
-    """Create the source-supported chemical and target nodes for one record."""
-    subject = ChemicalEntity(
-        id=f"PUBCHEM.COMPOUND:{record['subject_id']}",
-        name=record["subject_name"],
-    )
+def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple[ChemicalEntity | Protein, NamedThing]:
+    """Create the ligand and target nodes for one record.
+
+    A ligand with a PubChem CID is a chemical. A peptide ligand mapped through its
+    UniProt accession is a protein.
+    """
+    peptide_accession = _source_text(record.get("ligand_uniprot_id"))
+    if peptide_accession and not _source_text(record.get("subject_id")):
+        subject: ChemicalEntity | Protein = Protein(id=f"UniProtKB:{peptide_accession}", name=record["subject_name"])
+    else:
+        subject = ChemicalEntity(
+            id=f"PUBCHEM.COMPOUND:{record['subject_id']}",
+            name=record["subject_name"],
+        )
     if target.protein_curie:
         object: NamedThing = Protein(
             id=target.protein_curie,
@@ -500,18 +537,23 @@ def _component_nodes(target: TargetDescriptor) -> list[Protein]:
 
 
 def _interaction_edges(
-    subject: ChemicalEntity,
+    subject: ChemicalEntity | Protein,
     object: NamedThing,
     endogenous: Any,
     rule: InteractionRule,
     species_context_qualifier: str | None,
     source_record_url: str,
-) -> list[Association]:
+) -> tuple[list[Association], list[str]]:
     """Build the optional primary and physical edges, each with its own qualifiers.
 
     Endogenous projection applies only to an affects/regulates primary edge.
     Related-to edges remain unqualified; physical edges carry their own mechanism
     and species context without asserting an effect on activity.
+
+    Protein (peptide) ligands use the Biolink 4.4.6 classes that accept a protein
+    subject: GeneRegulatesGeneAssociation for regulates and PairwiseGeneToGeneInteraction
+    for binding, both with a protein target. Edges with no such class (affects, or a
+    complex target) are left out and returned by name for logging (translator-ingests#582).
     """
     common_fields: dict[str, Any] = {
         "subject": subject.id,
@@ -520,6 +562,9 @@ def _interaction_edges(
         "agent_type": AgentTypeEnum.manual_agent,
     }
     edges: list[Association] = []
+    omitted: list[str] = []
+    protein_ligand = isinstance(subject, Protein)
+    protein_target = isinstance(object, Protein)
     primary = rule.primary
     if primary is not None:
         if primary.relation == "related":
@@ -533,31 +578,39 @@ def _interaction_edges(
             )
         else:
             predicate, direction = _endogenous_projection(endogenous, primary)
-            edges.append(
-                ChemicalAffectsGeneAssociation(
-                    id=entity_id(),
-                    predicate=predicate,
-                    qualified_predicate=BIOLINK_CAUSES if primary.qualified else None,
-                    object_aspect_qualifier=primary.aspect,
-                    object_direction_qualifier=direction,
-                    causal_mechanism_qualifier=primary.mechanism,
-                    species_context_qualifier=species_context_qualifier,
-                    sources=_gtopdb_sources(source_record_url),
-                    **common_fields,
-                )
-            )
-    if rule.physical is not None:
-        edges.append(
-            PairwiseMolecularInteraction(
-                id=entity_id(),
-                predicate="biolink:directly_physically_interacts_with",
-                causal_mechanism_qualifier=rule.physical.mechanism,
-                species_context_qualifier=species_context_qualifier,
-                sources=_gtopdb_sources(source_record_url),
+            primary_fields: dict[str, Any] = {
+                "id": entity_id(),
+                "predicate": predicate,
+                "qualified_predicate": BIOLINK_CAUSES if primary.qualified else None,
+                "object_aspect_qualifier": primary.aspect,
+                "object_direction_qualifier": direction,
+                "causal_mechanism_qualifier": primary.mechanism,
+                "species_context_qualifier": species_context_qualifier,
+                "sources": _gtopdb_sources(source_record_url),
                 **common_fields,
-            )
-        )
-    return edges
+            }
+            if not protein_ligand:
+                edges.append(ChemicalAffectsGeneAssociation(**primary_fields))
+            elif predicate == BIOLINK_REGULATES and protein_target:
+                edges.append(GeneRegulatesGeneAssociation(**primary_fields))
+            else:
+                omitted.append(f"{predicate.removeprefix('biolink:')} to {'protein' if protein_target else 'complex'}")
+    if rule.physical is not None:
+        physical_fields: dict[str, Any] = {
+            "id": entity_id(),
+            "predicate": "biolink:directly_physically_interacts_with",
+            "causal_mechanism_qualifier": rule.physical.mechanism,
+            "species_context_qualifier": species_context_qualifier,
+            "sources": _gtopdb_sources(source_record_url),
+            **common_fields,
+        }
+        if not protein_ligand:
+            edges.append(PairwiseMolecularInteraction(**physical_fields))
+        elif protein_target:
+            edges.append(PairwiseGeneToGeneInteraction(**physical_fields))
+        else:
+            omitted.append("directly_physically_interacts_with to complex")
+    return edges, omitted
 
 
 def _endogenous_projection(
@@ -599,7 +652,7 @@ def _endogenous_projection(
     return predicate, direction
 
 
-def _transform_record(record: dict[str, Any], target: TargetDescriptor) -> KnowledgeGraph | None:
+def _transform_record(record: dict[str, Any], target: TargetDescriptor) -> tuple[KnowledgeGraph | None, list[str]]:
     """Skip unsupported records, then assemble nodes, interaction edges, and evidence.
 
     ``IUPHARobj:<Target ID>`` is shared by species descriptors, so each
@@ -609,16 +662,16 @@ def _transform_record(record: dict[str, Any], target: TargetDescriptor) -> Knowl
     translator-ingests#510).
     """
     if target.classification in UNSUPPORTED_TARGET_CLASSES:
-        return None
+        return None, []
 
     rule = resolve_rule(record["Type"], record["Action"])
     if rule is None:
-        return None
+        return None, []
 
     subject, object = _nodes_for_record(record, target)
     endogenous = record["Endogenous"]
     publications = _publication_list(record[PUBLICATIONS_COLUMN])
-    edges = _interaction_edges(
+    edges, omitted = _interaction_edges(
         subject,
         object,
         endogenous,
@@ -644,7 +697,9 @@ def _transform_record(record: dict[str, Any], target: TargetDescriptor) -> Knowl
     if publications:
         for edge in edges:
             edge.publications = publications
-    return KnowledgeGraph(nodes=[subject, object, *component_nodes], edges=edges)
+    # A peptide ligand whose edges were all left out would otherwise be an orphan node.
+    ligand_nodes = [subject] if any(edge.subject == subject.id for edge in edges) else []
+    return KnowledgeGraph(nodes=[*ligand_nodes, object, *component_nodes], edges=edges), omitted
 
 
 def _share_node_taxa(nodes: list[NamedThing]) -> None:
@@ -669,9 +724,11 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
     targets = tuple(TargetDescriptor.from_record(record) for record in records)
     nodes: list[NamedThing] = []
     edges: list[Association] = []
+    omitted_peptide_edges: Counter[str] = Counter()
 
     for record, target in zip(records, targets, strict=True):
-        graph = _transform_record(record, target)
+        graph, omitted = _transform_record(record, target)
+        omitted_peptide_edges.update(omitted)
         if graph is not None:
             nodes.extend(graph.nodes)
             edges.extend(graph.edges)
@@ -685,6 +742,14 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         koza.log(
             f"Excluded {count} GtoPdb interaction {record_word} with a "
             f"{classification.value} target; no unsupported target CURIE was emitted.",
+            level="WARNING",
+        )
+
+    for kind, count in sorted(omitted_peptide_edges.items()):
+        edge_word = "edge" if count == 1 else "edges"
+        koza.log(
+            f"Left out {count} peptide-ligand {kind} {edge_word}: no Biolink 4.4.6 association class "
+            "accepts a protein subject with this predicate and target (translator-ingests#582).",
             level="WARNING",
         )
 

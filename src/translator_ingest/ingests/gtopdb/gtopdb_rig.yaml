@@ -76,7 +76,9 @@ ingest_info:
       description: "All interaction data for ligands and targets."
     - file_name: "ligands.csv"
       location: "https://www.guidetopharmacology.org/DATA/ligands.csv"
-      description: "Complete ligand list; used to map GtoPdb Ligand IDs to PubChem CIDs for subject node identifiers."
+      description: >-
+        Complete ligand list; used to map GtoPdb Ligand IDs to PubChem CIDs for chemical ligands, and to UniProt
+        accessions for peptide ligands without a PubChem CID.
     - file_name: "complexportal_<taxon>.tsv"
       location: "https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/<taxon>.tsv"
       description: >-
@@ -93,13 +95,16 @@ ingest_info:
         A multi-species target may therefore also be a macromolecular complex, with a separate descriptor for
         each species. Multiple canonical UniProt accessions without multiple source subunit IDs are retained as
         unresolved multi-protein groups rather than inferred to be complexes. Records lacking a Target ID or
-        Ligand ID, and records whose Ligand ID has no PubChem CID in ligands.csv (blank, or GtoPdb's placeholder CID 0, used for 2,356
-        ligands in 2026.3.1, mostly peptides and antibodies), are dropped because
-        they cannot be turned into a well-identified edge.
+        Ligand ID, and records whose Ligand ID has neither a PubChem CID in ligands.csv (blank, or GtoPdb's
+        placeholder CID 0, used for 2,392 ligands in 2026.3.1, mostly peptides and antibodies) nor a single
+        UniProt ID, are dropped because they cannot be turned into a well-identified edge. Peptide ligands with
+        a single UniProt ID (761 in 2026.3.1) are kept as biolink:Protein ligands.
       fields_used: "Ligand, Target, Target ID, Target Subunit IDs, Target Gene Symbol, Target UniProt ID, Target Species, Ligand ID, Type, Action, PubMed ID, Endogenous"
     - file_name: "ligands.csv"
-      included_records: "Used only for identifier mapping (Ligand ID to PubChem CID); no edges are created directly from this file."
-      fields_used: "Ligand ID, PubChem CID"
+      included_records: >-
+        Used only for identifier mapping: Ligand ID to PubChem CID, or, for a ligand without a real PubChem CID,
+        Ligand ID to its single UniProt ID. No edges are created directly from this file.
+      fields_used: "Ligand ID, PubChem CID, UniProt ID"
 
   filtered_content: []
 
@@ -265,11 +270,81 @@ target_info:
       additional_notes:
         - "The mapping independently specifies the primary and physical edges and their causal mechanisms: https://docs.google.com/spreadsheets/d/1DeAE04O1mz3R9s3dCZpG2hQp9hwif5WjdkUMsBci-u8/edit?gid=461277142#gid=461277142"
         - "This edge type is modeled as a Biolink PairwiseMolecularInteraction and accepts its own causal_mechanism_qualifier. Physical-only mappings emit this edge without an 'affects'/'regulates' edge."
+    - subject_categories:
+        - biolink:Protein
+      predicates:
+        - biolink:regulates
+      object_categories:
+        - biolink:Protein
+      qualifiers:
+        - property: biolink:qualified_predicate
+          value_enumeration:
+            - biolink:causes
+        - property: biolink:object_aspect_qualifier
+          value_enumeration:
+            - activity
+        - property: biolink:object_direction_qualifier
+          value_enumeration:
+            - upregulated
+            - downregulated
+        - property: biolink:causal_mechanism_qualifier
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      primary_knowledge_sources:
+        - infores:gtopdb
+      edge_properties:
+        - biolink:publications
+        - biolink:species_context_qualifier
+      ui_explanation: >-
+        Source GtoPdb data provides expert-curated assertions about how an endogenous peptide ligand regulates
+        the activity of a protein target. The edge has the same predicate and qualifiers as the 'regulates'
+        edge for chemical ligands, but its subject is the peptide's UniProt protein.
+      source_files:
+        - interactions.csv
+        - ligands.csv
+      additional_notes:
+        - "Modeled as a Biolink GeneRegulatesGeneAssociation, the Biolink 4.4.6 class that accepts a protein subject with these qualifiers. ChemicalAffectsGeneAssociation requires a ChemicalEntity subject."
+        - "A peptide's UniProt accession often names its precursor protein (for example, the CALCA precursor for CGRP), so the subject can be the precursor rather than the mature peptide."
+        - "Peptide 'affects' edges (ENDOGENOUS = FALSE) and peptide edges to complex targets are left out and counted in the transform log, because no Biolink 4.4.6 class accepts a protein subject with them: https://github.com/NCATSTranslator/translator-ingests/issues/582"
+    - subject_categories:
+        - biolink:Protein
+      predicates:
+        - biolink:directly_physically_interacts_with
+      object_categories:
+        - biolink:Protein
+      qualifiers:
+        - property: biolink:causal_mechanism_qualifier
+          value_enumeration:
+            - binding
+            - allosteric_modulation
+      knowledge_level:
+        - knowledge_assertion
+      agent_type:
+        - manual_agent
+      primary_knowledge_sources:
+        - infores:gtopdb
+      edge_properties:
+        - biolink:publications
+        - biolink:species_context_qualifier
+      ui_explanation: >-
+        Source GtoPdb data provides expert-curated assertions that a peptide ligand physically binds a protein
+        target, without asserting a direction of effect. The subject is the peptide's UniProt protein.
+      source_files:
+        - interactions.csv
+        - ligands.csv
+      additional_notes:
+        - "Modeled as a Biolink PairwiseGeneToGeneInteraction, the Biolink 4.4.6 interaction class that accepts a protein at both ends."
+        - "Binding edges from a peptide to a complex target are left out: https://github.com/NCATSTranslator/translator-ingests/issues/582"
 
     - subject_categories:
         - biolink:ChemicalEntity
         - biolink:MolecularMixture
         - biolink:SmallMolecule
+        - biolink:Protein
       predicates:
         - biolink:related_to
       object_categories:
@@ -335,6 +410,7 @@ target_info:
         - "UniProtKB"
       additional_notes:
         - "A target descriptor with one canonical UniProt accession is represented as biolink:Protein. Isoform-only values, such as P56856|P56856-2, resolve to one canonical protein rather than a complex."
+        - "A peptide ligand without a real PubChem CID and with a single UniProt ID in ligands.csv is also represented as biolink:Protein. The ligand node is written only when at least one of its edges is emitted."
     - node_category: biolink:MacromolecularComplex
       source_identifier_types:
         - "IUPHARobj"

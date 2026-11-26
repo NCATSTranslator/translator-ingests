@@ -36,7 +36,7 @@ def test_preparation_to_serialized_source_urls(
 ) -> None:
     """Ligands sharing a PubChem CID keep distinct links; membership links describe the target."""
     (tmp_path / "ligands.csv").write_text(
-        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"10250","2244"\n"4073","2244"\n'
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"10250","2244",""\n"4073","2244",""\n'
     )
     record = {
         "Target": "5-HT3AB" if complex_target else "example target",

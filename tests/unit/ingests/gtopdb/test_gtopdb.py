@@ -15,6 +15,7 @@ from translator_ingest.ingests.gtopdb.gtopdb import (
     TargetClassification,
     TargetDescriptor,
     _load_ligand_mapping,
+    _load_peptide_uniprot_mapping,
     _publication_list,
     get_latest_version,
     prepare,
@@ -237,7 +238,9 @@ def test_empty_interaction_rule_is_rejected() -> None:
 
 
 def test_prepare_preserves_source_target_fields(tmp_path):
-    (tmp_path / "ligands.csv").write_text('"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n')
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"1","2244",""\n'
+    )
     context = RecordingContext()
     context.input_files_dir = tmp_path
     source_record = {
@@ -268,7 +271,9 @@ def test_prepare_preserves_source_target_fields(tmp_path):
 
 
 def test_prepare_aggregates_duplicate_rows_and_retains_null_qualifiers(tmp_path):
-    (tmp_path / "ligands.csv").write_text('"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n')
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"1","2244",""\n'
+    )
     context = RecordingContext()
     context.input_files_dir = tmp_path
     base = {
@@ -300,7 +305,9 @@ def test_prepare_aggregates_duplicate_rows_and_retains_null_qualifiers(tmp_path)
 
 def test_prepare_preserves_target_species_descriptors(tmp_path):
     """Keep source target descriptors separate when their species differ."""
-    (tmp_path / "ligands.csv").write_text('"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n')
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"1","2244",""\n'
+    )
     context = RecordingContext()
     context.input_files_dir = tmp_path
     base = {
@@ -333,7 +340,9 @@ def test_prepare_preserves_target_species_descriptors(tmp_path):
 
 
 def test_load_ligand_mapping_and_publication_list(tmp_path):
-    (tmp_path / "ligands.csv").write_text('"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"1","2244"\n')
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"1","2244",""\n'
+    )
 
     assert _load_ligand_mapping(tmp_path) == {"1": "2244"}
     assert _publication_list("123|456") == ["PMID:123", "PMID:456"]
@@ -654,3 +663,128 @@ def test_get_latest_version_live():
     version = get_latest_version()
     major, _, minor = version.partition(".")
     assert major.isdigit() and minor.isdigit()
+
+
+def test_load_peptide_uniprot_mapping(tmp_path):
+    """Only ligands without a real PubChem CID and with exactly one UniProt accession are mapped."""
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n'
+        '"683","0","P06881"\n'  # CGRP: placeholder CID, single accession
+        '"5","","P01189"\n'  # blank CID, single accession
+        '"1","2244","P99999"\n'  # real CID wins
+        '"6","0","P01308|P01315"\n'  # several accessions
+        '"7","0",""\n'  # nothing to map
+    )
+
+    assert _load_peptide_uniprot_mapping(tmp_path) == {"683": "P06881", "5": "P01189"}
+
+
+def _peptide_record(**overrides):
+    record = {
+        "Ligand ID": "683",
+        "subject_id": float("nan"),
+        "ligand_uniprot_id": "P06881",
+        "subject_name": "αCGRP",
+        "target_id": "1",
+        "target_name": "example receptor",
+        "target_species": "Human",
+        "target_subunit_ids": "",
+        "target_gene_symbols": "GENE",
+        "target_uniprot_ids": "P08588",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "TRUE",
+        "PubMed ID": "123",
+    }
+    return record | overrides
+
+
+@pytest.mark.parametrize(
+    "overrides,expected_edges,expected_omissions",
+    [
+        (
+            # Endogenous agonist of a protein: regulates and binding both have a protein-subject class.
+            {},
+            {
+                ("GeneRegulatesGeneAssociation", "biolink:regulates", "UniProtKB:P08588"),
+                ("PairwiseGeneToGeneInteraction", "biolink:directly_physically_interacts_with", "UniProtKB:P08588"),
+            },
+            [],
+        ),
+        (
+            # Non-endogenous agonist: affects has no protein-subject class, so only binding remains.
+            {"Endogenous": "FALSE"},
+            {("PairwiseGeneToGeneInteraction", "biolink:directly_physically_interacts_with", "UniProtKB:P08588")},
+            ["affects to protein"],
+        ),
+        (
+            # Complex target: no interaction class accepts it, so only the complex composition remains.
+            {"target_id": "48", "target_subunit_ids": "45|46", "target_uniprot_ids": "Q16602|O60894"},
+            {
+                ("Association", "biolink:has_part", "UniProtKB:Q16602"),
+                ("Association", "biolink:has_part", "UniProtKB:O60894"),
+            },
+            ["regulates to complex", "directly_physically_interacts_with to complex"],
+        ),
+    ],
+)
+def test_peptide_ligand_edges(overrides, expected_edges, expected_omissions):
+    """Peptide ligands use protein-subject classes where Biolink 4.4.6 has one (translator-ingests#582)."""
+    context = RecordingContext()
+    graph = transform_ingest_all(context, [_peptide_record(**overrides)])[0]
+
+    assert {(type(edge).__name__, edge.predicate, edge.object) for edge in graph.edges} == expected_edges
+    for edge in graph.edges:
+        assert type(edge).model_validate(edge.model_dump()) == edge
+    interactions = [edge for edge in graph.edges if edge.predicate != "biolink:has_part"]
+    assert all(
+        edge.subject == "UniProtKB:P06881" and edge.species_context_qualifier == "NCBITaxon:9606"
+        for edge in interactions
+    )
+    regulates = [edge for edge in interactions if edge.predicate == "biolink:regulates"]
+    assert all(
+        edge.qualified_predicate == "biolink:causes" and edge.object_aspect_qualifier == "activity"
+        for edge in regulates
+    )
+    ligand = [node for node in graph.nodes if node.id == "UniProtKB:P06881"]
+    assert [type(node).__name__ for node in ligand] == (["Protein"] if interactions else [])
+    logged = [message for level, message in context.messages if "peptide-ligand" in message]
+    assert len(logged) == len(expected_omissions)
+    assert all(any(kind in message for message in logged) for kind in expected_omissions)
+
+
+def test_prepare_keeps_peptide_ligands(tmp_path):
+    """A peptide with a placeholder CID survives preparation and becomes a protein ligand."""
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n'
+        '"1","2244",""\n"683","0","P06881"\n"7","0",""\n'
+    )
+    context = RecordingContext()
+    context.input_files_dir = tmp_path
+    source_record = {
+        "Target": "example receptor",
+        "Target ID": "1",
+        "Target Subunit IDs": "",
+        "Target Gene Symbol": "GENE",
+        "Target UniProt ID": "P08588",
+        "Target Species": "Human",
+        "Ligand ID": "1",
+        "Ligand": "example ligand",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "TRUE",
+        "Ligand Context": "",
+        "PubMed ID": "123",
+    }
+    rows = [
+        source_record,
+        source_record | {"Ligand ID": "683", "Ligand": "αCGRP"},
+        source_record | {"Ligand ID": "7", "Ligand": "unmapped antibody"},
+    ]
+
+    prepared = prepare(context, rows)
+    graph = transform_ingest_all(context, prepared)[0]
+
+    assert sorted(record["Ligand ID"] for record in prepared) == ["1", "683"]
+    assert {edge.subject for edge in graph.edges} == {"PUBCHEM.COMPOUND:2244", "UniProtKB:P06881"}
+    assert {type(node).__name__ for node in graph.nodes if node.id == "UniProtKB:P06881"} == {"Protein"}
