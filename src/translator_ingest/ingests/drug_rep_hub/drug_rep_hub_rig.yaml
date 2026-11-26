@@ -59,6 +59,11 @@ ingest_info:
       description: >-
         One row per compound sample, providing compound identity information (PubChem CID, InChIKey, vendor
         name). Used to assign identifiers to the chemical (subject) nodes that the drug-annotation edges attach to.
+        The compound part of each broad_id (for example BRD-K98530306 in BRD-K98530306-003-16-7) links every edge
+        to its compound's record in the infores:drug-repurposing-hub RetrievalSource.source_record_urls:
+        https://repo-hub.broadinstitute.org/repurposing-app?q=<Broad compound ID>. Salts and batches of a compound
+        open the same record. A chemical with several compound IDs gets one URL for each, and a chemical whose
+        samples have no broad_id gets none.
 
   included_content:
     - file_name: repo-drug-annotation.txt
@@ -70,7 +75,7 @@ ingest_info:
       included_records: >-
         All sample rows that resolve to a chemical identifier (a numeric PubChem CID, or a valid InChIKey when
         no CID is present).
-      fields_used: pert_iname, InChIKey, vendor_name, pubchem_cid
+      fields_used: pert_iname, InChIKey, vendor_name, pubchem_cid, broad_id
 
   filtered_content:
     - file_name: repo-sample-annotation.txt

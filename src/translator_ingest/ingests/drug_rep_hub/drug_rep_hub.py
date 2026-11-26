@@ -4,6 +4,7 @@ import re
 
 from typing import Any, Iterable
 from collections import defaultdict
+from urllib.parse import quote
 from translator_ingest import INGESTS_PARSER_PATH
 
 from biolink_model.datamodel.pydanticmodel_v2 import (
@@ -16,6 +17,7 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     Gene,
     KnowledgeLevelEnum,
     AgentTypeEnum,
+    RetrievalSource,
 )
 from koza.model.graphs import KnowledgeGraph
 from translator_ingest.util.biolink import build_association_knowledge_sources, get_treatment_indication_predicates
@@ -25,12 +27,44 @@ from translator_ingest.util.transform_utils import entity_id
 inchikey_regex = re.compile('^[A-Z]{14}-[A-Z]{10}-[A-Z]$')
 
 INFORES_DRUG_REP_HUB = "infores:drug-repurposing-hub"
-DRUG_REP_HUB_SOURCES = build_association_knowledge_sources(primary=INFORES_DRUG_REP_HUB)
+DRUG_REP_HUB_RECORD_URL = "https://repo-hub.broadinstitute.org/repurposing-app?q={}"
+# The compound part of a Broad sample ID, e.g. BRD-K98530306 in BRD-K98530306-003-16-7.
+BROAD_COMPOUND_ID = re.compile(r"BRD-[A-Z][0-9]{8}")
 PUBCHEM_PREFIX = "PUBCHEM.COMPOUND:"
 INCHIKEY_PREFIX = "INCHIKEY:"
 SMILES_PREFIX = "SMILES:"
 
 SAMPLES = defaultdict(dict)
+# Broad compound IDs per pert_iname and chemical ID, in source order without repeats.
+SAMPLE_COMPOUND_IDS: defaultdict[str, defaultdict[str, list[str]]] = defaultdict(lambda: defaultdict(list))
+
+
+def broad_compound_id(broad_id: str) -> str | None:
+    """Return the compound part of a Broad sample ID, or None if it has none.
+
+    Every salt and batch of a compound opens the same Repurposing Hub record.
+
+    >>> broad_compound_id("BRD-K98530306-003-16-7")
+    'BRD-K98530306'
+    >>> broad_compound_id("") is None
+    True
+    """
+    match = BROAD_COMPOUND_ID.match(broad_id.strip())
+    return match.group(0) if match else None
+
+
+def drug_rep_hub_sources(compound_ids: list[str]) -> list[RetrievalSource]:
+    """Attribute an edge to the Hub, linking each compound's record when one is known.
+
+    >>> drug_rep_hub_sources(["BRD-K98530306"])[0].source_record_urls
+    ['https://repo-hub.broadinstitute.org/repurposing-app?q=BRD-K98530306']
+    >>> drug_rep_hub_sources([])[0].source_record_urls is None
+    True
+    """
+    if not compound_ids:
+        return build_association_knowledge_sources(primary=INFORES_DRUG_REP_HUB)
+    urls = [DRUG_REP_HUB_RECORD_URL.format(quote(compound_id, safe="")) for compound_id in compound_ids]
+    return build_association_knowledge_sources(primary=(INFORES_DRUG_REP_HUB, urls))
 
 def load_json_config(filename: str) -> dict:
     """Load a JSON config file and return its contents."""
@@ -112,10 +146,15 @@ def transform_drug_rep_hub_samples(
             )
             # nodes.append(chemical)
             SAMPLES[name][id] = chemical
+            compound_id = broad_compound_id(record["broad_id"])
+            if compound_id and compound_id not in SAMPLE_COMPOUND_IDS[name][id]:
+                SAMPLE_COMPOUND_IDS[name][id].append(compound_id)
         yield KnowledgeGraph(nodes=nodes, edges=[])
 
 
-def create_disease_association(chemical, indication, indication_info, predicate, clinical_phase, disease_area):
+def create_disease_association(
+    chemical, indication, indication_info, predicate, clinical_phase, disease_area, *, sources: list[RetrievalSource]
+):
     """
     Create a disease association between a chemical and a disease/phenotypic feature.
     Treatment predicates yield a ChemicalOrDrugOrTreatmentToDiseaseOrPhenotypicFeatureAssociation carrying the
@@ -135,7 +174,7 @@ def create_disease_association(chemical, indication, indication_info, predicate,
         "predicate": predicate,
         "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
         "agent_type": AgentTypeEnum.manual_agent,
-        "sources": DRUG_REP_HUB_SOURCES,
+        "sources": sources,
         "original_object": indication,
         #TODO: disease_area=disease_area,
     }
@@ -150,7 +189,7 @@ def create_disease_association(chemical, indication, indication_info, predicate,
     return disease, association
 
 
-def create_chemical_role_association(chemical, indication, indication_info, predicate):
+def create_chemical_role_association(chemical, indication, indication_info, predicate, *, sources: list[RetrievalSource]):
     chemical_role = ChemicalEntity(
         id=indication_info['xref'],
         name=indication_info['primary_name'] if indication_info['primary_name'] else indication,
@@ -162,13 +201,13 @@ def create_chemical_role_association(chemical, indication, indication_info, pred
         object=chemical_role.id,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        sources=DRUG_REP_HUB_SOURCES,
+        sources=sources,
         original_object = indication
     )
     return chemical_role, association
 
 
-def create_target_association(chemical, target_gene_symbol, moa):
+def create_target_association(chemical, target_gene_symbol, moa, *, sources: list[RetrievalSource]):
     if target_gene_symbol not in TARGETS:
         return None, None
     target_id = TARGETS[target_gene_symbol]
@@ -184,13 +223,15 @@ def create_target_association(chemical, target_gene_symbol, moa):
         object=target.id,
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_agent,
-        sources=DRUG_REP_HUB_SOURCES,
+        sources=sources,
         description = moa
     )
     return target, association
 
 
-def build_indication_association(chemical: ChemicalEntity, clinical_phase: str, indication: str, disease_area: str):
+def build_indication_association(
+    chemical: ChemicalEntity, clinical_phase: str, indication: str, disease_area: str, *, sources: list[RetrievalSource]
+):
     if indication not in INDICATIONS:
         return None, None
     indication_info = INDICATIONS[indication]
@@ -198,14 +239,17 @@ def build_indication_association(chemical: ChemicalEntity, clinical_phase: str, 
     if predicate == 'biolink:treats':
         predicate = predicate_map[clinical_phase]
     if predicate == 'biolink:has_chemical_role':
-        return create_chemical_role_association(chemical, indication, indication_info, predicate)
+        return create_chemical_role_association(chemical, indication, indication_info, predicate, sources=sources)
     else:
-        return create_disease_association(chemical, indication, indication_info, predicate, clinical_phase, disease_area)
+        return create_disease_association(
+            chemical, indication, indication_info, predicate, clinical_phase, disease_area, sources=sources
+        )
 
 
 @koza.prepare_data(tag="ingest_drug_rep_hub_annotations")
 def prepare_complexes(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
     koza.state['samples'] = SAMPLES
+    koza.state['sample_compound_ids'] = SAMPLE_COMPOUND_IDS
     for record in data:
         yield record
 
@@ -226,15 +270,20 @@ def transform_drug_rep_hub_annotations(
         if pert_iname in koza.state['samples']:
             for chem_id, chemical in koza.state['samples'][pert_iname].items():
                 nodes.append(chemical)
+                sources = drug_rep_hub_sources(koza.state['sample_compound_ids'][pert_iname][chem_id])
                 for indication in [ind.strip() for ind in indications.split('|')]:
-                    disease, indication_association = build_indication_association(chemical, clinical_phase, indication, disease_area)
+                    disease, indication_association = build_indication_association(
+                        chemical, clinical_phase, indication, disease_area, sources=sources
+                    )
                     if indication_association:
                         nodes.append(disease)
                         edges.append(indication_association)
                 if targets:
                     target_gene_symbols = [gene.strip() for gene in targets.split('|')]
                     for target_gene_symbol in target_gene_symbols:
-                        target, target_association = create_target_association(chemical, target_gene_symbol, moa)
+                        target, target_association = create_target_association(
+                            chemical, target_gene_symbol, moa, sources=sources
+                        )
                         if target_association:
                             nodes.append(target)
                             edges.append(target_association)
