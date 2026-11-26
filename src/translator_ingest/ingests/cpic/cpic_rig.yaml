@@ -8,12 +8,19 @@ source_info:
   citations:
     - https://www.clinpgx.org/cpic/pairs
   terms_of_use_info:
+    license_name: CC0 1.0 Universal (CPIC curated content)
+    license_url: https://creativecommons.org/publicdomain/zero/1.0/
     terms_of_use_url: https://www.clinpgx.org/page/dataUsagePolicy
     terms_of_use_description: >-
-      The upstream draft RIG claims CC BY 4.0 for CPIC. Confirm the applicable terms
-      for this ClinPGx-hosted API payload and its mixed-source annotations before
-      release. The ClinPGx entity ZIP files used for identifier mapping explicitly
-      contain CC BY-NC-SA 4.0 licenses; do not assume the combined output is CC BY.
+      The ClinPGx Data Usage Policy (read 2026-11-21) releases CPIC curated content
+      under CC0 1.0 and applies those terms to the CPIC database and API. CPIC asks
+      for attribution, the URL, access date and version. The upstream draft RIG's
+      CC BY 4.0 claim does not match. The API payload also carries ClinPGx evidence
+      levels and FDA label categories, and the ClinPGx entity files used for mapping
+      are CC BY-SA 4.0 with research-only and no-sale terms. The terms for that
+      mixed content are under discussion in
+      https://github.com/IlyaLab/TranslatorPharcogenomicsKG/issues/17 and
+      https://github.com/NCATSTranslator/translator-ingests/issues/578.
   data_access_locations:
     - https://api.clinpgx.org/v1/cpic/pair
     - https://www.clinpgx.org/cpic/pairs
@@ -73,7 +80,7 @@ ingest_info:
   future_considerations:
     - category: edge_content
       consideration: >-
-        Review broad inclusion of level C, the FDA-label filter, agent type, and
+        Review broad inclusion of level C, the FDA-label filter, and
         appropriate Biolink slots for CPIC/ClinPGx levels and FDA label categories.
         Raw levels and pair IDs are preserved by edge ID in transform metadata.
 target_info:
@@ -94,9 +101,11 @@ target_info:
       knowledge_level:
         - knowledge_assertion
       agent_type:
-        - text_mining_agent
+        - manual_agent
       primary_knowledge_sources:
         - infores:cpic
+      ## includes source_record_urls: https://www.clinpgx.org/guideline/{CPIC guideline accession}.
+      ## Guideline-level page. Pairs under the same guideline share a URL. CPIC has no pair-level page.
       edge_properties:
         - biolink:publications
       ui_explanation: CPIC lists this gene–drug pair; the association follows the draft PGKG RIG mapping.

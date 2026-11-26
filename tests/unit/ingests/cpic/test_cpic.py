@@ -118,7 +118,7 @@ def test_complete_transform(input_dir: Path, tmp_path: Path) -> None:
     assert edge["predicate"] == "biolink:associated_with_response_to"
     assert edge["publications"] == ["PMID:123", "PMID:456", "PMID:789"]
     assert edge["knowledge_level"] == "knowledge_assertion"
-    assert edge["agent_type"] == "text_mining_agent"
+    assert edge["agent_type"] == "manual_agent"
     sources = {source["resource_id"]: source for source in edge["sources"]}
     assert sources["infores:cpic"]["resource_role"] == "primary_knowledge_source"
     assert sources["infores:cpic"]["source_record_urls"] == [

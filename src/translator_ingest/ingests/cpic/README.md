@@ -21,7 +21,7 @@ chemical mappings must agree, or the transform fails.
 The output follows the draft RIG:
 
 - Gene → `biolink:associated_with_response_to` → Drug.
-- `knowledge_assertion` and `text_mining_agent` (agent type requires review).
+- `knowledge_assertion` and `manual_agent`.
 - Primary source `infores:cpic`, retrieved through aggregator `infores:clinpgx`.
 - PMID citations and guideline URLs; duplicate mapped pairs union these values.
 - Stable edge IDs and original PharmGKB accessions as node cross-references.
@@ -56,13 +56,21 @@ No changes to `graphs.yaml` enable this draft in the default graph.
 2. **FDA-label filter:** the upstream rule excludes the current ondansetron–CYP2D6
    pair despite its CPIC level A. Review whether this filter belongs in the CPIC
    ingest at all. It is implemented explicitly for comparison with the RIG.
-3. **Agent type:** both the RIG and notebook specify `text_mining_agent`; confirm
-   whether curated CPIC assertions should instead use `manual_agent`.
+3. **Agent type:** the upstream RIG and notebook specify `text_mining_agent`. This
+   ingest uses `manual_agent`. CPIC levels and guidelines are set by expert panels,
+   and the Biolink `AgentTypeEnum` assigns `manual_agent` to statements a human
+   curator concludes. The `infores:cpic` registration
+   ([biolink/information-resource-registry#155](https://github.com/biolink/information-resource-registry/pull/155))
+   uses the same value. The upstream RIG still needs the matching change.
 4. **Evidence attributes:** agree on Biolink representations for the raw levels
    and FDA categories before moving them from audit metadata onto edges.
-5. **License:** the original RIG says CC BY 4.0, but the required ClinPGx entity
-   mapping ZIPs contain CC BY-NC-SA 4.0 licenses. Confirm the terms for the
-   ClinPGx-hosted pair payload and mixed-source annotations before redistribution.
+5. **License:** the original RIG says CC BY 4.0. The ClinPGx data usage policy
+   releases CPIC curated content under CC0 1.0, including the CPIC database and API.
+   The ClinPGx evidence levels and FDA categories in the same payload, and the entity
+   mapping ZIPs, are CC BY-SA 4.0 with research-only and no-sale terms (the ZIPs
+   created 2026-10-05 stated CC BY-NC-SA 4.0). The mixed content is under discussion in
+   [IlyaLab/TranslatorPharcogenomicsKG#17](https://github.com/IlyaLab/TranslatorPharcogenomicsKG/issues/17)
+   and [#578](https://github.com/NCATSTranslator/translator-ingests/issues/578).
 
 ## Snapshot transform
 
