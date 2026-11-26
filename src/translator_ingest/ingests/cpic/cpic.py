@@ -220,8 +220,8 @@ def transform_row(koza: koza.KozaTransform, record: dict[str, Any]) -> Knowledge
             aggregating=INFORES_CLINPGX,
         ),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
-        # CPIC expert panels write the guidelines that assign each pair's level.
-        agent_type=AgentTypeEnum.manual_agent,
+        # The upstream PGx RIG and CPIC notebook both specify text_mining_agent.
+        agent_type=AgentTypeEnum.text_mining_agent,
     )
     return KnowledgeGraph(nodes=nodes, edges=[edge])
 

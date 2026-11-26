@@ -101,7 +101,7 @@ target_info:
       knowledge_level:
         - knowledge_assertion
       agent_type:
-        - manual_agent
+        - text_mining_agent
       primary_knowledge_sources:
         - infores:cpic
       ## includes source_record_urls: https://www.clinpgx.org/guideline/{CPIC guideline accession}.

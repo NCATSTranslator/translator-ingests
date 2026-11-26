@@ -21,7 +21,7 @@ chemical mappings must agree, or the transform fails.
 The output follows the draft RIG:
 
 - Gene → `biolink:associated_with_response_to` → Drug.
-- `knowledge_assertion` and `manual_agent`.
+- `knowledge_assertion` and `text_mining_agent`, as in the upstream RIG and notebook.
 - Primary source `infores:cpic`, retrieved through aggregator `infores:clinpgx`.
 - PMID citations and guideline URLs; duplicate mapped pairs union these values.
 - Stable edge IDs and original PharmGKB accessions as node cross-references.
@@ -56,12 +56,10 @@ No changes to `graphs.yaml` enable this draft in the default graph.
 2. **FDA-label filter:** the upstream rule excludes the current ondansetron–CYP2D6
    pair despite its CPIC level A. Review whether this filter belongs in the CPIC
    ingest at all. It is implemented explicitly for comparison with the RIG.
-3. **Agent type:** the upstream RIG and notebook specify `text_mining_agent`. This
-   ingest uses `manual_agent`. CPIC levels and guidelines are set by expert panels,
-   and the Biolink `AgentTypeEnum` assigns `manual_agent` to statements a human
-   curator concludes. The `infores:cpic` registration
-   ([biolink/information-resource-registry#155](https://github.com/biolink/information-resource-registry/pull/155))
-   uses the same value. The upstream RIG still needs the matching change.
+3. **Agent type:** the ingest uses `text_mining_agent`, the value in the upstream
+   RIG and notebook. CPIC levels and guidelines are set by expert panels, which the
+   Biolink `AgentTypeEnum` describes as `manual_agent`. A change belongs in the
+   upstream RIG first.
 4. **Evidence attributes:** agree on Biolink representations for the raw levels
    and FDA categories before moving them from audit metadata onto edges.
 5. **License:** the original RIG says CC BY 4.0. The ClinPGx data usage policy
