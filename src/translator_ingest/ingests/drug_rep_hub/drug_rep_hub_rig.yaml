@@ -33,8 +33,8 @@ source_info:
   source_status: maintained_as_needed_updates
   additional_notes:
     - >-
-      The ingest currently pins the 20200324 drug-annotation file and the 20240610 sample-annotation file
-      (see download.yaml). A future iteration should move to the latest 2025-08-19 release.
+      The ingest pins the 20250818 drug-annotation and sample-annotation files from the 2025-08-19 release
+      (see download.yaml).
 
 # Information about Ingested Content (the scope, content, and rationale for what is included and excluded in this ingest)
 ingest_info:
