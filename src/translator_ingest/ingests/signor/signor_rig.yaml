@@ -87,6 +87,9 @@ target_info:
           value_enumeration:
             - downregulated
             - upregulated
+        - property: biolink:causal_mechanism_qualifier
+          value_range:
+            - biolink:CausalMechanismQualifierEnum
         - property: biolink:species_context_qualifier
           value_description: NCBITaxon term to represent data in the SIGNOR TAX_ID column.
       knowledge_level:
@@ -95,6 +98,8 @@ target_info:
         - manual_agent
       primary_knowledge_sources:
         - infores:signor
+      additional_notes:
+        - "Modeled as a Biolink GeneRegulatesGeneAssociation, which accepts causal_mechanism_qualifier but not anatomical_context_qualifier, so these edges carry the SIGNOR MECHANISM and omit CELL_DATA and TISSUE_DATA."
       ## MHB: edge properties need to include "biolink" prefix.; QW: fixed, thanks for pointing this out!
       edge_properties:
         - biolink:publications

@@ -525,7 +525,7 @@ def test_transform_preserves_edge_routing_and_evidence(
         assert fields.get("object_aspect_qualifier") == ("abundance" if qualified else None)
         direction = "downregulated" if protein_pair else "decreased"
         assert fields.get("object_direction_qualifier") == (direction if qualified else None)
-        mechanism = "binding" if qualified and type(edge) is not GeneRegulatesGeneAssociation else None
+        mechanism = "binding" if qualified else None
         assert fields.get("causal_mechanism_qualifier") == mechanism
         species = None if not qualified and index == 1 else "NCBITaxon:9606"
         assert fields.get("species_context_qualifier") == species
@@ -743,7 +743,7 @@ def test_transform_preserves_mechanism_placement(
     subject_category: str,
     object_category: str,
 ) -> None:
-    """Keep mechanisms off gene-regulation and chemical-pair primaries where currently absent."""
+    """Carry the mechanism on qualified primaries, including gene regulation; chemical pairs have none."""
     signor_record.update(
         subject_category=subject_category,
         object_category=object_category,
@@ -759,8 +759,7 @@ def test_transform_preserves_mechanism_placement(
         assert primary.model_dump().get("causal_mechanism_qualifier") is None
         assert interaction.model_dump().get("causal_mechanism_qualifier") is None
     else:
-        primary_mechanism = None if object_category == subject_category == "protein" else expected_value
-        assert primary.model_dump().get("causal_mechanism_qualifier") == primary_mechanism
+        assert primary.model_dump().get("causal_mechanism_qualifier") == expected_value
         assert interaction.model_dump().get("causal_mechanism_qualifier") == expected_value
 
 
