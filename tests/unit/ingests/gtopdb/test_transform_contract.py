@@ -576,13 +576,13 @@ def test_complex_portal_substitution(
     ]
     graph = list(transform_ingest_all(context, prepare(context, rows)))[0]
 
-    complexes = {
-        node.in_taxon[0]: node for node in graph.nodes if node.id.split(":")[0] in {"ComplexPortal", "IUPHARobj"}
-    }
     taxa = {"Human": "NCBITaxon:9606", "Mouse": "NCBITaxon:10090", "Rat": "NCBITaxon:10116"}
-    assert {species: complexes[taxon].id for species, taxon in taxa.items()} == expected_ids
-    for node in complexes.values():
-        assert node.xref == (["IUPHARobj:378"] if node.id.startswith("ComplexPortal:") else None)
+    complexes = {node.id: node for node in graph.nodes if node.id.split(":")[0] in {"ComplexPortal", "IUPHARobj"}}
+    assert set(complexes) == set(expected_ids.values())
+    for node_id, node in complexes.items():
+        # An IUPHARobj node shared by several species carries all of them.
+        assert node.in_taxon == sorted(taxa[species] for species, used in expected_ids.items() if used == node_id)
+        assert node.xref == (["IUPHARobj:378"] if node_id.startswith("ComplexPortal:") else None)
     has_part_subjects = {
         (edge.subject, edge.species_context_qualifier) for edge in graph.edges if edge.predicate == "biolink:has_part"
     }

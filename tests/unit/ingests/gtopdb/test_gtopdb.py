@@ -541,6 +541,10 @@ def test_transform_qualifies_components_of_multi_species_source_complexes(
         "UniProtKB:P23979": ["NCBITaxon:10090"],
         "UniProtKB:Q9JHJ5": ["NCBITaxon:10090"],
     }
+    # Koza writes the first copy of a node, so every copy must carry both species.
+    assert {tuple(node.in_taxon) for node in graph.nodes if node.id == "IUPHARobj:378"} == {
+        ("NCBITaxon:10090", "NCBITaxon:9606")
+    }
     component_edges = [edge for edge in graph.edges if edge.predicate == "biolink:has_part"]
     assert {(edge.subject, edge.object, edge.species_context_qualifier) for edge in component_edges} == {
         ("IUPHARobj:378", "UniProtKB:P46098", "NCBITaxon:9606"),

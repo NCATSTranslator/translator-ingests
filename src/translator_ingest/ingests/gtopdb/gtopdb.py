@@ -641,6 +641,21 @@ def _transform_record(record: dict[str, Any], target: TargetDescriptor) -> Knowl
     return KnowledgeGraph(nodes=[subject, object, *component_nodes], edges=edges)
 
 
+def _share_node_taxa(nodes: list[NamedThing]) -> None:
+    """Give every copy of a node the union of the taxa recorded for its ID.
+
+    Koza writes only the first node per ID, so an IUPHARobj complex seen in human,
+    mouse and rat would otherwise be written with whichever species came first.
+    Species-specific composition stays on the has_part edges.
+    """
+    taxa: dict[str, set[str]] = {}
+    for node in nodes:
+        taxa.setdefault(node.id, set()).update(getattr(node, "in_taxon", None) or ())
+    for node in nodes:
+        if len(taxa[node.id]) > 1:
+            node.in_taxon = sorted(taxa[node.id])
+
+
 @koza.transform(tag="gtopdb_interaction_parsing")
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
     """Aggregate record graphs and report exclusions."""
@@ -654,6 +669,7 @@ def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]
         if graph is not None:
             nodes.extend(graph.nodes)
             edges.extend(graph.edges)
+    _share_node_taxa(nodes)
 
     unsupported_target_counts = Counter(
         target.classification for target in targets if target.classification in UNSUPPORTED_TARGET_CLASSES
