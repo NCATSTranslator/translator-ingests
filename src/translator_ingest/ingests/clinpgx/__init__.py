@@ -1,0 +1,1 @@
+"""ClinPGx relationship-summary ingest."""
