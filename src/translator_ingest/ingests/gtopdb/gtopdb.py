@@ -44,6 +44,12 @@ BIOLINK_RELATED = "biolink:related_to"
 GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
 GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
 
+# STOPGAP, remove when NCATSTranslator/Babel#1277 is resolved: NodeNorm does not resolve
+# IUPHARobj, so complexes that exactly match a Complex Portal complex take its normalizable ID.
+# Once NodeNorm resolves IUPHARobj, delete this matching (the constants below,
+# _complex_portal_protein_members, _load_complex_portal_index and the complex_portal_id
+# field), the Complex Portal entries in download.yaml, and the gtopdb entries in
+# pipeline.NORMALIZATION_STRICT_OVERRIDES and pipeline.DOWNLOAD_ATTEMPTS_OVERRIDES.
 # Complex Portal files listed in download.yaml, one per species of a GtoPdb complex target.
 COMPLEX_PORTAL_FILE_PATTERN = "complexportal_*.tsv"
 COMPLEX_PORTAL_ID_COLUMN = "#Complex ac"

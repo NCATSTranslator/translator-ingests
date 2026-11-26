@@ -65,7 +65,7 @@ ingest_info:
     species-qualified component set under one IUPHARobj node. Biolink 4.4.6 permits this qualifier on has_part
     (https://github.com/biolink/biolink-model/pull/1797;
     https://github.com/NCATSTranslator/translator-ingests/issues/510).
-    NodeNorm does not resolve IUPHARobj (https://github.com/NCATSTranslator/Babel/issues/1277). When a complex's
+    As a stopgap until NodeNorm resolves IUPHARobj (https://github.com/NCATSTranslator/Babel/issues/1277), when a complex's
     species and canonical UniProt members equal those of exactly one protein-only Complex Portal complex, the
     species-specific ComplexPortal ID is the node ID and IUPHARobj is kept as an xref. Other complexes keep their
     IUPHARobj ID, and the gtopdb source uses non-strict normalization so that they are not dropped.
@@ -104,6 +104,15 @@ ingest_info:
   filtered_content: []
 
   future_considerations:
+    - category: other
+      consideration: >-
+        Remove the IUPHARobj stopgap once NodeNorm resolves IUPHARobj
+        (https://github.com/NCATSTranslator/Babel/issues/1277): delete the Complex Portal entries in
+        download.yaml and the Complex Portal matching in gtopdb.py, and remove the gtopdb entries from
+        NORMALIZATION_STRICT_OVERRIDES and DOWNLOAD_ATTEMPTS_OVERRIDES in pipeline.py so that strict normalization
+        returns. Complexes then keep their IUPHARobj IDs, shared across species as before. Check first whether
+        Babel groups IUPHARobj with Complex Portal IDs, which would make the species-specific Complex Portal nodes
+        merge with them.
     - category: edge_content
       consideration: >-
         Implemented, including species-qualified composition for multi-species targets (#510): use Target ID, Target Subunit IDs, Target UniProt ID, and Target Species from
