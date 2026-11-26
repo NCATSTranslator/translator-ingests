@@ -79,6 +79,9 @@ ingest_info:
       description: >-
         Complete ligand list; used to map GtoPdb Ligand IDs to PubChem CIDs for chemical ligands, and to UniProt
         accessions for peptide ligands without a PubChem CID.
+    - file_name: "ligand_id_mapping.csv"
+      location: "https://www.guidetopharmacology.org/DATA/ligand_id_mapping.csv"
+      description: "Ligand cross-references; used for ChEMBL and ChEBI compound IDs when a ligand has no PubChem CID."
     - file_name: "complexportal_<taxon>.tsv"
       location: "https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/<taxon>.tsv"
       description: >-
@@ -95,16 +98,27 @@ ingest_info:
         A multi-species target may therefore also be a macromolecular complex, with a separate descriptor for
         each species. Multiple canonical UniProt accessions without multiple source subunit IDs are retained as
         unresolved multi-protein groups rather than inferred to be complexes. Records lacking a Target ID or
-        Ligand ID, and records whose Ligand ID has neither a PubChem CID in ligands.csv (blank, or GtoPdb's
-        placeholder CID 0, used for 2,392 ligands in 2026.3.1, mostly peptides and antibodies) nor a single
-        UniProt ID, are dropped because they cannot be turned into a well-identified edge. Peptide ligands with
-        a single UniProt ID (761 in 2026.3.1) are kept as biolink:Protein ligands.
+        Ligand ID are dropped. Each ligand is identified by the first of: its PubChem CID in ligands.csv
+        (GtoPdb's placeholder CID 0 and blanks do not count; 2,392 ligands in 2026.3.1 have neither a real
+        CID), its ChEMBL or ChEBI ID in ligand_id_mapping.csv (as a chemical), or its single UniProt ID in
+        ligands.csv (as biolink:Protein; peptides only). Records whose ligand has none of these are dropped
+        because they cannot be turned into a well-identified edge (1,369 ligands in 2026.3.1, mostly peptides
+        and antibodies).
       fields_used: "Ligand, Target, Target ID, Target Subunit IDs, Target Gene Symbol, Target UniProt ID, Target Species, Ligand ID, Type, Action, PubMed ID, Endogenous"
     - file_name: "ligands.csv"
       included_records: >-
         Used only for identifier mapping: Ligand ID to PubChem CID, or, for a ligand without a real PubChem CID,
         Ligand ID to its single UniProt ID. No edges are created directly from this file.
       fields_used: "Ligand ID, PubChem CID, UniProt ID"
+    - file_name: "ligand_id_mapping.csv"
+      included_records: >-
+        Used only for identifier mapping: for a ligand without a real PubChem CID, its ChEMBL compound ID, or
+        failing that its ChEBI ID. DrugBank IDs are not used because NodeNorm groups most biologic DrugBank IDs
+        with their UniProt protein, which puts them outside the chemical association classes. CAS numbers are
+        not used because most of those available here do not resolve in NodeNorm and, under this source's
+        non-strict normalization, would pass through as unnormalized nodes
+        (https://github.com/NCATSTranslator/translator-ingests/issues/582).
+      fields_used: "Ligand id, ChEMBl ID, Chebi ID"
 
   filtered_content: []
 
@@ -398,7 +412,7 @@ target_info:
       source_identifier_types:
         - "PUBCHEM.COMPOUND"
       additional_notes:
-        - "Ligand nodes are identified in the target graph by PubChem CID (PUBCHEM.COMPOUND prefix). The ingest reads the GtoPdb Ligand ID from interactions.csv and maps it to a PubChem CID via the ligands.csv file; ligands with no PubChem CID mapping are dropped. The ingest assigns biolink:ChemicalEntity to all ligand nodes; downstream normalization may reassign more specific categories such as biolink:SmallMolecule or biolink:MolecularMixture."
+        - "Ligand nodes are identified by PubChem CID (PUBCHEM.COMPOUND prefix) where GtoPdb gives a real one, otherwise by ChEMBL (CHEMBL.COMPOUND) or ChEBI ID from ligand_id_mapping.csv. The ingest reads the GtoPdb Ligand ID from interactions.csv and maps it through ligands.csv and ligand_id_mapping.csv. Peptides with none of these but a single UniProt ID become biolink:Protein ligands (see that node type); other ligands are dropped. The ingest assigns biolink:ChemicalEntity to all ligand nodes; downstream normalization may reassign more specific categories such as biolink:SmallMolecule or biolink:MolecularMixture."
     - node_category: biolink:MolecularMixture
       source_identifier_types:
         - "PUBCHEM.COMPOUND"

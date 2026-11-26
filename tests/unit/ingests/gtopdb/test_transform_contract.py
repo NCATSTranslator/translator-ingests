@@ -544,6 +544,7 @@ def test_complex_portal_substitution(
 ) -> None:
     """Exact, unambiguous species and member matches use Complex Portal IDs (NCATSTranslator/Babel#1277)."""
     copyfile(FIXTURES / "fixtures" / "ligands.csv", tmp_path / "ligands.csv")
+    copyfile(FIXTURES / "fixtures" / "ligand_id_mapping.csv", tmp_path / "ligand_id_mapping.csv")
     (tmp_path / "complexportal_9606.tsv").write_text(
         COMPLEX_PORTAL_HEADER
         + "CPX-271\t5-HT3A/B receptor\t9606\tP46098(2)|O95264(3)\n"
@@ -627,6 +628,7 @@ def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Pa
     PUBCHEM.COMPOUND: or PUBCHEM.COMPOUND:nan, which non-strict normalization would keep.
     """
     copyfile(FIXTURES / "fixtures" / "ligands.csv", tmp_path / "ligands.csv")
+    copyfile(FIXTURES / "fixtures" / "ligand_id_mapping.csv", tmp_path / "ligand_id_mapping.csv")
     source = pd.read_csv(FIXTURES / "fixtures" / "interactions.csv", dtype={"Ligand ID": str, "Target ID": str})
     records = prepare(context, source.to_dict(orient="records"))
     assert [record["target_name"] for record in records] == [

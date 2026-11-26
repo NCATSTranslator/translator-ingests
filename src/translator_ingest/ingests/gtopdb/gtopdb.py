@@ -67,6 +67,13 @@ COMPLEX_PORTAL_PROTEIN_MEMBER = re.compile(
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
 LIGAND_UNIPROT_COLUMN = "UniProt ID"
+# Chemical identifiers from ligand_id_mapping.csv, tried in this order for a ligand without
+# a PubChem CID. Both resolve to chemicals in NodeNorm. DrugBank (biologics normalize to
+# proteins) and CAS (mostly unresolved) are not used (translator-ingests#582).
+LIGAND_CHEMICAL_XREFS = (
+    ("ChEMBl ID", re.compile(r"CHEMBL[0-9]+"), "CHEMBL.COMPOUND:{}"),
+    ("Chebi ID", re.compile(r"CHEBI:[0-9]+"), "{}"),
+)
 # A UniProtKB accession (https://www.uniprot.org/help/accession_numbers).
 UNIPROT_ACCESSION = re.compile(r"[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2}")
 PUBLICATIONS_COLUMN = "PubMed ID"
@@ -377,6 +384,31 @@ def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
     return {ligand_id: cid for ligand_id, cid in mapping.items() if cid}
 
 
+def _load_ligand_chemical_xrefs(input_files_dir: Path) -> dict[str, str]:
+    """Map ligands without a real PubChem CID to a ChEMBL or ChEBI chemical CURIE.
+
+    Mostly peptides, antibodies and nucleic acids that ChEMBL or ChEBI record as compounds.
+    """
+    ligands = pd.read_csv(input_files_dir / "ligands.csv", skiprows=1, dtype=str)
+    without_cid = {
+        _source_text(ligand_id)
+        for ligand_id, cid in zip(ligands[LIGAND_ID_COLUMN], ligands[PUBCHEM_ID_COLUMN])
+        if _pubchem_cid(cid) is None
+    }
+    xrefs = pd.read_csv(input_files_dir / "ligand_id_mapping.csv", skiprows=1, dtype=str)
+    mapping = {}
+    for _, row in xrefs.iterrows():
+        ligand_id = _source_text(row["Ligand id"])
+        if ligand_id not in without_cid:
+            continue
+        for column, pattern, curie in LIGAND_CHEMICAL_XREFS:
+            value = _source_text(row[column])
+            if pattern.fullmatch(value):
+                mapping[ligand_id] = curie.format(value)
+                break
+    return mapping
+
+
 def _load_peptide_uniprot_mapping(input_files_dir: Path) -> dict[str, str]:
     """Map ligands without a real PubChem CID to their single UniProt accession.
 
@@ -442,6 +474,7 @@ def _prepare_interactions(
     ligand_mapping: dict[str, str],
     complex_portal_index: dict[tuple[str, frozenset[str]], str],
     peptide_mapping: dict[str, str] | None = None,
+    chemical_xrefs: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Aggregate source rows, retain target metadata, and record Complex Portal matches."""
     source = pd.DataFrame(data)[list(SOURCE_COLUMNS)].drop_duplicates()
@@ -453,9 +486,15 @@ def _prepare_interactions(
     prepared = source.groupby(list(GROUP_COLUMNS), as_index=False, dropna=False).agg(aggregations)
     prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
     ligand_ids = prepared[LIGAND_ID_COLUMN].astype(str).str.strip()
+    # Ligand identity, in order: PubChem CID, ChEMBL or ChEBI compound, single UniProt accession.
     prepared["subject_id"] = ligand_ids.map(ligand_mapping)
-    prepared["ligand_uniprot_id"] = ligand_ids.map(peptide_mapping or {})
-    prepared = prepared.dropna(subset=["subject_id", "ligand_uniprot_id"], how="all").drop_duplicates()
+    has_chemical = prepared["subject_id"].notna()
+    prepared["ligand_chemical_curie"] = ligand_ids.map(chemical_xrefs or {}).where(~has_chemical)
+    has_chemical |= prepared["ligand_chemical_curie"].notna()
+    prepared["ligand_uniprot_id"] = ligand_ids.map(peptide_mapping or {}).where(~has_chemical)
+    prepared = prepared.dropna(
+        subset=["subject_id", "ligand_chemical_curie", "ligand_uniprot_id"], how="all"
+    ).drop_duplicates()
     records = prepared.to_dict(orient="records")
     for record in records:
         key = TargetDescriptor.from_record(record).complex_member_key
@@ -472,6 +511,7 @@ def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[di
         _load_ligand_mapping(input_files_dir),
         _load_complex_portal_index(input_files_dir),
         _load_peptide_uniprot_mapping(input_files_dir),
+        _load_ligand_chemical_xrefs(input_files_dir),
     )
 
 
@@ -491,12 +531,20 @@ def _publication_list(value: str | None) -> list[str] | None:
 def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple[ChemicalEntity | Protein, NamedThing]:
     """Create the ligand and target nodes for one record.
 
-    A ligand with a PubChem CID is a chemical. A peptide ligand mapped through its
-    UniProt accession is a protein.
+    A ligand with a PubChem CID, or failing that a ChEMBL or ChEBI compound ID, is a
+    chemical. A peptide ligand mapped only through its UniProt accession is a protein.
     """
     peptide_accession = _source_text(record.get("ligand_uniprot_id"))
-    if peptide_accession and not _source_text(record.get("subject_id")):
-        subject: ChemicalEntity | Protein = Protein(id=f"UniProtKB:{peptide_accession}", name=record["subject_name"])
+    chemical_curie = _source_text(record.get("ligand_chemical_curie"))
+    if _source_text(record.get("subject_id")):
+        subject: ChemicalEntity | Protein = ChemicalEntity(
+            id=f"PUBCHEM.COMPOUND:{record['subject_id']}",
+            name=record["subject_name"],
+        )
+    elif chemical_curie:
+        subject = ChemicalEntity(id=chemical_curie, name=record["subject_name"])
+    elif peptide_accession:
+        subject = Protein(id=f"UniProtKB:{peptide_accession}", name=record["subject_name"])
     else:
         subject = ChemicalEntity(
             id=f"PUBCHEM.COMPOUND:{record['subject_id']}",

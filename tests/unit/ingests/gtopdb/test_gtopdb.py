@@ -59,6 +59,9 @@ GTOPDB_SOURCES = [
 ]
 
 
+LIGAND_ID_MAPPING_HEADER = '"# GtoPdb Version: test"\n"Ligand id","Name","Species","Type","PubChem SID","PubChem CID","ChEMBl ID","Chebi ID","UniProt id","Ensembl ID","IUPAC name","INN","CAS","DrugBank ID","Drug Central ID"\n'
+
+
 def test_target_descriptor_preserves_source_identity_and_components():
     target = TargetDescriptor.from_record(
         {
@@ -241,6 +244,7 @@ def test_prepare_preserves_source_target_fields(tmp_path):
     (tmp_path / "ligands.csv").write_text(
         '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"1","2244",""\n'
     )
+    (tmp_path / "ligand_id_mapping.csv").write_text(LIGAND_ID_MAPPING_HEADER)
     context = RecordingContext()
     context.input_files_dir = tmp_path
     source_record = {
@@ -274,6 +278,7 @@ def test_prepare_aggregates_duplicate_rows_and_retains_null_qualifiers(tmp_path)
     (tmp_path / "ligands.csv").write_text(
         '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"1","2244",""\n'
     )
+    (tmp_path / "ligand_id_mapping.csv").write_text(LIGAND_ID_MAPPING_HEADER)
     context = RecordingContext()
     context.input_files_dir = tmp_path
     base = {
@@ -308,6 +313,7 @@ def test_prepare_preserves_target_species_descriptors(tmp_path):
     (tmp_path / "ligands.csv").write_text(
         '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"1","2244",""\n'
     )
+    (tmp_path / "ligand_id_mapping.csv").write_text(LIGAND_ID_MAPPING_HEADER)
     context = RecordingContext()
     context.input_files_dir = tmp_path
     base = {
@@ -343,6 +349,7 @@ def test_load_ligand_mapping_and_publication_list(tmp_path):
     (tmp_path / "ligands.csv").write_text(
         '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"1","2244",""\n'
     )
+    (tmp_path / "ligand_id_mapping.csv").write_text(LIGAND_ID_MAPPING_HEADER)
 
     assert _load_ligand_mapping(tmp_path) == {"1": "2244"}
     assert _publication_list("123|456") == ["PMID:123", "PMID:456"]
@@ -675,6 +682,7 @@ def test_load_peptide_uniprot_mapping(tmp_path):
         '"6","0","P01308|P01315"\n'  # several accessions
         '"7","0",""\n'  # nothing to map
     )
+    (tmp_path / "ligand_id_mapping.csv").write_text(LIGAND_ID_MAPPING_HEADER)
 
     assert _load_peptide_uniprot_mapping(tmp_path) == {"683": "P06881", "5": "P01189"}
 
@@ -759,6 +767,7 @@ def test_prepare_keeps_peptide_ligands(tmp_path):
         '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n'
         '"1","2244",""\n"683","0","P06881"\n"7","0",""\n'
     )
+    (tmp_path / "ligand_id_mapping.csv").write_text(LIGAND_ID_MAPPING_HEADER)
     context = RecordingContext()
     context.input_files_dir = tmp_path
     source_record = {
@@ -788,3 +797,56 @@ def test_prepare_keeps_peptide_ligands(tmp_path):
     assert sorted(record["Ligand ID"] for record in prepared) == ["1", "683"]
     assert {edge.subject for edge in graph.edges} == {"PUBCHEM.COMPOUND:2244", "UniProtKB:P06881"}
     assert {type(node).__name__ for node in graph.nodes if node.id == "UniProtKB:P06881"} == {"Protein"}
+
+
+def test_ligand_identity_precedence(tmp_path):
+    """PubChem CID, then ChEMBL, then ChEBI, then a single UniProt accession (translator-ingests#582)."""
+    (tmp_path / "ligands.csv").write_text(
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n'
+        '"1","2244","P99999"\n'  # real CID wins over everything
+        '"2","0","P06881"\n'  # ChEMBL wins over UniProt
+        '"3","","P01189"\n'  # ChEBI wins over UniProt
+        '"4","0","P10092"\n'  # only UniProt
+        '"5","0",""\n'  # nothing usable: dropped
+        '"6","0",""\n'  # malformed ChEMBL and multi-value ChEBI: dropped
+    )
+    (tmp_path / "ligand_id_mapping.csv").write_text(
+        LIGAND_ID_MAPPING_HEADER
+        + '"1","a","Human","Synthetic organic","","2244","CHEMBL25","","","","","","","",""\n'
+        + '"2","b","Human","Peptide","","","CHEMBL1201823","","P06881","","","","","DB01281",""\n'
+        + '"3","c","Human","Peptide","","","","CHEBI:3892","P01189","","","","","",""\n'
+        + '"4","d","Human","Peptide","","","","","P10092","","","","","",""\n'
+        + '"5","e","Human","Antibody","","","","","","","","","9000-00-0","DB00001",""\n'
+        + '"6","f","Human","Peptide","","","CHEMBL","CHEBI:1|CHEBI:2","","","","","","",""\n'
+    )
+    context = RecordingContext()
+    context.input_files_dir = tmp_path
+    base = {
+        "Target": "example receptor",
+        "Target ID": "1",
+        "Target Subunit IDs": "",
+        "Target Gene Symbol": "GENE",
+        "Target UniProt ID": "P08588",
+        "Target Species": "Human",
+        "Ligand": "ligand",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "FALSE",
+        "Ligand Context": "",
+        "PubMed ID": "123",
+    }
+
+    graph = transform_ingest_all(context, prepare(context, [base | {"Ligand ID": str(i)} for i in range(1, 7)]))[0]
+
+    subjects = {edge.subject for edge in graph.edges}
+    assert subjects == {"PUBCHEM.COMPOUND:2244", "CHEMBL.COMPOUND:CHEMBL1201823", "CHEBI:3892", "UniProtKB:P10092"}
+    categories = {node.id: type(node).__name__ for node in graph.nodes if node.id in subjects}
+    assert categories == {
+        "PUBCHEM.COMPOUND:2244": "ChemicalEntity",
+        "CHEMBL.COMPOUND:CHEMBL1201823": "ChemicalEntity",
+        "CHEBI:3892": "ChemicalEntity",
+        "UniProtKB:P10092": "Protein",
+    }
+    # A ChEMBL-identified peptide is a chemical, so its affects edge uses the chemical class.
+    chembl_affects = [e for e in graph.edges if e.subject.startswith("CHEMBL") and e.predicate == "biolink:affects"]
+    assert [type(e).__name__ for e in chembl_affects] == ["ChemicalAffectsGeneAssociation"]

@@ -16,3 +16,7 @@
   local_name: complexportal_562.tsv
 - url: https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/2697049.tsv
   local_name: complexportal_2697049.tsv
+# Cross-references for ligands, used for ChEMBL and ChEBI identifiers when a ligand
+# has no PubChem CID (translator-ingests#582).
+- url: https://www.guidetopharmacology.org/DATA/ligand_id_mapping.csv
+  local_name: ligand_id_mapping.csv
