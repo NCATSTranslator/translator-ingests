@@ -621,18 +621,20 @@ def test_species_qualified_components_survive_jsonl_and_merge_keys(context: Koza
 
 
 def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Path) -> None:
-    """Exercise CSV mapping, grouping, missing scalars, and real graph serialization."""
+    """Exercise CSV mapping, grouping, missing scalars, and real graph serialization.
+
+    Ligands with a blank or missing PubChem CID are dropped rather than emitted as
+    PUBCHEM.COMPOUND: or PUBCHEM.COMPOUND:nan, which non-strict normalization would keep.
+    """
     copyfile(FIXTURES / "fixtures" / "ligands.csv", tmp_path / "ligands.csv")
     source = pd.read_csv(FIXTURES / "fixtures" / "interactions.csv", dtype={"Ligand ID": str, "Target ID": str})
     records = prepare(context, source.to_dict(orient="records"))
     assert [record["target_name"] for record in records] == [
         "A target",
         "B missing labels",
-        "C blank CID",
-        "D missing CID",
         "G isoform",
     ]
-    assert [record["subject_id"] for record in records] == ["2244", "2244", "", "nan", "0055"]
+    assert [record["subject_id"] for record in records] == ["2244", "2244", "0055"]
     assert records[0]["PubMed ID"] == "123|123|456"
     assert all(pd.isna(records[1][key]) for key in ("Type", "Action", "Endogenous"))
     assert isinstance(records[1]["Type"], float)
@@ -640,10 +642,6 @@ def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Pa
     assert [edge.subject for edge in graph.edges] == [
         "PUBCHEM.COMPOUND:2244",
         "PUBCHEM.COMPOUND:2244",
-        "PUBCHEM.COMPOUND:",
-        "PUBCHEM.COMPOUND:",
-        "PUBCHEM.COMPOUND:nan",
-        "PUBCHEM.COMPOUND:nan",
         "PUBCHEM.COMPOUND:0055",
         "PUBCHEM.COMPOUND:0055",
     ]
@@ -657,8 +655,6 @@ def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Pa
     assert [node["id"] for node in written_nodes] == [
         "PUBCHEM.COMPOUND:2244",
         "UniProtKB:P08588",
-        "PUBCHEM.COMPOUND:",
-        "PUBCHEM.COMPOUND:nan",
         "PUBCHEM.COMPOUND:0055",
         "UniProtKB:P56856",
     ]

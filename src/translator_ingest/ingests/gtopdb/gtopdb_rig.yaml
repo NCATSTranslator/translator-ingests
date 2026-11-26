@@ -93,7 +93,8 @@ ingest_info:
         A multi-species target may therefore also be a macromolecular complex, with a separate descriptor for
         each species. Multiple canonical UniProt accessions without multiple source subunit IDs are retained as
         unresolved multi-protein groups rather than inferred to be complexes. Records lacking a Target ID or
-        Ligand ID, and records whose Ligand ID has no PubChem CID mapping in ligands.csv, are dropped because
+        Ligand ID, and records whose Ligand ID has no PubChem CID in ligands.csv (blank, or GtoPdb's placeholder CID 0, used for 2,356
+        ligands in 2026.3.1, mostly peptides and antibodies), are dropped because
         they cannot be turned into a well-identified edge.
       fields_used: "Ligand, Target, Target ID, Target Subunit IDs, Target Gene Symbol, Target UniProt ID, Target Species, Ligand ID, Type, Action, PubMed ID, Endogenous"
     - file_name: "ligands.csv"

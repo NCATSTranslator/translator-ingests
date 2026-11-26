@@ -337,19 +337,33 @@ def get_latest_version() -> str:
     return match.group("version")
 
 
+def _pubchem_cid(value: Any) -> str | None:
+    """Return a stripped PubChem CID, or None for blanks and GtoPdb's "0" placeholder.
+
+    GtoPdb writes CID 0 for 2,356 ligands without a PubChem record (mostly peptides and
+    antibodies). Mapping it would merge unrelated ligands into PUBCHEM.COMPOUND:0.
+
+    >>> _pubchem_cid(" 2244 "), _pubchem_cid("0055")
+    ('2244', '0055')
+    >>> [_pubchem_cid(value) for value in ("0", "", " ", None, float("nan"))]
+    [None, None, None, None, None]
+    """
+    identifier = _source_text(value)
+    return identifier if re.fullmatch(r"[0-9]+", identifier) and int(identifier) > 0 else None
+
+
 def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
-    """Load the source Ligand ID to PubChem CID crosswalk."""
+    """Load the source Ligand ID to PubChem CID crosswalk, keeping only real CIDs."""
     ligands = pd.read_csv(
         input_files_dir / "ligands.csv",
         skiprows=1,
         dtype={LIGAND_ID_COLUMN: str, PUBCHEM_ID_COLUMN: str},
     )
-    return dict(
-        zip(
-            ligands[LIGAND_ID_COLUMN].astype(str).str.strip(),
-            ligands[PUBCHEM_ID_COLUMN].astype(str).str.strip(),
-        )
-    )
+    mapping = {
+        _source_text(ligand_id): _pubchem_cid(cid)
+        for ligand_id, cid in zip(ligands[LIGAND_ID_COLUMN], ligands[PUBCHEM_ID_COLUMN])
+    }
+    return {ligand_id: cid for ligand_id, cid in mapping.items() if cid}
 
 
 def _complex_portal_protein_members(members: str) -> frozenset[str] | None:
