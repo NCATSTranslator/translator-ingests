@@ -46,7 +46,11 @@ logger = get_logger(__name__)
 
 # Source-specific normalization overrides.
 # All sources default to strict normalization (True).
-NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {}
+NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {
+    # NodeNorm does not resolve IUPHARobj (NCATSTranslator/Babel#1277). GtoPdb complexes
+    # without a Complex Portal match keep their IUPHARobj IDs; restore strict once it does.
+    "gtopdb": False,
+}
 
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):

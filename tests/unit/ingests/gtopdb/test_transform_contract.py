@@ -523,6 +523,74 @@ def test_complex_order_and_filtered_species_context(
     }
 
 
+COMPLEX_PORTAL_HEADER = (
+    "#Complex ac\tRecommended name\tTaxonomy identifier\tIdentifiers (and stoichiometry) of molecules in complex\n"
+)
+
+
+@pytest.mark.parametrize(
+    "extra_complex_portal_rows,expected_ids",
+    [
+        ([], {"Human": "ComplexPortal:CPX-271", "Mouse": "ComplexPortal:CPX-275", "Rat": "IUPHARobj:378"}),
+        (
+            # A second human complex with the same members makes the human match ambiguous.
+            ["CPX-9999\tduplicate\t9606\tO95264(1)|P46098(1)\n"],
+            {"Human": "IUPHARobj:378", "Mouse": "ComplexPortal:CPX-275", "Rat": "IUPHARobj:378"},
+        ),
+    ],
+)
+def test_complex_portal_substitution(
+    context: KozaTransform, tmp_path: Path, extra_complex_portal_rows: list[str], expected_ids: dict[str, str]
+) -> None:
+    """Exact, unambiguous species and member matches use Complex Portal IDs (NCATSTranslator/Babel#1277)."""
+    copyfile(FIXTURES / "fixtures" / "ligands.csv", tmp_path / "ligands.csv")
+    (tmp_path / "complexportal_9606.tsv").write_text(
+        COMPLEX_PORTAL_HEADER
+        + "CPX-271\t5-HT3A/B receptor\t9606\tP46098(2)|O95264(3)\n"
+        # Nested complexes and processed chains never match, even with the same proteins.
+        + "CPX-6015\treceptor-ligand complex\t9606\tCPX-6024(1)|P46098(1)|O95264(1)\n"
+        + "".join(extra_complex_portal_rows)
+    )
+    (tmp_path / "complexportal_10090.tsv").write_text(
+        COMPLEX_PORTAL_HEADER + "CPX-275\t5-HT3A/B receptor\t10090\tP23979(2)|Q9JHJ5-2(3)\n"
+    )
+    source_row = {
+        "Target": "5-HT3AB",
+        "Target ID": "378",
+        "Target Subunit IDs": "373|374",
+        "Target Gene Symbol": "HTR3A|HTR3B",
+        "Target UniProt ID": "P46098|O95264",
+        "Target Species": "Human",
+        "Ligand ID": "1",
+        "Ligand": "example ligand",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "FALSE",
+        "Ligand Context": "",
+        "PubMed ID": "123",
+    }
+    rows = [
+        source_row,
+        source_row | {"Target Species": "Mouse", "Target UniProt ID": "P23979|Q9JHJ5"},
+        source_row | {"Target Species": "Rat", "Target UniProt ID": "P35563|Q9JJ16"},
+    ]
+    graph = list(transform_ingest_all(context, prepare(context, rows)))[0]
+
+    complexes = {
+        node.in_taxon[0]: node for node in graph.nodes if node.id.split(":")[0] in {"ComplexPortal", "IUPHARobj"}
+    }
+    taxa = {"Human": "NCBITaxon:9606", "Mouse": "NCBITaxon:10090", "Rat": "NCBITaxon:10116"}
+    assert {species: complexes[taxon].id for species, taxon in taxa.items()} == expected_ids
+    for node in complexes.values():
+        assert node.xref == (["IUPHARobj:378"] if node.id.startswith("ComplexPortal:") else None)
+    has_part_subjects = {
+        (edge.subject, edge.species_context_qualifier) for edge in graph.edges if edge.predicate == "biolink:has_part"
+    }
+    assert has_part_subjects == {(expected_ids[species], taxon) for species, taxon in taxa.items()}
+    interaction_objects = {edge.object for edge in graph.edges if edge.predicate != "biolink:has_part"}
+    assert interaction_objects == set(expected_ids.values())
+
+
 def test_species_qualified_components_survive_jsonl_and_merge_keys(context: KozaTransform, tmp_path: Path) -> None:
     """Written has_part edges keep species, and ORION merges per species, never across species (#510)."""
     human = RECORD | {

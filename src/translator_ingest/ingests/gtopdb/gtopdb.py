@@ -44,6 +44,18 @@ BIOLINK_RELATED = "biolink:related_to"
 GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
 GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
 
+# Complex Portal files listed in download.yaml, one per species of a GtoPdb complex target.
+COMPLEX_PORTAL_FILE_PATTERN = "complexportal_*.tsv"
+COMPLEX_PORTAL_ID_COLUMN = "#Complex ac"
+COMPLEX_PORTAL_TAXON_COLUMN = "Taxonomy identifier"
+COMPLEX_PORTAL_MEMBERS_COLUMN = "Identifiers (and stoichiometry) of molecules in complex"
+# A plain UniProt accession, optionally an isoform, with its stoichiometry. Members that
+# are other complexes (CPX-), chemicals (CHEBI:), RNAs (URS), processed chains (-PRO_)
+# or bracketed alternatives do not match, so complexes containing them are never used.
+COMPLEX_PORTAL_PROTEIN_MEMBER = re.compile(
+    r"(?P<accession>[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})(?:-\d+)?\(\d+\)"
+)
+
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
 PUBLICATIONS_COLUMN = "PubMed ID"
@@ -201,6 +213,7 @@ class TargetDescriptor:
     subunit_ids: tuple[str, ...]
     gene_symbols: tuple[str, ...]
     uniprot_ids: tuple[str, ...]
+    complex_portal_id: str = ""
 
     @classmethod
     def from_record(cls, record: dict[str, Any]) -> "TargetDescriptor":
@@ -212,6 +225,7 @@ class TargetDescriptor:
             subunit_ids=_pipe_values(record.get("target_subunit_ids")),
             gene_symbols=_pipe_values(record.get("target_gene_symbols")),
             uniprot_ids=_pipe_values(record.get("target_uniprot_ids")) or _pipe_values(record.get("object_id")),
+            complex_portal_id=_source_text(record.get("complex_portal_id")),
         )
 
     @property
@@ -263,11 +277,36 @@ class TargetDescriptor:
         return f"UniProtKB:{self.canonical_uniprot_ids[0]}"
 
     @property
-    def complex_curie(self) -> str | None:
+    def iuphar_curie(self) -> str | None:
         """Return the GtoPdb target CURIE for a source-defined complex."""
         if self.classification is not TargetClassification.MACROMOLECULAR_COMPLEX:
             return None
         return f"IUPHARobj:{self.source_id}"
+
+    @property
+    def complex_curie(self) -> str | None:
+        """Return the node CURIE for a complex, preferring a matched Complex Portal ID.
+
+        NodeNorm does not resolve IUPHARobj (NCATSTranslator/Babel#1277), so a
+        species-specific Complex Portal ID with the same members is used when one
+        was matched during preparation.
+
+        >>> human = TargetDescriptor("378", "5-HT3AB", "Human", ("373", "374"), (), ("P46098", "O95264"))
+        >>> human.complex_curie
+        'IUPHARobj:378'
+        >>> TargetDescriptor("378", "5-HT3AB", "Human", ("373", "374"), (), (), "CPX-271").complex_curie
+        'ComplexPortal:CPX-271'
+        """
+        if self.iuphar_curie is None:
+            return None
+        return f"ComplexPortal:{self.complex_portal_id}" if self.complex_portal_id else self.iuphar_curie
+
+    @property
+    def complex_member_key(self) -> tuple[str, frozenset[str]] | None:
+        """Return the (taxon, canonical UniProt members) key used to match Complex Portal."""
+        if self.iuphar_curie is None or not self.species_context_qualifier or not self.canonical_uniprot_ids:
+            return None
+        return self.species_context_qualifier, frozenset(self.canonical_uniprot_ids)
 
     @property
     def species_context_qualifier(self) -> str | None:
@@ -313,6 +352,43 @@ def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
     )
 
 
+def _complex_portal_protein_members(members: str) -> frozenset[str] | None:
+    """Return canonical UniProt members, or None if any member is not a plain protein.
+
+    >>> sorted(_complex_portal_protein_members("P46098(2)|O95264(3)"))
+    ['O95264', 'P46098']
+    >>> _complex_portal_protein_members("CPX-6024(1)|P15260(2)|P38484(2)") is None
+    True
+    >>> _complex_portal_protein_members("Q6UXL0(1)|Q9UHD0-PRO_0000015379(1)") is None
+    True
+    """
+    accessions = []
+    for member in members.split("|"):
+        match = COMPLEX_PORTAL_PROTEIN_MEMBER.fullmatch(member.strip())
+        if match is None:
+            return None
+        accessions.append(match["accession"])
+    return frozenset(accessions)
+
+
+def _load_complex_portal_index(input_files_dir: Path) -> dict[tuple[str, frozenset[str]], str]:
+    """Index protein-only Complex Portal complexes by taxon and members.
+
+    A key shared by several complexes is ambiguous and is left out, so a GtoPdb
+    complex keeps its IUPHARobj ID unless exactly one complex matches.
+    """
+    candidates: dict[tuple[str, frozenset[str]], set[str]] = {}
+    for path in sorted(input_files_dir.glob(COMPLEX_PORTAL_FILE_PATTERN)):
+        table = pd.read_csv(path, sep="\t", dtype=str).fillna("")
+        for complex_id, taxon, members in table[
+            [COMPLEX_PORTAL_ID_COLUMN, COMPLEX_PORTAL_TAXON_COLUMN, COMPLEX_PORTAL_MEMBERS_COLUMN]
+        ].itertuples(index=False):
+            proteins = _complex_portal_protein_members(members)
+            if proteins:
+                candidates.setdefault((f"NCBITaxon:{taxon.strip()}", proteins), set()).add(complex_id.strip())
+    return {key: next(iter(ids)) for key, ids in candidates.items() if len(ids) == 1}
+
+
 def _join_publications(values: pd.Series) -> str:
     """Combine distinct source publication cells in their input order."""
     return "|".join(pd.unique(values.dropna().astype(str)))
@@ -321,8 +397,9 @@ def _join_publications(values: pd.Series) -> str:
 def _prepare_interactions(
     data: Iterable[dict[str, Any]],
     ligand_mapping: dict[str, str],
+    complex_portal_index: dict[tuple[str, frozenset[str]], str],
 ) -> list[dict[str, Any]]:
-    """Aggregate source rows and retain source target metadata for emission."""
+    """Aggregate source rows, retain target metadata, and record Complex Portal matches."""
     source = pd.DataFrame(data)[list(SOURCE_COLUMNS)].drop_duplicates()
     source = source.astype({LIGAND_ID_COLUMN: "string", "Target ID": "string"})
     source = source.dropna(subset=["Target ID", LIGAND_ID_COLUMN])
@@ -333,13 +410,20 @@ def _prepare_interactions(
     prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
     prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
     prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
-    return prepared.to_dict(orient="records")
+    records = prepared.to_dict(orient="records")
+    for record in records:
+        key = TargetDescriptor.from_record(record).complex_member_key
+        record["complex_portal_id"] = complex_portal_index.get(key, "") if key else ""
+    return records
 
 
 @koza.prepare_data(tag="gtopdb_interaction_parsing")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     """Prepare GtoPdb interactions for record-level graph transformation."""
-    return _prepare_interactions(data, _load_ligand_mapping(Path(koza.input_files_dir)))
+    input_files_dir = Path(koza.input_files_dir)
+    return _prepare_interactions(
+        data, _load_ligand_mapping(input_files_dir), _load_complex_portal_index(input_files_dir)
+    )
 
 
 def _publication_list(value: str | None) -> list[str] | None:
@@ -371,10 +455,11 @@ def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple
         object = MacromolecularComplex(
             id=target.complex_curie,
             name=target.name,
-            # IUPHARobj identifies the source target concept. The taxon keeps
-            # human target 378 (5-HT3AB) distinct in meaning from its mouse
-            # descriptor, even though both use IUPHARobj:378 as the node ID.
+            # Without a Complex Portal match, IUPHARobj identifies the source target
+            # concept for every species, and the taxon keeps human target 378
+            # (5-HT3AB) distinct in meaning from its mouse descriptor.
             in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
+            xref=[target.iuphar_curie] if target.complex_curie != target.iuphar_curie else None,
         )
     else:
         raise ValueError(f"Cannot create a target node for {target.key}")
