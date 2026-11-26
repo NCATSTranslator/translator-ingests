@@ -14,8 +14,10 @@ from koza.transform import Mappings
 from koza.io.writer.writer import KozaWriter
 
 from translator_ingest.ingests.drug_rep_hub.drug_rep_hub import (
+    broad_compound_id,
     build_indication_association,
     create_chemical_role_association,
+    drug_rep_hub_sources,
     transform_drug_rep_hub_annotations,
 )
 
@@ -47,6 +49,7 @@ def test_chemical_role_association_keeps_drug_and_role_distinct():
         indication="anticoagulant",
         indication_info={"xref": "CHEBI:50249", "primary_name": "anticoagulant"},
         predicate="biolink:has_chemical_role",
+        sources=drug_rep_hub_sources([]),
     )
 
     assert association.subject == chemical.id
@@ -85,7 +88,9 @@ def test_indication_association_clinical_context(
     """The clinical phase sets the predicate of treatment edges, and their clinical approval status/research phase."""
     chemical = ChemicalEntity(id="PUBCHEM.COMPOUND:3385", name="5-fluorouracil")
 
-    _, association = build_indication_association(chemical, clinical_phase, indication, disease_area="")
+    _, association = build_indication_association(
+        chemical, clinical_phase, indication, disease_area="", sources=drug_rep_hub_sources([])
+    )
 
     assert type(association) is association_class
     assert association.predicate == predicate
@@ -119,7 +124,13 @@ def test_indication_association_clinical_context(
                 "subject": "PUBCHEM.COMPOUND:3385",
                 "predicate": "biolink:treats",
                 "object": "MONDO:0007254",
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:drug-repurposing-hub"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:drug-repurposing-hub",
+                        "source_record_urls": ["https://repo-hub.broadinstitute.org/repurposing-app?q=BRD-K24844714"],
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
             },
@@ -147,7 +158,13 @@ def test_indication_association_clinical_context(
                 "subject": "PUBCHEM.COMPOUND:3385",
                 "predicate": "biolink:affects",
                 "object": "HGNC:1681",
-                "sources": [{"resource_role": "primary_knowledge_source", "resource_id": "infores:drug-repurposing-hub"}],
+                "sources": [
+                    {
+                        "resource_role": "primary_knowledge_source",
+                        "resource_id": "infores:drug-repurposing-hub",
+                        "source_record_urls": ["https://repo-hub.broadinstitute.org/repurposing-app?q=BRD-K24844714"],
+                    }
+                ],
                 "knowledge_level": KnowledgeLevelEnum.knowledge_assertion,
                 "agent_type": AgentTypeEnum.manual_agent,
             }
@@ -170,6 +187,9 @@ def test_ingest_transform(
             )
         }
     }
+    mock_koza_transform.state['sample_compound_ids'] = {
+        "5-fluorouracil": {"PUBCHEM.COMPOUND:3385": [broad_compound_id("BRD-K24844714-001-24-5")]}
+    }
     for result in transform_drug_rep_hub_annotations(mock_koza_transform, test_record):
         validate_transform_result(
             result=result,
@@ -178,3 +198,41 @@ def test_ingest_transform(
             node_test_slots=NODE_TEST_SLOTS,
             edge_test_slots=ASSOCIATION_TEST_SLOTS,
         )
+
+
+@pytest.mark.parametrize(
+    "compound_ids,expected_urls",
+    [
+        # Feedback#1377: clonidine's Hub record, opened by its compound ID
+        (["BRD-K98530306"], ["https://repo-hub.broadinstitute.org/repurposing-app?q=BRD-K98530306"]),
+        (
+            ["BRD-K98530306", "BRD-A00047421"],
+            [
+                "https://repo-hub.broadinstitute.org/repurposing-app?q=BRD-K98530306",
+                "https://repo-hub.broadinstitute.org/repurposing-app?q=BRD-A00047421",
+            ],
+        ),
+        ([], None),
+    ],
+)
+def test_drug_rep_hub_sources(compound_ids: list[str], expected_urls: Optional[list[str]]):
+    """Edges link every Hub compound record of their chemical, or carry no URL when none is known (#516)."""
+    (source,) = drug_rep_hub_sources(compound_ids)
+    assert source.resource_id == "infores:drug-repurposing-hub"
+    assert source.resource_role == "primary_knowledge_source"
+    assert source.source_record_urls == expected_urls
+
+
+@pytest.mark.parametrize(
+    "broad_id,expected",
+    [
+        ("BRD-K98530306-003-16-7", "BRD-K98530306"),
+        ("BRD-K98530306-003-22-9", "BRD-K98530306"),
+        (" BRD-A00047421-001-01-7 ", "BRD-A00047421"),
+        ("", None),
+        ("not-a-broad-id", None),
+    ],
+)
+def test_broad_compound_id(broad_id: str, expected: Optional[str]):
+    """Salts and batches of one compound share its compound ID."""
+    assert broad_compound_id(broad_id) == expected
