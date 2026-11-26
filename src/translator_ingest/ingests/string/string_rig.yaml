@@ -263,7 +263,7 @@ target_info:
         object_categories:
           - biolink:Protein
         qualifiers:
-          - property: species_context_qualifier
+          - property: biolink:species_context_qualifier
             value_enumeration:
               - NCBITaxon:9606
               - NCBITaxon:10090
@@ -303,7 +303,7 @@ target_info:
         object_categories:
           - biolink:Protein
         qualifiers:
-          - property: species_context_qualifier
+          - property: biolink:species_context_qualifier
             value_enumeration:
               - NCBITaxon:9606
               - NCBITaxon:10090
