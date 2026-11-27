@@ -8,7 +8,6 @@ def find_project_root(start: Path = Path(__file__)) -> Path:
             return parent
     raise FileNotFoundError("Could not find project root from starting point.")
 
-
 ingest_dir_ignore_list = ["__pycache__", "_ingest_template"]
 
 
