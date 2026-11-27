@@ -2,6 +2,7 @@
 Supporting variables and utility methods for the
 STRING protein–protein interaction ingest processing.
 """
+import re
 from typing import Any, Iterable
 from pathlib import Path
 from urllib.parse import urlencode
@@ -88,8 +89,47 @@ PREDICATE_TO_ASSOCIATION_CLASS: dict[str, type[Association]] = {
     "biolink:coexpressed_with":                   GeneToGeneCoexpressionAssociation,
 }
 
-# Match the v12.0 files pinned in string.yaml.
-STRING_NETWORK_URL = "https://version-12-0.string-db.org/cgi/network"
+# A STRING release as get_latest_version() returns it and as it names the pipeline's
+# data/string/<version>/ folder, e.g. "v12.0".
+STRING_VERSION_PATTERN = re.compile(r"v(?P<major>[0-9]+)\.(?P<minor>[0-9]+)")
+
+
+def string_version_from_source_dir(input_files_dir: str | Path) -> str:
+    """Return the STRING release whose files are in a pipeline source_data directory.
+
+    The pipeline downloads each release into data/string/<version>/source_data, so the
+    parent directory names the release the link files belong to.
+
+    >>> string_version_from_source_dir("data/string/v12.0/source_data")
+    'v12.0'
+    >>> string_version_from_source_dir("data/string/source_data")
+    Traceback (most recent call last):
+    ...
+    ValueError: Expected the STRING source data under data/string/<version>/source_data, got 'data/string/source_data'
+    """
+    version = Path(input_files_dir).parent.name
+    if STRING_VERSION_PATTERN.fullmatch(version) is None:
+        raise ValueError(
+            f"Expected the STRING source data under data/string/<version>/source_data, got {str(input_files_dir)!r}"
+        )
+    return version
+
+
+def string_network_url(version: str) -> str:
+    """Return the network page on STRING's stable host for one release.
+
+    Each release keeps its own host (version-<major>-<minor>.string-db.org), so links stay
+    consistent with the ingested files after STRING publishes a newer release.
+
+    >>> string_network_url("v12.0")
+    'https://version-12-0.string-db.org/cgi/network'
+    >>> string_network_url("v13.1")
+    'https://version-13-1.string-db.org/cgi/network'
+    """
+    match = STRING_VERSION_PATTERN.fullmatch(version)
+    if match is None:
+        raise ValueError(f"Expected a STRING version like 'v12.0', got {version!r}")
+    return f"https://version-{match['major']}-{match['minor']}.string-db.org/cgi/network"
 
 
 # Note on identifier scheme: for the three Translator-target taxa (human / mouse / rat),
@@ -129,26 +169,27 @@ def parse_string_protein_id(string_id: str) -> tuple[str, str]:
     return f"ENSEMBL:{ensp}", taxon_curie
 
 
-def string_source_record_url(protein1: str, protein2: str) -> str:
+def string_source_record_url(protein1: str, protein2: str, version: str) -> str:
     """Build a URL requesting a functional evidence network for two raw STRING IDs.
 
     Preserve the source's taxon-prefixed protein identifiers, before any node
     normalization. Canonical ordering makes symmetric rows share a URL. Request
     no added neighbors or display score cutoff to focus on the ingested pair.
     The intended view shows pair-level evidence shared by every predicate derived
-    from the row; it is not a predicate-specific assertion page.
+    from the row; it is not a predicate-specific assertion page. The host is the
+    stable host of the ingested release (see string_network_url).
 
     URL parameters follow STRING's linking documentation:
     https://string-db.org/help/api/#linking-to-the-search-results-page
 
     >>> first = "9606.ENSP00000478725"
     >>> second = "9606.ENSP00000478289"
-    >>> url = string_source_record_url(first, second)
+    >>> url = string_source_record_url(first, second, "v12.0")
     >>> url.startswith("https://version-12-0.string-db.org/cgi/network?")
     True
     >>> "identifiers=9606.ENSP00000478289%0D9606.ENSP00000478725" in url
     True
-    >>> url == string_source_record_url(second, first)
+    >>> url == string_source_record_url(second, first, "v12.0")
     True
     """
     _, subject_taxon = parse_string_protein_id(protein1)
@@ -165,7 +206,7 @@ def string_source_record_url(protein1: str, protein2: str) -> str:
         "add_color_nodes": 0,
         "add_white_nodes": 0,
     }
-    return f"{STRING_NETWORK_URL}?{urlencode(parameters)}"
+    return f"{string_network_url(version)}?{urlencode(parameters)}"
 
 
 

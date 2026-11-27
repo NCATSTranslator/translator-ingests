@@ -10,7 +10,11 @@ from koza.io.writer.jsonl_writer import JSONLWriter
 from koza.model.writer import WriterConfig
 
 from translator_ingest.ingests.string.string import transform_string_ppi
-from translator_ingest.ingests.string.string_utils import string_source_record_url
+from translator_ingest.ingests.string.string_utils import (
+    string_network_url,
+    string_source_record_url,
+    string_version_from_source_dir,
+)
 
 
 @pytest.mark.parametrize(
@@ -26,6 +30,7 @@ def test_serialized_pair_links(tmp_path: Path, protein1: str, protein2: str, tax
     writer = JSONLWriter(str(tmp_path), "string", WriterConfig())
     context = KozaTransform(extra_fields={}, writer=writer, mappings={})
     context.state["string_to_entrez"] = {protein1: ["NCBIGene:123"]}
+    context.state["string_version"] = "v12.0"
     record = {
         "protein1": protein1,
         "protein2": protein2,
@@ -67,7 +72,7 @@ def test_serialized_pair_links(tmp_path: Path, protein1: str, protein2: str, tax
         "add_white_nodes": ["0"],
     }
     assert "%0D" in url
-    assert url == string_source_record_url(protein2, protein1)
+    assert url == string_source_record_url(protein2, protein1, "v12.0")
     assert transform_string_ppi(context, record | {"protein1": protein2, "protein2": protein1}) is None
 
     other = transform_string_ppi(context, record | {"protein2": protein2 + "9"})
@@ -90,4 +95,34 @@ def test_serialized_pair_links(tmp_path: Path, protein1: str, protein2: str, tax
 def test_pair_url_rejects_invalid_or_mixed_taxa(protein1: str, protein2: str) -> None:
     """Never produce a species-disambiguated URL for an invalid pair."""
     with pytest.raises(ValueError):
-        string_source_record_url(protein1, protein2)
+        string_source_record_url(protein1, protein2, "v12.0")
+
+
+@pytest.mark.parametrize(
+    "version,host",
+    [("v12.0", "version-12-0.string-db.org"), ("v13.0", "version-13-0.string-db.org"), ("v12.5", "version-12-5.string-db.org")],
+)
+def test_links_follow_the_ingested_release(tmp_path: Path, version: str, host: str) -> None:
+    """The source record URL points at the STRING release whose files were ingested."""
+    source_data = tmp_path / "string" / version / "source_data"
+    source_data.mkdir(parents=True)
+    assert string_version_from_source_dir(source_data) == version
+    assert string_network_url(version) == f"https://{host}/cgi/network"
+
+    writer = JSONLWriter(str(tmp_path), "string", WriterConfig())
+    context = KozaTransform(extra_fields={}, writer=writer, mappings={})
+    context.state["string_to_entrez"] = {}
+    context.state["string_version"] = version
+    record = {"protein1": "9606.ENSP00000000233", "protein2": "9606.ENSP00000371175", "combined_score": "900"}
+    graph = transform_string_ppi(context, record)
+    assert graph is not None
+    assert {urlsplit(edge.sources[0].source_record_urls[0]).netloc for edge in graph.edges} == {host}
+
+
+@pytest.mark.parametrize("bad", ["12.0", "v12", "latest", "version-12-0"])
+def test_unversioned_inputs_fail(tmp_path: Path, bad: str) -> None:
+    """A source directory or version that does not name a STRING release is an error, not a guess."""
+    with pytest.raises(ValueError):
+        string_network_url(bad)
+    with pytest.raises(ValueError):
+        string_version_from_source_dir(tmp_path / "string" / bad / "source_data")

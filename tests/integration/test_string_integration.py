@@ -39,6 +39,10 @@ FIXTURE_DIR = (
     / "ingests"
     / "string"
     / "sample_data"
+    # Mirrors the pipeline's data/string/<version>/source_data layout, from which the
+    # transform reads the STRING release used in source record URLs.
+    / "v12.0"
+    / "source_data"
 )
 ENTREZ_FIXTURE = FIXTURE_DIR / "all_organisms.entrez_2_string.tsv"
 # Per-taxon fixture filenames (must match string.yaml's reader configuration).

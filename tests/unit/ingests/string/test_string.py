@@ -68,7 +68,7 @@ FIXTURE_STRING_TO_ENTREZ: dict[str, list[str]] = {
 def mock_koza() -> koza.KozaTransform:
     """Fresh MockKozaTransform with empty state and fixture mapping for each test."""
     mk = MockKozaTransform(extra_fields={}, writer=MockKozaWriter(), mappings={})
-    mk.state = {"string_to_entrez": FIXTURE_STRING_TO_ENTREZ}
+    mk.state = {"string_to_entrez": FIXTURE_STRING_TO_ENTREZ, "string_version": "v12.0"}
     return mk
 
 

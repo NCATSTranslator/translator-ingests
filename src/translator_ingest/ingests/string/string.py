@@ -40,6 +40,7 @@ from translator_ingest.ingests.string.string_utils import (
     edges_for_row,
     sorted_pair_key,
     string_source_record_url,
+    string_version_from_source_dir,
     make_string_ppi_edge,
     EDGE_KL_AT,
     COMBINED_SCORE_THRESHOLD
@@ -83,6 +84,8 @@ def on_data_begin_string_ppi(koza_transform: koza.KozaTransform) -> None:
     assert koza_transform.input_files_dir is not None, "Koza Transform 'input_files_dir' variable cannot be null!"
     mapping_path = Path(koza_transform.input_files_dir) / ENTREZ_MAPPING_FILENAME
     koza_transform.state["string_to_entrez"] = load_string_to_entrez_mapping(mapping_path)
+    # Source record URLs point at the STRING release that was downloaded, not a pinned one.
+    koza_transform.state["string_version"] = string_version_from_source_dir(koza_transform.input_files_dir)
 
 
 @koza.transform_record(tag="string_ppi")
@@ -154,7 +157,9 @@ def transform_string_ppi(
         equivalent_identifiers=object_equivalents,
     )
 
-    source_record_url = string_source_record_url(record["protein1"], record["protein2"])
+    source_record_url = string_source_record_url(
+        record["protein1"], record["protein2"], koza_transform.state["string_version"]
+    )
     edges = [
         make_string_ppi_edge(
             subject_id, pred, score, object_id,

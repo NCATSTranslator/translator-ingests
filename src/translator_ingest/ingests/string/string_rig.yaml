@@ -79,7 +79,9 @@ ingest_info:
 
       Each emitted edge carries a pair-focused URL in the infores:string RetrievalSource.source_record_urls.
       The URL uses both raw taxon-prefixed protein identifiers in canonical order, separated by encoded
-      carriage return (%0D), and pins the hostname to version-12-0.string-db.org to match the source files.
+      carriage return (%0D), and uses the stable host of the ingested STRING release
+      (version-<major>-<minor>.string-db.org, e.g. version-12-0 for v12.0) so links match the source files.
+      The release comes from the pipeline's data/string/<version>/source_data directory.
       species selects the source taxon; network_flavor=evidence displays evidence channels;
       network_type=functional matches the input network; add_color_nodes=0 and add_white_nodes=0 prevent
       extra neighbors. required_score=0 avoids an additional display cutoff on combined confidence and
