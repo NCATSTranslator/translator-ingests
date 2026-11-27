@@ -16,6 +16,9 @@ from translator_ingest.ingests.gtopdb.gtopdb import (
 )
 
 
+LIGAND_ID_MAPPING_HEADER = '"# GtoPdb Version: test"\n"Ligand id","Name","Species","Type","PubChem SID","PubChem CID","ChEMBl ID","Chebi ID","UniProt id","Ensembl ID","IUPAC name","INN","CAS","DrugBank ID","Drug Central ID"\n'
+
+
 @pytest.mark.parametrize(
     "type_value,action,endogenous,predicates",
     [
@@ -36,8 +39,9 @@ def test_preparation_to_serialized_source_urls(
 ) -> None:
     """Ligands sharing a PubChem CID keep distinct links; membership links describe the target."""
     (tmp_path / "ligands.csv").write_text(
-        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID"\n"10250","2244"\n"4073","2244"\n'
+        '"# GtoPdb Version: test"\n"Ligand ID","PubChem CID","UniProt ID"\n"10250","2244",""\n"4073","2244",""\n'
     )
+    (tmp_path / "ligand_id_mapping.csv").write_text(LIGAND_ID_MAPPING_HEADER)
     record = {
         "Target": "5-HT3AB" if complex_target else "example target",
         "Target ID": "378" if complex_target else "1",
