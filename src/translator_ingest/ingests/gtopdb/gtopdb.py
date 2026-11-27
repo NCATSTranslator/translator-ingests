@@ -44,6 +44,24 @@ BIOLINK_RELATED = "biolink:related_to"
 GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions.csv"
 GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
 
+# STOPGAP, remove when NCATSTranslator/Babel#1277 is resolved: NodeNorm does not resolve
+# IUPHARobj, so strict normalization drops every IUPHARobj complex. Complexes that exactly match
+# a Complex Portal complex take its normalizable ID and survive; the others are dropped.
+# Once NodeNorm resolves IUPHARobj, delete this matching (the constants below,
+# _complex_portal_protein_members, _load_complex_portal_index and the complex_portal_id
+# field) and the Complex Portal entries in download.yaml.
+# Complex Portal files listed in download.yaml, one per species of a GtoPdb complex target.
+COMPLEX_PORTAL_FILE_PATTERN = "complexportal_*.tsv"
+COMPLEX_PORTAL_ID_COLUMN = "#Complex ac"
+COMPLEX_PORTAL_TAXON_COLUMN = "Taxonomy identifier"
+COMPLEX_PORTAL_MEMBERS_COLUMN = "Identifiers (and stoichiometry) of molecules in complex"
+# A plain UniProt accession, optionally an isoform, with its stoichiometry. Members that
+# are other complexes (CPX-), chemicals (CHEBI:), RNAs (URS), processed chains (-PRO_)
+# or bracketed alternatives do not match, so complexes containing them are never used.
+COMPLEX_PORTAL_PROTEIN_MEMBER = re.compile(
+    r"(?P<accession>[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})(?:-\d+)?\(\d+\)"
+)
+
 LIGAND_ID_COLUMN = "Ligand ID"
 PUBCHEM_ID_COLUMN = "PubChem CID"
 PUBLICATIONS_COLUMN = "PubMed ID"
@@ -201,6 +219,7 @@ class TargetDescriptor:
     subunit_ids: tuple[str, ...]
     gene_symbols: tuple[str, ...]
     uniprot_ids: tuple[str, ...]
+    complex_portal_id: str = ""
 
     @classmethod
     def from_record(cls, record: dict[str, Any]) -> "TargetDescriptor":
@@ -212,6 +231,7 @@ class TargetDescriptor:
             subunit_ids=_pipe_values(record.get("target_subunit_ids")),
             gene_symbols=_pipe_values(record.get("target_gene_symbols")),
             uniprot_ids=_pipe_values(record.get("target_uniprot_ids")) or _pipe_values(record.get("object_id")),
+            complex_portal_id=_source_text(record.get("complex_portal_id")),
         )
 
     @property
@@ -263,49 +283,42 @@ class TargetDescriptor:
         return f"UniProtKB:{self.canonical_uniprot_ids[0]}"
 
     @property
-    def complex_curie(self) -> str | None:
+    def iuphar_curie(self) -> str | None:
         """Return the GtoPdb target CURIE for a source-defined complex."""
         if self.classification is not TargetClassification.MACROMOLECULAR_COMPLEX:
             return None
         return f"IUPHARobj:{self.source_id}"
 
     @property
+    def complex_curie(self) -> str | None:
+        """Return the node CURIE for a complex, preferring a matched Complex Portal ID.
+
+        NodeNorm does not resolve IUPHARobj (NCATSTranslator/Babel#1277), so a
+        species-specific Complex Portal ID with the same members is used when one
+        was matched during preparation.
+
+        >>> human = TargetDescriptor("378", "5-HT3AB", "Human", ("373", "374"), (), ("P46098", "O95264"))
+        >>> human.complex_curie
+        'IUPHARobj:378'
+        >>> TargetDescriptor("378", "5-HT3AB", "Human", ("373", "374"), (), (), "CPX-271").complex_curie
+        'ComplexPortal:CPX-271'
+        """
+        if self.iuphar_curie is None:
+            return None
+        return f"ComplexPortal:{self.complex_portal_id}" if self.complex_portal_id else self.iuphar_curie
+
+    @property
+    def complex_member_key(self) -> tuple[str, frozenset[str]] | None:
+        """Return the (taxon, canonical UniProt members) key used to match Complex Portal."""
+        if self.iuphar_curie is None or not self.species_context_qualifier or not self.canonical_uniprot_ids:
+            return None
+        return self.species_context_qualifier, frozenset(self.canonical_uniprot_ids)
+
+    @property
     def species_context_qualifier(self) -> str | None:
         """Return the NCBI Taxonomy CURIE for a recognized source species."""
         species = _known_species(self.species)
         return SPECIES_TO_TAXON.get(species) if species else None
-
-
-def source_target_species_descriptors(
-    targets: Iterable[TargetDescriptor],
-) -> dict[str, dict[str, TargetDescriptor]]:
-    """Index source target descriptors by ID and known species.
-
-    Complex membership and multi-species coverage are independent properties:
-    a GtoPdb target can be a complex in several species.
-
-    For example, target 378 (5-HT3AB) has distinct Human and Mouse descriptors
-    in GtoPdb 2026.2, and both descriptors identify the same two source
-    subunits. It is therefore a multi-species complex, not an ambiguous list
-    of proteins to split into individual interaction edges.
-
-    >>> human = TargetDescriptor("378", "5-HT3AB", "Human", (), (), ("P46098",))
-    >>> mouse = TargetDescriptor("378", "5-HT3AB", "Mouse", (), (), ("P23979",))
-    >>> sorted(source_target_species_descriptors((human, mouse))["378"])
-    ['human', 'mouse']
-    """
-    descriptors: dict[str, dict[str, TargetDescriptor]] = {}
-    for target in targets:
-        species = _known_species(target.species)
-        if target.source_id and species:
-            descriptors.setdefault(target.source_id, {})[species] = target
-    return descriptors
-
-
-def multi_species_source_target_ids(targets: Iterable[TargetDescriptor]) -> frozenset[str]:
-    """Return source target IDs represented for more than one known species."""
-    descriptors = source_target_species_descriptors(targets)
-    return frozenset(source_id for source_id, species in descriptors.items() if len(species) > 1)
 
 
 def get_latest_version() -> str:
@@ -330,19 +343,70 @@ def get_latest_version() -> str:
     return match.group("version")
 
 
+def _pubchem_cid(value: Any) -> str | None:
+    """Return a stripped PubChem CID, or None for blanks and GtoPdb's "0" placeholder.
+
+    GtoPdb writes CID 0 for 2,356 ligands without a PubChem record (mostly peptides and
+    antibodies). Mapping it would merge unrelated ligands into PUBCHEM.COMPOUND:0.
+
+    >>> _pubchem_cid(" 2244 "), _pubchem_cid("0055")
+    ('2244', '0055')
+    >>> [_pubchem_cid(value) for value in ("0", "", " ", None, float("nan"))]
+    [None, None, None, None, None]
+    """
+    identifier = _source_text(value)
+    return identifier if re.fullmatch(r"[0-9]+", identifier) and int(identifier) > 0 else None
+
+
 def _load_ligand_mapping(input_files_dir: Path) -> dict[str, str]:
-    """Load the source Ligand ID to PubChem CID crosswalk."""
+    """Load the source Ligand ID to PubChem CID crosswalk, keeping only real CIDs."""
     ligands = pd.read_csv(
         input_files_dir / "ligands.csv",
         skiprows=1,
         dtype={LIGAND_ID_COLUMN: str, PUBCHEM_ID_COLUMN: str},
     )
-    return dict(
-        zip(
-            ligands[LIGAND_ID_COLUMN].astype(str).str.strip(),
-            ligands[PUBCHEM_ID_COLUMN].astype(str).str.strip(),
-        )
-    )
+    mapping = {
+        _source_text(ligand_id): _pubchem_cid(cid)
+        for ligand_id, cid in zip(ligands[LIGAND_ID_COLUMN], ligands[PUBCHEM_ID_COLUMN])
+    }
+    return {ligand_id: cid for ligand_id, cid in mapping.items() if cid}
+
+
+def _complex_portal_protein_members(members: str) -> frozenset[str] | None:
+    """Return canonical UniProt members, or None if any member is not a plain protein.
+
+    >>> sorted(_complex_portal_protein_members("P46098(2)|O95264(3)"))
+    ['O95264', 'P46098']
+    >>> _complex_portal_protein_members("CPX-6024(1)|P15260(2)|P38484(2)") is None
+    True
+    >>> _complex_portal_protein_members("Q6UXL0(1)|Q9UHD0-PRO_0000015379(1)") is None
+    True
+    """
+    accessions = []
+    for member in members.split("|"):
+        match = COMPLEX_PORTAL_PROTEIN_MEMBER.fullmatch(member.strip())
+        if match is None:
+            return None
+        accessions.append(match["accession"])
+    return frozenset(accessions)
+
+
+def _load_complex_portal_index(input_files_dir: Path) -> dict[tuple[str, frozenset[str]], str]:
+    """Index protein-only Complex Portal complexes by taxon and members.
+
+    A key shared by several complexes is ambiguous and is left out, so a GtoPdb
+    complex keeps its IUPHARobj ID unless exactly one complex matches.
+    """
+    candidates: dict[tuple[str, frozenset[str]], set[str]] = {}
+    for path in sorted(input_files_dir.glob(COMPLEX_PORTAL_FILE_PATTERN)):
+        table = pd.read_csv(path, sep="\t", dtype=str).fillna("")
+        for complex_id, taxon, members in table[
+            [COMPLEX_PORTAL_ID_COLUMN, COMPLEX_PORTAL_TAXON_COLUMN, COMPLEX_PORTAL_MEMBERS_COLUMN]
+        ].itertuples(index=False):
+            proteins = _complex_portal_protein_members(members)
+            if proteins:
+                candidates.setdefault((f"NCBITaxon:{taxon.strip()}", proteins), set()).add(complex_id.strip())
+    return {key: next(iter(ids)) for key, ids in candidates.items() if len(ids) == 1}
 
 
 def _join_publications(values: pd.Series) -> str:
@@ -353,8 +417,9 @@ def _join_publications(values: pd.Series) -> str:
 def _prepare_interactions(
     data: Iterable[dict[str, Any]],
     ligand_mapping: dict[str, str],
+    complex_portal_index: dict[tuple[str, frozenset[str]], str],
 ) -> list[dict[str, Any]]:
-    """Aggregate source rows and retain source target metadata for emission."""
+    """Aggregate source rows, retain target metadata, and record Complex Portal matches."""
     source = pd.DataFrame(data)[list(SOURCE_COLUMNS)].drop_duplicates()
     source = source.astype({LIGAND_ID_COLUMN: "string", "Target ID": "string"})
     source = source.dropna(subset=["Target ID", LIGAND_ID_COLUMN])
@@ -365,13 +430,20 @@ def _prepare_interactions(
     prepared = prepared.rename(columns=PREPARED_COLUMN_RENAMES)
     prepared["subject_id"] = prepared[LIGAND_ID_COLUMN].astype(str).str.strip().map(ligand_mapping)
     prepared = prepared.dropna(subset=["subject_id"]).drop_duplicates()
-    return prepared.to_dict(orient="records")
+    records = prepared.to_dict(orient="records")
+    for record in records:
+        key = TargetDescriptor.from_record(record).complex_member_key
+        record["complex_portal_id"] = complex_portal_index.get(key, "") if key else ""
+    return records
 
 
 @koza.prepare_data(tag="gtopdb_interaction_parsing")
 def prepare(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     """Prepare GtoPdb interactions for record-level graph transformation."""
-    return _prepare_interactions(data, _load_ligand_mapping(Path(koza.input_files_dir)))
+    input_files_dir = Path(koza.input_files_dir)
+    return _prepare_interactions(
+        data, _load_ligand_mapping(input_files_dir), _load_complex_portal_index(input_files_dir)
+    )
 
 
 def _publication_list(value: str | None) -> list[str] | None:
@@ -403,10 +475,11 @@ def _nodes_for_record(record: dict[str, Any], target: TargetDescriptor) -> tuple
         object = MacromolecularComplex(
             id=target.complex_curie,
             name=target.name,
-            # IUPHARobj identifies the source target concept. The taxon keeps
-            # human target 378 (5-HT3AB) distinct in meaning from its mouse
-            # descriptor, even though both use IUPHARobj:378 as the node ID.
+            # Without a Complex Portal match, IUPHARobj identifies the source target
+            # concept for every species, and the taxon keeps human target 378
+            # (5-HT3AB) distinct in meaning from its mouse descriptor.
             in_taxon=[target.species_context_qualifier] if target.species_context_qualifier else None,
+            xref=[target.iuphar_curie] if target.complex_curie != target.iuphar_curie else None,
         )
     else:
         raise ValueError(f"Cannot create a target node for {target.key}")
@@ -526,21 +599,14 @@ def _endogenous_projection(
     return predicate, direction
 
 
-def _transform_record(
-    record: dict[str, Any],
-    target: TargetDescriptor,
-    *,
-    emit_component_edges: bool,
-) -> KnowledgeGraph | None:
+def _transform_record(record: dict[str, Any], target: TargetDescriptor) -> KnowledgeGraph | None:
     """Skip unsupported records, then assemble nodes, interaction edges, and evidence.
 
-    All descriptors are resolved before any records are emitted. Passing that
-    context preserves validation order and accounts for other species even when
-    their interaction records are later skipped.
-
-    ``IUPHARobj:<Target ID>`` is shared by species descriptors. Component edges
-    are omitted for multi-species targets until Biolink supports taxon-qualified
-    ``has_part`` assertions; see biolink/biolink-model#1797 and translator-ingests#510.
+    ``IUPHARobj:<Target ID>`` is shared by species descriptors, so each
+    ``has_part`` edge carries the descriptor's ``species_context_qualifier``.
+    Human and mouse target 378 (5-HT3AB) therefore keep separate component
+    sets under one complex node (biolink/biolink-model#1797, Biolink 4.4.6;
+    translator-ingests#510).
     """
     if target.classification in UNSUPPORTED_TARGET_CLASSES:
         return None
@@ -561,13 +627,14 @@ def _transform_record(
         source_record_url=gtopdb_ligand_record_url(record[LIGAND_ID_COLUMN]),
     )
 
-    component_nodes = _component_nodes(target) if emit_component_edges else []
+    component_nodes = _component_nodes(target)
     edges.extend(
         Association(
             id=entity_id(),
             subject=object.id,
             predicate="biolink:has_part",
             object=component.id,
+            species_context_qualifier=target.species_context_qualifier,
             sources=_gtopdb_sources(gtopdb_target_record_url(target.source_id)),
             knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
             agent_type=AgentTypeEnum.manual_agent,
@@ -580,24 +647,35 @@ def _transform_record(
     return KnowledgeGraph(nodes=[subject, object, *component_nodes], edges=edges)
 
 
+def _share_node_taxa(nodes: list[NamedThing]) -> None:
+    """Give every copy of a node the union of the taxa recorded for its ID.
+
+    Koza writes only the first node per ID, so an IUPHARobj complex seen in human,
+    mouse and rat would otherwise be written with whichever species came first.
+    Species-specific composition stays on the has_part edges.
+    """
+    taxa: dict[str, set[str]] = {}
+    for node in nodes:
+        taxa.setdefault(node.id, set()).update(getattr(node, "in_taxon", None) or ())
+    for node in nodes:
+        if len(taxa[node.id]) > 1:
+            node.in_taxon = sorted(taxa[node.id])
+
+
 @koza.transform(tag="gtopdb_interaction_parsing")
 def transform_ingest_all(koza: koza.KozaTransform, data: Iterable[dict[str, Any]]) -> Iterable[KnowledgeGraph]:
-    """Resolve batch species context, aggregate record graphs, and report exclusions."""
+    """Aggregate record graphs and report exclusions."""
     records = list(data)
     targets = tuple(TargetDescriptor.from_record(record) for record in records)
-    multi_species_target_ids = multi_species_source_target_ids(targets)
     nodes: list[NamedThing] = []
     edges: list[Association] = []
 
     for record, target in zip(records, targets, strict=True):
-        graph = _transform_record(
-            record,
-            target,
-            emit_component_edges=target.source_id not in multi_species_target_ids,
-        )
+        graph = _transform_record(record, target)
         if graph is not None:
             nodes.extend(graph.nodes)
             edges.extend(graph.edges)
+    _share_node_taxa(nodes)
 
     unsupported_target_counts = Counter(
         target.classification for target in targets if target.classification in UNSUPPORTED_TARGET_CLASSES

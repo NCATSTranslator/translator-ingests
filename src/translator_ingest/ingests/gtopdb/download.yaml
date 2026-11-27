@@ -2,3 +2,17 @@
   local_name: ligands.csv
 - url: https://www.guidetopharmacology.org/DATA/interactions.csv
   local_name: interactions.csv
+# STOPGAP, remove when NCATSTranslator/Babel#1277 is resolved (see the gtopdb RIG).
+# Complex Portal complexes for the species of GtoPdb complex targets. Used only to
+# substitute a normalizable ComplexPortal ID for an IUPHARobj complex with the same
+# species and members, because NodeNorm does not resolve IUPHARobj.
+- url: https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/9606.tsv
+  local_name: complexportal_9606.tsv
+- url: https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/10090.tsv
+  local_name: complexportal_10090.tsv
+- url: https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/10116.tsv
+  local_name: complexportal_10116.tsv
+- url: https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/562.tsv
+  local_name: complexportal_562.tsv
+- url: https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/2697049.tsv
+  local_name: complexportal_2697049.tsv

@@ -60,9 +60,15 @@ ingest_info:
     These are source entity pages, not unique interaction or species-specific assertion URLs. Users must
     inspect the matching target and species; the website currently requires registration and login.
     The links are not release-pinned snapshots.
-    Species-qualified composition for a Target ID observed in more than one species is planned under
-    https://github.com/NCATSTranslator/translator-ingests/issues/510; until then, such targets keep their
-    species-qualified ligand-target edges but omit has_part edges and component nodes.
+    Each complex has_part edge carries the species_context_qualifier of its target descriptor, so a Target ID
+    observed in more than one species (for example target 378, 5-HT3AB, in human and mouse) keeps a separate,
+    species-qualified component set under one IUPHARobj node. Biolink 4.4.6 permits this qualifier on has_part
+    (https://github.com/biolink/biolink-model/pull/1797;
+    https://github.com/NCATSTranslator/translator-ingests/issues/510).
+    As a stopgap until NodeNorm resolves IUPHARobj (https://github.com/NCATSTranslator/Babel/issues/1277), when a complex's
+    species and canonical UniProt members equal those of exactly one protein-only Complex Portal complex, the
+    species-specific ComplexPortal ID is the node ID and IUPHARobj is kept as an xref. Other complexes keep their
+    IUPHARobj ID, and strict normalization drops them, together with their edges, until NodeNorm resolves IUPHARobj.
 
   relevant_files:
     - file_name: "interactions.csv"
@@ -71,6 +77,12 @@ ingest_info:
     - file_name: "ligands.csv"
       location: "https://www.guidetopharmacology.org/DATA/ligands.csv"
       description: "Complete ligand list; used to map GtoPdb Ligand IDs to PubChem CIDs for subject node identifiers."
+    - file_name: "complexportal_<taxon>.tsv"
+      location: "https://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/<taxon>.tsv"
+      description: >-
+        Complex Portal complexes for taxa 9606, 10090, 10116, 562 and 2697049, the species of GtoPdb complex
+        targets. Used only to map a GtoPdb complex to a normalizable ComplexPortal ID. The files are the current
+        Complex Portal release, which is not tied to the GtoPdb version.
 
   included_content:
     - file_name: "interactions.csv"
@@ -81,7 +93,8 @@ ingest_info:
         A multi-species target may therefore also be a macromolecular complex, with a separate descriptor for
         each species. Multiple canonical UniProt accessions without multiple source subunit IDs are retained as
         unresolved multi-protein groups rather than inferred to be complexes. Records lacking a Target ID or
-        Ligand ID, and records whose Ligand ID has no PubChem CID mapping in ligands.csv, are dropped because
+        Ligand ID, and records whose Ligand ID has no PubChem CID in ligands.csv (blank, or GtoPdb's placeholder CID 0, used for 2,356
+        ligands in 2026.3.1, mostly peptides and antibodies), are dropped because
         they cannot be turned into a well-identified edge.
       fields_used: "Ligand, Target, Target ID, Target Subunit IDs, Target Gene Symbol, Target UniProt ID, Target Species, Ligand ID, Type, Action, PubMed ID, Endogenous"
     - file_name: "ligands.csv"
@@ -91,9 +104,17 @@ ingest_info:
   filtered_content: []
 
   future_considerations:
+    - category: other
+      consideration: >-
+        Remove the IUPHARobj stopgap once NodeNorm resolves IUPHARobj
+        (https://github.com/NCATSTranslator/Babel/issues/1277): delete the Complex Portal entries in
+        download.yaml and the Complex Portal matching in gtopdb.py. All complexes then keep their IUPHARobj IDs,
+        shared across species, and survive normalization. Check first whether
+        Babel groups IUPHARobj with Complex Portal IDs, which would make the species-specific Complex Portal nodes
+        merge with them.
     - category: edge_content
       consideration: >-
-        Implemented for single-species targets and completed by #510 for multi-species targets: use Target ID, Target Subunit IDs, Target UniProt ID, and Target Species from
+        Implemented, including species-qualified composition for multi-species targets (#510): use Target ID, Target Subunit IDs, Target UniProt ID, and Target Species from
         interactions.csv to identify source-defined complexes and their species-specific components.
         Multiple source subunit IDs provide complex evidence; multiple UniProt accessions alone must not
         turn a target family or unresolved group into a complex. Preserve individual component identifiers
@@ -285,6 +306,9 @@ target_info:
         - manual_agent
       primary_knowledge_sources:
         - infores:gtopdb
+      edge_properties:
+        - biolink:publications
+        - biolink:species_context_qualifier
       ui_explanation: >-
         A source-defined GtoPdb macromolecular complex has one or more protein components. The components are
         taken from the source Target UniProt ID list only when the corresponding target descriptor has multiple
@@ -292,7 +316,7 @@ target_info:
       source_files:
         - interactions.csv
       additional_notes:
-        - "The Target ID and Target Species together identify the source descriptor. A Target ID observed in multiple known species omits has_part edges and component nodes conservatively, because the current Biolink Association class does not permit species_context_qualifier on has_part. This avoids merging organism-specific compositions under one IUPHARobj CURIE; see https://github.com/biolink/biolink-model/pull/1797 and https://github.com/NCATSTranslator/translator-ingests/issues/510. For a single-species Target ID, the complex and its components carry in_taxon instead."
+        - "The Target ID and Target Species together identify the source descriptor. Each has_part edge carries species_context_qualifier set to the descriptor's NCBITaxon CURIE, so a Target ID observed in multiple known species keeps one component set per species under a shared IUPHARobj CURIE, or under species-specific ComplexPortal CURIEs where they match. For example, IUPHARobj:378 (5-HT3AB) has_part UniProtKB:P46098 and UniProtKB:O95264 with NCBITaxon:9606, and UniProtKB:P23979 and UniProtKB:Q9JHJ5 with NCBITaxon:10090. Component nodes carry in_taxon. Graph merging keys edges on their qualifiers, so these assertions stay distinct. Biolink 4.4.6 permits the qualifier on has_part (https://github.com/biolink/biolink-model/pull/1797; https://github.com/NCATSTranslator/translator-ingests/issues/510). A descriptor with no known species emits has_part without the qualifier."
 
   node_type_info:
     - node_category: biolink:ChemicalEntity
@@ -314,44 +338,13 @@ target_info:
     - node_category: biolink:MacromolecularComplex
       source_identifier_types:
         - "IUPHARobj"
+        - "ComplexPortal"
       additional_notes:
-        - "A target descriptor with more than one Target Subunit IDs is represented as a source-defined macromolecular complex using its GtoPdb target identifier (IUPHARobj prefix). The target and its UniProtKB protein components carry the source species as biolink:in_taxon and are connected by biolink:has_part edges. The IUPHARobj prefix is distinct from GTOPDB, which identifies GtoPdb ligands."
+        - "A target descriptor with more than one Target Subunit IDs is represented as a source-defined macromolecular complex using its GtoPdb target identifier (IUPHARobj prefix). The target and its UniProtKB protein components carry the source species as biolink:in_taxon and are connected by biolink:has_part edges. An IUPHARobj node recorded in several species lists all of them in in_taxon, and the has_part edges carry the species of each component set. The IUPHARobj prefix is distinct from GTOPDB, which identifies GtoPdb ligands."
+        - "A complex whose species and canonical UniProt members equal those of exactly one Complex Portal complex uses that ComplexPortal ID, with IUPHARobj as an xref. Complex Portal complexes that contain other complexes, chemicals, RNAs, processed chains or alternative members are not used, and a member set shared by several Complex Portal complexes is treated as ambiguous. For example, human and mouse target 378 (5-HT3AB) become ComplexPortal:CPX-271 and ComplexPortal:CPX-275. Unmatched complexes keep IUPHARobj, which NodeNorm does not resolve, so normalization drops them and their edges (https://github.com/NCATSTranslator/Babel/issues/1277)."
         - "Multiple canonical UniProt accessions without multiple source subunit IDs are not represented as complexes; they are an unresolved multi-protein group and are retained for audit pending a source-supported model."
 
   future_considerations:
-    - category: spoq_pattern
-      consideration: >-
-        Planned complex model for #510: identify each source-defined biolink:MacromolecularComplex by
-        the IUPHARobj prefix and Target ID, with biolink:Protein component nodes identified by individual UniProtKB
-        accessions. IUPHARobj identifies GtoPdb targets; GTOPDB remains the ligand namespace. Emit each
-        composition assertion as a biolink:Association from the complex to a component using
-        biolink:has_part, species_context_qualifier set to the source species' NCBITaxon CURIE,
-        knowledge_level knowledge_assertion, agent_type manual_agent, and primary_knowledge_source
-        infores:gtopdb. A shared IUPHARobj identifier can have different compositions in different species;
-        node-level in_taxon alone does not identify the species of an individual composition assertion.
-        Ligand-target assertions must retain the complex as their target and the applicable species context;
-        do not copy complex-level pharmacological activity to every component protein.
-    - category: spoq_pattern
-      consideration: >-
-        Required #510 example: IUPHARobj:378 (5-HT3AB) has four separate biolink:has_part assertions:
-        UniProtKB:P46098 and UniProtKB:O95264 each with species_context_qualifier NCBITaxon:9606 (human),
-        and UniProtKB:P23979 and UniProtKB:Q9JHJ5 each with species_context_qualifier NCBITaxon:10090 (mouse).
-        Preserve these edge qualifiers through serialization, normalization, and graph merging so the
-        organism-specific component sets remain distinguishable. Deduplication must preserve species context.
-    - category: spoq_pattern
-      consideration: >-
-        Completion of #510 requires adoption of a compatible Biolink schema and runtime model containing
-        https://github.com/biolink/biolink-model/pull/1797, which merged on 2026-09-02. The currently pinned
-        Biolink 4.4.4 predates that change; Biolink 4.4.6 (published 2026-10-09) contains it, and its adoption is
-        tracked in https://github.com/NCATSTranslator/translator-ingests/pull/556. The schema change alone does not
-        complete the ingest work: this ingest emits source-defined complexes and their has_part edges only for
-        Target IDs observed in a single known species, and still excludes unresolved multi-protein groups.
-        Verify the human/mouse example with source-derived fixtures, qualifier preservation through the
-        pipeline, duplicate-row handling, the missing/ambiguous-species policy, and unchanged single-protein
-        behavior. Before closing #510, merge the implementation, demonstrate a successful pipeline run with
-        the compatible dependency, and update this RIG's scope, fields_used, filtering rules, node_type_info,
-        and edge_type_info (including complex targets, has_part, and species qualifiers) to describe the
-        implemented output. Move the completed specification out of future considerations at that point.
     - category: node_properties
       consideration: "Consider future new Biolink node types (e.g. stimulus and fusion protein) for more accurate mapping of GtoPdb target/ligand types into the Biolink Model."
     - category: spoq_pattern

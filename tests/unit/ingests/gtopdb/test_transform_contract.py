@@ -24,6 +24,7 @@ from koza import KozaTransform
 from koza.io.writer.jsonl_writer import JSONLWriter
 from koza.model.graphs import KnowledgeGraph
 from koza.model.writer import WriterConfig
+from orion.merging import edge_key_function
 from pydantic import ValidationError
 
 from translator_ingest.ingests.gtopdb.gtopdb import prepare, transform_ingest_all
@@ -492,7 +493,7 @@ def test_mixed_batch_order_duplicates_and_evidence(context: KozaTransform) -> No
 def test_complex_order_and_filtered_species_context(
     context: KozaTransform, type_value: str, action: str, interaction_predicates: list[str]
 ) -> None:
-    """Even a skipped second-species record prevents unqualified component edges."""
+    """A skipped second-species record leaves the first species' qualified components intact."""
     human = RECORD | {
         "target_id": "378",
         "target_subunit_ids": "373|374",
@@ -515,23 +516,125 @@ def test_complex_order_and_filtered_species_context(
     assert len({edge.id for edge in single.edges}) == len(interaction_predicates) + 2
     mouse = human | {"target_species": "Mouse", "Type": "unknown"}
     combined = list(transform_ingest_all(context, [human, mouse]))[0]
-    assert [node.id for node in combined.nodes] == ["PUBCHEM.COMPOUND:2244", "IUPHARobj:378"]
-    assert [edge.predicate for edge in combined.edges] == interaction_predicates
+    assert [node.id for node in combined.nodes] == [node.id for node in single.nodes]
+    assert [edge.predicate for edge in combined.edges] == [edge.predicate for edge in single.edges]
+    assert {edge.species_context_qualifier for edge in combined.edges if edge.predicate == "biolink:has_part"} == {
+        "NCBITaxon:9606"
+    }
+
+
+COMPLEX_PORTAL_HEADER = (
+    "#Complex ac\tRecommended name\tTaxonomy identifier\tIdentifiers (and stoichiometry) of molecules in complex\n"
+)
+
+
+@pytest.mark.parametrize(
+    "extra_complex_portal_rows,expected_ids",
+    [
+        ([], {"Human": "ComplexPortal:CPX-271", "Mouse": "ComplexPortal:CPX-275", "Rat": "IUPHARobj:378"}),
+        (
+            # A second human complex with the same members makes the human match ambiguous.
+            ["CPX-9999\tduplicate\t9606\tO95264(1)|P46098(1)\n"],
+            {"Human": "IUPHARobj:378", "Mouse": "ComplexPortal:CPX-275", "Rat": "IUPHARobj:378"},
+        ),
+    ],
+)
+def test_complex_portal_substitution(
+    context: KozaTransform, tmp_path: Path, extra_complex_portal_rows: list[str], expected_ids: dict[str, str]
+) -> None:
+    """Exact, unambiguous species and member matches use Complex Portal IDs (NCATSTranslator/Babel#1277)."""
+    copyfile(FIXTURES / "fixtures" / "ligands.csv", tmp_path / "ligands.csv")
+    (tmp_path / "complexportal_9606.tsv").write_text(
+        COMPLEX_PORTAL_HEADER
+        + "CPX-271\t5-HT3A/B receptor\t9606\tP46098(2)|O95264(3)\n"
+        # Nested complexes and processed chains never match, even with the same proteins.
+        + "CPX-6015\treceptor-ligand complex\t9606\tCPX-6024(1)|P46098(1)|O95264(1)\n"
+        + "".join(extra_complex_portal_rows)
+    )
+    (tmp_path / "complexportal_10090.tsv").write_text(
+        COMPLEX_PORTAL_HEADER + "CPX-275\t5-HT3A/B receptor\t10090\tP23979(2)|Q9JHJ5-2(3)\n"
+    )
+    source_row = {
+        "Target": "5-HT3AB",
+        "Target ID": "378",
+        "Target Subunit IDs": "373|374",
+        "Target Gene Symbol": "HTR3A|HTR3B",
+        "Target UniProt ID": "P46098|O95264",
+        "Target Species": "Human",
+        "Ligand ID": "1",
+        "Ligand": "example ligand",
+        "Type": "Agonist",
+        "Action": "Agonist",
+        "Endogenous": "FALSE",
+        "Ligand Context": "",
+        "PubMed ID": "123",
+    }
+    rows = [
+        source_row,
+        source_row | {"Target Species": "Mouse", "Target UniProt ID": "P23979|Q9JHJ5"},
+        source_row | {"Target Species": "Rat", "Target UniProt ID": "P35563|Q9JJ16"},
+    ]
+    graph = list(transform_ingest_all(context, prepare(context, rows)))[0]
+
+    taxa = {"Human": "NCBITaxon:9606", "Mouse": "NCBITaxon:10090", "Rat": "NCBITaxon:10116"}
+    complexes = {node.id: node for node in graph.nodes if node.id.split(":")[0] in {"ComplexPortal", "IUPHARobj"}}
+    assert set(complexes) == set(expected_ids.values())
+    for node_id, node in complexes.items():
+        # An IUPHARobj node shared by several species carries all of them.
+        assert node.in_taxon == sorted(taxa[species] for species, used in expected_ids.items() if used == node_id)
+        assert node.xref == (["IUPHARobj:378"] if node_id.startswith("ComplexPortal:") else None)
+    has_part_subjects = {
+        (edge.subject, edge.species_context_qualifier) for edge in graph.edges if edge.predicate == "biolink:has_part"
+    }
+    assert has_part_subjects == {(expected_ids[species], taxon) for species, taxon in taxa.items()}
+    interaction_objects = {edge.object for edge in graph.edges if edge.predicate != "biolink:has_part"}
+    assert interaction_objects == set(expected_ids.values())
+
+
+def test_species_qualified_components_survive_jsonl_and_merge_keys(context: KozaTransform, tmp_path: Path) -> None:
+    """Written has_part edges keep species, and ORION merges per species, never across species (#510)."""
+    human = RECORD | {
+        "target_id": "378",
+        "target_name": "5-HT3AB",
+        "target_subunit_ids": "373|374",
+        "target_uniprot_ids": "P46098|O95264",
+    }
+    second_ligand = human | {"Ligand ID": "2", "subject_id": "3345"}
+    mouse = human | {"target_species": "Mouse", "target_uniprot_ids": "P23979|Q9JHJ5"}
+    graph = list(transform_ingest_all(context, [human, second_ligand, mouse]))[0]
+    context.write(*graph.nodes, *graph.edges)
+    context.writer.finalize()
+
+    written = [json.loads(line) for line in (tmp_path / "output" / "gtopdb_edges.jsonl").read_text().splitlines()]
+    components = [edge for edge in written if edge["predicate"] == "biolink:has_part"]
+    assert len(components) == 6
+    assert all("species_context_qualifier" in edge for edge in components)
+    merge_keys = {edge_key_function(edge): (edge["object"], edge["species_context_qualifier"]) for edge in components}
+    assert sorted(merge_keys.values()) == [
+        ("UniProtKB:O95264", "NCBITaxon:9606"),
+        ("UniProtKB:P23979", "NCBITaxon:10090"),
+        ("UniProtKB:P46098", "NCBITaxon:9606"),
+        ("UniProtKB:Q9JHJ5", "NCBITaxon:10090"),
+    ]
+    relabelled = components[0] | {"species_context_qualifier": "NCBITaxon:10116"}
+    assert edge_key_function(relabelled) != edge_key_function(components[0])
 
 
 def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Path) -> None:
-    """Exercise CSV mapping, grouping, missing scalars, and real graph serialization."""
+    """Exercise CSV mapping, grouping, missing scalars, and real graph serialization.
+
+    Ligands with a blank or missing PubChem CID are dropped rather than emitted as
+    PUBCHEM.COMPOUND: or PUBCHEM.COMPOUND:nan, which non-strict normalization would keep.
+    """
     copyfile(FIXTURES / "fixtures" / "ligands.csv", tmp_path / "ligands.csv")
     source = pd.read_csv(FIXTURES / "fixtures" / "interactions.csv", dtype={"Ligand ID": str, "Target ID": str})
     records = prepare(context, source.to_dict(orient="records"))
     assert [record["target_name"] for record in records] == [
         "A target",
         "B missing labels",
-        "C blank CID",
-        "D missing CID",
         "G isoform",
     ]
-    assert [record["subject_id"] for record in records] == ["2244", "2244", "", "nan", "0055"]
+    assert [record["subject_id"] for record in records] == ["2244", "2244", "0055"]
     assert records[0]["PubMed ID"] == "123|123|456"
     assert all(pd.isna(records[1][key]) for key in ("Type", "Action", "Endogenous"))
     assert isinstance(records[1]["Type"], float)
@@ -539,10 +642,6 @@ def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Pa
     assert [edge.subject for edge in graph.edges] == [
         "PUBCHEM.COMPOUND:2244",
         "PUBCHEM.COMPOUND:2244",
-        "PUBCHEM.COMPOUND:",
-        "PUBCHEM.COMPOUND:",
-        "PUBCHEM.COMPOUND:nan",
-        "PUBCHEM.COMPOUND:nan",
         "PUBCHEM.COMPOUND:0055",
         "PUBCHEM.COMPOUND:0055",
     ]
@@ -556,8 +655,6 @@ def test_local_preparation_and_jsonl_output(context: KozaTransform, tmp_path: Pa
     assert [node["id"] for node in written_nodes] == [
         "PUBCHEM.COMPOUND:2244",
         "UniProtKB:P08588",
-        "PUBCHEM.COMPOUND:",
-        "PUBCHEM.COMPOUND:nan",
         "PUBCHEM.COMPOUND:0055",
         "UniProtKB:P56856",
     ]

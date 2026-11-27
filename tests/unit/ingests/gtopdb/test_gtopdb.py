@@ -17,9 +17,7 @@ from translator_ingest.ingests.gtopdb.gtopdb import (
     _load_ligand_mapping,
     _publication_list,
     get_latest_version,
-    multi_species_source_target_ids,
     prepare,
-    source_target_species_descriptors,
     transform_ingest_all,
 )
 from translator_ingest.ingests.gtopdb.rules import (
@@ -138,8 +136,8 @@ def test_target_descriptor_classifies_components_before_accession_cardinality(re
     assert target.classification is classification
 
 
-def test_multi_species_target_detection_is_independent_of_complex_classification():
-    """Identify source targets with distinct known species without flattening complexes."""
+def test_complex_classification_is_independent_of_species():
+    """Each species descriptor of target 378 is a complex with its own taxon."""
     human_complex = TargetDescriptor.from_record(
         {
             "target_id": "378",
@@ -173,10 +171,10 @@ def test_multi_species_target_detection_is_independent_of_complex_classification
 
     assert human_complex.classification is TargetClassification.MACROMOLECULAR_COMPLEX
     assert mouse_complex.classification is TargetClassification.MACROMOLECULAR_COMPLEX
-    assert multi_species_source_target_ids((human_complex, mouse_complex, unknown_species)) == frozenset({"378"})
-    assert source_target_species_descriptors((human_complex, mouse_complex, unknown_species)) == {
-        "378": {"human": human_complex, "mouse": mouse_complex}
-    }
+    assert unknown_species.classification is TargetClassification.MACROMOLECULAR_COMPLEX
+    assert human_complex.species_context_qualifier == "NCBITaxon:9606"
+    assert mouse_complex.species_context_qualifier == "NCBITaxon:10090"
+    assert unknown_species.species_context_qualifier is None
 
 
 @pytest.mark.parametrize(
@@ -485,11 +483,10 @@ def test_transform_emits_source_defined_complex_targets():
         ("IUPHARobj:378", "biolink:has_part", "UniProtKB:P46098"),
         ("IUPHARobj:378", "biolink:has_part", "UniProtKB:O95264"),
     }
-    assert {
-        edge.predicate: edge.species_context_qualifier for edge in graph.edges if edge.predicate != "biolink:has_part"
-    } == {
+    assert {edge.predicate: edge.species_context_qualifier for edge in graph.edges} == {
         "biolink:affects": "NCBITaxon:9606",
         "biolink:directly_physically_interacts_with": "NCBITaxon:9606",
+        "biolink:has_part": "NCBITaxon:9606",
     }
     assert all(node.in_taxon == ["NCBITaxon:9606"] for node in graph.nodes if node.id != "PUBCHEM.COMPOUND:2244")
     assert context.messages == []
@@ -503,10 +500,10 @@ def test_transform_emits_source_defined_complex_targets():
         ("Allosteric modulator", "Neutral", 2, "allosteric_modulation"),
     ],
 )
-def test_transform_omits_components_for_multi_species_source_complexes(
+def test_transform_qualifies_components_of_multi_species_source_complexes(
     type_value: str, action: str, edge_count: int, physical_mechanism: str | None
 ):
-    """Avoid merging human and mouse target 378 components under IUPHARobj:378."""
+    """Keep human and mouse target 378 components apart by species under IUPHARobj:378."""
     human = {
         "Ligand ID": "1",
         "subject_id": "2244",
@@ -533,9 +530,30 @@ def test_transform_omits_components_for_multi_species_source_complexes(
     assert {node.id for node in graph.nodes} == {
         "PUBCHEM.COMPOUND:2244",
         "IUPHARobj:378",
+        "UniProtKB:P46098",
+        "UniProtKB:O95264",
+        "UniProtKB:P23979",
+        "UniProtKB:Q9JHJ5",
     }
-    assert all(edge.predicate != "biolink:has_part" for edge in graph.edges)
-    assert len(graph.edges) == edge_count
+    assert {node.id: node.in_taxon for node in graph.nodes if node.id.startswith("UniProtKB:")} == {
+        "UniProtKB:P46098": ["NCBITaxon:9606"],
+        "UniProtKB:O95264": ["NCBITaxon:9606"],
+        "UniProtKB:P23979": ["NCBITaxon:10090"],
+        "UniProtKB:Q9JHJ5": ["NCBITaxon:10090"],
+    }
+    # Koza writes the first copy of a node, so every copy must carry both species.
+    assert {tuple(node.in_taxon) for node in graph.nodes if node.id == "IUPHARobj:378"} == {
+        ("NCBITaxon:10090", "NCBITaxon:9606")
+    }
+    component_edges = [edge for edge in graph.edges if edge.predicate == "biolink:has_part"]
+    assert {(edge.subject, edge.object, edge.species_context_qualifier) for edge in component_edges} == {
+        ("IUPHARobj:378", "UniProtKB:P46098", "NCBITaxon:9606"),
+        ("IUPHARobj:378", "UniProtKB:O95264", "NCBITaxon:9606"),
+        ("IUPHARobj:378", "UniProtKB:P23979", "NCBITaxon:10090"),
+        ("IUPHARobj:378", "UniProtKB:Q9JHJ5", "NCBITaxon:10090"),
+    }
+    assert all(type(edge).model_validate(edge.model_dump()) == edge for edge in component_edges)
+    assert len(graph.edges) == edge_count + len(component_edges)
     physical_edges = [edge for edge in graph.edges if edge.predicate == "biolink:directly_physically_interacts_with"]
     assert len(physical_edges) == 2
     assert all(edge.causal_mechanism_qualifier == physical_mechanism for edge in physical_edges)
