@@ -9,6 +9,8 @@ Validates KGX files against Biolink Model requirements using LinkML validation p
 import json
 import random
 import sys
+from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
@@ -17,6 +19,13 @@ from typing import Optional, Dict, Any, List
 import click
 from translator_ingest import INGESTS_DATA_DIR
 from translator_ingest.util.biolink import get_biolink_schema, get_current_biolink_version
+from translator_ingest.util.infores import (
+    InforesCatalog,
+    InforesValidationResult,
+    check_infores_ids,
+    get_edge_infores_ids,
+    get_infores_catalog,
+)
 from translator_ingest.util.storage.local import IngestFileName
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
@@ -74,6 +83,82 @@ def extract_edge_node_refs(edges: list[dict]) -> set[str]:
     return node_refs
 
 
+def invalid_infores_message(infores_id: str, edge_count: int) -> str:
+    """Error message for an infores id that is not in the catalog."""
+    if not infores_id:
+        return f"Edge sources have a null or empty infores id ({edge_count:,} edges)"
+    return f"Edge sources reference infores '{infores_id}' which is not in the infores catalog ({edge_count:,} edges)"
+
+
+def infores_validation_issues(result: InforesValidationResult) -> tuple[list[dict], list[dict]]:
+    """Report entries for edge source infores ids: invalid ids as errors, deprecated ids as warnings."""
+    errors = [
+        {
+            "type": "infores-validation",
+            "severity": "ERROR",
+            "message": invalid_infores_message(infores_id, edge_count),
+            "instance_path": "edges",
+        }
+        for infores_id, edge_count in result.invalid.items()
+    ]
+    warnings = [
+        {
+            "type": "infores-validation",
+            "severity": "WARN",
+            "message": f"Edge sources reference deprecated infores '{infores_id}' ({edge_count:,} edges)",
+            "instance_path": "edges",
+        }
+        for infores_id, edge_count in result.deprecated.items()
+    ]
+    for error in errors:
+        logger.error(error["message"])
+    for warning in warnings:
+        logger.warning(warning["message"])
+    return errors, warnings
+
+
+@dataclass(frozen=True)
+class InforesReport:
+    """Infores check results, split into the pieces that go into a validation report.
+
+    :param catalog: provenance of the catalog that was checked against, for the report's ``infores_catalog``
+    :param errors: report entries for invalid infores ids, to add to the report's errors
+    :param warnings: report entries for deprecated infores ids, to add to the report's warnings
+    :param statistics: infores counts for the report's ``statistics`` section
+    :param issues: invalid and deprecated infores ids with their edge counts, for the report's ``issues`` section
+    """
+
+    catalog: dict[str, str]
+    errors: list[dict]
+    warnings: list[dict]
+    statistics: dict[str, int]
+    issues: dict[str, dict[str, int]]
+
+
+def build_infores_report(infores_edge_counts: Counter[str], catalog: InforesCatalog) -> InforesReport:
+    """Check edge infores ids against the catalog and build the validation report pieces for them.
+
+    :param infores_edge_counts: number of edges referencing each infores id
+    :param catalog: the infores catalog to check against
+    """
+    result = check_infores_ids(infores_edge_counts, catalog)
+    errors, warnings = infores_validation_issues(result)
+    return InforesReport(
+        catalog=catalog.provenance(),
+        errors=errors,
+        warnings=warnings,
+        statistics={
+            "distinct_infores_ids": result.distinct_count,
+            "invalid_infores_count": len(result.invalid),
+            "deprecated_infores_count": len(result.deprecated),
+        },
+        issues={
+            "invalid_infores": result.invalid,
+            "deprecated_infores": result.deprecated,
+        },
+    )
+
+
 def save_validation_report(report: Dict[str, Any], output_dir: Path) -> Path:
     """Save validation report to JSON file"""
 
@@ -98,6 +183,8 @@ def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, An
     """
     logger.info("Starting streaming validation for large files")
 
+    infores_catalog = get_infores_catalog()
+
     # First pass: collect all node IDs and nodes for reference checking
     logger.info(f"Loading nodes from: {nodes_file}")
     node_ids = set()
@@ -119,6 +206,7 @@ def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, An
     edge_sample = []
     missing_nodes = set()
     sampled_node_refs = set()  # Only track nodes from sampled edges
+    infores_edge_counts = Counter()  # Counted over all edges, not just the sample
     MAX_MISSING_NODES = 1000  # Limit missing nodes to track
     SAMPLE_PERCENTAGE = 0.10
     MIN_SAMPLE_SIZE = 1000    # Minimum sample size for meaningful validation
@@ -159,6 +247,8 @@ def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, An
             obj = edge["object"]
             if obj not in node_ids and len(missing_nodes) < MAX_MISSING_NODES:
                 missing_nodes.add(obj)
+
+        infores_edge_counts.update(get_edge_infores_ids(edge))
 
     # Rebuild node references from final sample to ensure accuracy
     sampled_node_refs = set()
@@ -223,6 +313,11 @@ def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, An
         except Exception as e:
             logger.error(f"Sample validation failed: {e}")
 
+    # Add infores errors and warnings (checked over all edges)
+    infores_report = build_infores_report(infores_edge_counts, infores_catalog)
+    errors.extend(infores_report.errors)
+    warnings.extend(infores_report.warnings)
+
     # Add reference integrity errors (limited)
     for missing_node in list(missing_nodes)[:100]:  # Limit to first 100
         errors.append({
@@ -238,6 +333,7 @@ def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, An
     report = {
         "timestamp": datetime.now().isoformat(),
         "biolink_version": get_current_biolink_version(),
+        "infores_catalog": infores_report.catalog,
         "files": {"nodes_file": str(nodes_file), "edges_file": str(edges_file)},
         "statistics": {
             "total_nodes": node_count,
@@ -245,16 +341,19 @@ def validate_large_kgx_files(nodes_file: Path, edges_file: Path) -> Dict[str, An
             "unique_nodes_in_edges": len(all_edge_node_refs),
             "missing_nodes_count": len(missing_nodes),
             "orphaned_nodes_count": len(orphaned_nodes),
+            **infores_report.statistics,
             "validation_errors": len(errors),
             "validation_warnings": len(warnings),
             "edge_sample_size": len(edge_sample),
             "node_sample_size": len(node_sample),
-            "note": "Large file - validation performed on random edge sample with matching nodes"
+            "note": "Large file - Biolink validation performed on random edge sample with matching nodes; "
+                    "reference integrity and infores checks cover all edges"
         },
         "validation_status": ValidationStatus.PASSED if validation_passed else ValidationStatus.FAILED,
         "issues": {
             "errors": errors[:100],  # Limit errors in report
             "warnings": warnings[:100],  # Limit warnings in report
+            **infores_report.issues,
             "missing_nodes": list(missing_nodes)[:100],  # Skip sorting for large sets
             "orphaned_nodes": list(orphaned_nodes)[:100],  # Skip sorting for large sets
             "truncated": len(errors) > 100 or len(warnings) > 100 or len(missing_nodes) > 100 or len(orphaned_nodes) > 100
@@ -284,6 +383,8 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, An
 
     Returns comprehensive validation report.
     """
+    infores_catalog = get_infores_catalog()
+
     logger.info(f"Loading nodes from: {nodes_file}")
     nodes = load_jsonl(nodes_file)
     logger.info(f"Found {len(nodes)} nodes")
@@ -331,14 +432,20 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, An
     # Check reference integrity (nodes referenced in edges)
     node_ids = {node["id"] for node in nodes if "id" in node}
     edge_node_refs = set()
+    infores_edge_counts = Counter()
     for edge in edges:
         if "subject" in edge:
             edge_node_refs.add(edge["subject"])
         if "object" in edge:
             edge_node_refs.add(edge["object"])
+        infores_edge_counts.update(get_edge_infores_ids(edge))
 
     missing_nodes = edge_node_refs - node_ids
     orphaned_nodes = node_ids - edge_node_refs
+
+    infores_report = build_infores_report(infores_edge_counts, infores_catalog)
+    errors.extend(infores_report.errors)
+    warnings.extend(infores_report.warnings)
 
     # Add reference integrity errors
     for missing_node in missing_nodes:
@@ -357,6 +464,7 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, An
     report = {
         "timestamp": datetime.now().isoformat(),
         "biolink_version": get_current_biolink_version(),
+        "infores_catalog": infores_report.catalog,
         "files": {"nodes_file": str(nodes_file), "edges_file": str(edges_file)},
         "statistics": {
             "total_nodes": len(nodes),
@@ -364,6 +472,7 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, An
             "unique_nodes_in_edges": len(edge_node_refs),
             "missing_nodes_count": len(missing_nodes),
             "orphaned_nodes_count": len(orphaned_nodes),
+            **infores_report.statistics,
             "validation_errors": len(errors),
             "validation_warnings": len(warnings),
         },
@@ -371,6 +480,7 @@ def validate_kgx_consistency(nodes_file: Path, edges_file: Path) -> Dict[str, An
         "issues": {
             "errors": errors,
             "warnings": warnings,
+            **infores_report.issues,
             "missing_nodes": sorted(list(missing_nodes)),
             "orphaned_nodes": sorted(list(orphaned_nodes)),
         },

@@ -13,7 +13,6 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     KnowledgeLevelEnum,
     AgentTypeEnum, GeneFamily
 )
-from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 
 import koza
@@ -21,32 +20,28 @@ from koza.model.graphs import KnowledgeGraph
 
 from translator_ingest.ingests.panther.panther_orthologs_utils import (
     extract_panther_data_polars,
+    GENE_COL,
     GENE_A_ID_COL,
     GENE_B_ID_COL,
     GENE_FAMILY_ID_COL,
+    panther_sources
 )
-
-PANTHER_SOURCES = build_association_knowledge_sources(primary="infores:panther")
 
 
 def get_latest_version() -> str:
-    try:
-        response = requests.get(
-            "https://data.pantherdb.org/ftp/ortholog/current_release/README"
-        )
-        response.raise_for_status()
-        text = response.text
-        match = re.search(pattern=r"version:\s*v\.(\d+\.\d+)", string=text)
-        if match:
-            version = match.group(1)
-            print(f"Extracted version: {version}")
-            return version
-        else:
-            raise RuntimeError("Version match not found.")
+    """Get the current Panther release version from the ortholog README.
 
-    except (requests.RequestException, RuntimeError) as e:
-        print(f"Could not determine latest version for Panther: {e}")
-        return "unknown"
+    :return: The release version, e.g. '19.0'
+    """
+    response = requests.get(
+        "https://data.pantherdb.org/ftp/ortholog/current_release/README",
+        timeout=10,
+    )
+    response.raise_for_status()
+    match = re.search(pattern=r"version:\s*v\.(\d+\.\d+)", string=response.text)
+    if not match:
+        raise RuntimeError("Version match not found in Panther ortholog README.")
+    return match.group(1)
 
 
 @koza.prepare_data()
@@ -66,6 +61,7 @@ def prepare_panther_data(
     :return: Iterable[dict[str, Any]], pre-processed records with resolved gene CURIEs
              and taxon IDs ready for record-by-record transform_record processing.
     """
+    assert koza_transform.input_files_dir is not None
     data_archive_path: Path = koza_transform.input_files_dir / "RefGenomeOrthologs.tar.gz"
     df = extract_panther_data_polars(data_archive_path)
     return df.to_dicts()
@@ -87,6 +83,7 @@ def transform_gene_to_gene_orthology(
     :param record: Dict contents of a single pre-processed input data record
     :return: koza.model.graphs.KnowledgeGraph wrapping nodes (NamedThing) and edges (Association)
     """
+    gene_col = record[GENE_COL]
     gene_a_id = record[GENE_A_ID_COL]
     gene_b_id = record[GENE_B_ID_COL]
     gene_family_id = record[GENE_FAMILY_ID_COL]
@@ -104,16 +101,17 @@ def transform_gene_to_gene_orthology(
         object=gene_b.id,
         predicate="biolink:orthologous_to",
         has_evidence=orthology_evidence,
-        sources=PANTHER_SOURCES,
+        sources=panther_sources(gene_col, orthology_edge=True),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.manual_validation_of_automated_agent
     )
+
     gene_a_family_relationship = GeneToGeneFamilyAssociation(
         id=entity_id(),
         subject=gene_a.id,
         object=gene_family.id,
         predicate="biolink:member_of",
-        sources=PANTHER_SOURCES,
+        sources=panther_sources(gene_family_id, orthology_edge=False),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent
     )
@@ -122,7 +120,7 @@ def transform_gene_to_gene_orthology(
         subject=gene_b.id,
         object=gene_family.id,
         predicate="biolink:member_of",
-        sources=PANTHER_SOURCES,
+        sources=panther_sources(gene_family_id, orthology_edge=False),
         knowledge_level=KnowledgeLevelEnum.knowledge_assertion,
         agent_type=AgentTypeEnum.automated_agent
     )

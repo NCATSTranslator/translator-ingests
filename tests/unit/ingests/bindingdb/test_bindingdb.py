@@ -442,7 +442,7 @@ def _affinity_df(rows: list[dict]) -> pl.DataFrame:
     for row in rows:
         for col in columns:
             columns[col].append(row.get(col))
-    schema = {col: pl.Utf8 for col in AFFINITY_PARAMETERS.values()}
+    schema = {col: pl.String for col in AFFINITY_PARAMETERS.values()}
     return pl.DataFrame(columns, schema=schema)
 
 
