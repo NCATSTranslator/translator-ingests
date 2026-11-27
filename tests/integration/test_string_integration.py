@@ -44,9 +44,9 @@ ENTREZ_FIXTURE = FIXTURE_DIR / "all_organisms.entrez_2_string.tsv"
 # Per-taxon fixture filenames (must match string.yaml's reader configuration).
 # PPI uses the ``.full.`` 16-column variant for per-channel edge selection.
 PPI_FIXTURES = [
-    FIXTURE_DIR / "9606.protein.links.full.v12.0.txt.gz",
-    FIXTURE_DIR / "10090.protein.links.full.v12.0.txt.gz",
-    FIXTURE_DIR / "10116.protein.links.full.v12.0.txt.gz",
+    FIXTURE_DIR / "9606.protein.links.full.txt.gz",
+    FIXTURE_DIR / "10090.protein.links.full.txt.gz",
+    FIXTURE_DIR / "10116.protein.links.full.txt.gz",
 ]
 PPI_HEADER = [
     "protein1", "protein2",
@@ -115,9 +115,9 @@ def _load_jsonl(path: Path) -> list[dict]:
 @pytest.mark.parametrize(
     "fixture_name,expected_rows,expected_header,delimiter",
     [
-        ("9606.protein.links.full.v12.0.txt.gz",     200,  PPI_HEADER, None),
-        ("10090.protein.links.full.v12.0.txt.gz",    200,  PPI_HEADER, None),
-        ("10116.protein.links.full.v12.0.txt.gz",    200,  PPI_HEADER, None),
+        ("9606.protein.links.full.txt.gz",     200,  PPI_HEADER, None),
+        ("10090.protein.links.full.txt.gz",    200,  PPI_HEADER, None),
+        ("10116.protein.links.full.txt.gz",    200,  PPI_HEADER, None),
     ],
 )
 def test_fixture_row_counts(fixture_name, expected_rows, expected_header, delimiter):
