@@ -12,9 +12,7 @@ from types import ModuleType
 from translator_ingest.util.biolink import get_current_biolink_version
 from translator_ingest.util.logging_utils import get_logger, setup_logging
 
-from kghub_downloader.download_utils import download_from_yaml
 from kghub_downloader.main import main as kghub_download
-from kghub_downloader.model import DownloadOptions, DownloadReport
 
 from koza.runner import KozaRunner
 from koza.model.formats import OutputFormat as KozaOutputFormat
@@ -48,53 +46,7 @@ logger = get_logger(__name__)
 
 # Source-specific normalization overrides.
 # All sources default to strict normalization (True).
-NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {
-    # STOPGAP for gtopdb, remove when NCATSTranslator/Babel#1277 is resolved: NodeNorm does
-    # not resolve IUPHARobj, so strict normalization drops every GtoPdb complex without a
-    # Complex Portal match. Restore strict (delete this entry) once NodeNorm resolves IUPHARobj.
-    "gtopdb": False,
-}
-
-# Source-specific download attempts. All sources default to a single attempt.
-DOWNLOAD_ATTEMPTS_OVERRIDES: dict[str, int] = {
-    # STOPGAP for gtopdb, remove together with the Complex Portal download entries when
-    # NCATSTranslator/Babel#1277 is resolved: the EBI Complex Portal files often fail on
-    # the first request.
-    "gtopdb": 3,
-}
-DOWNLOAD_RETRY_DELAY_SECONDS = 10
-
-
-def download_with_retries(
-    yaml_file: str, output_dir: str, attempts: int, retry_delay_seconds: float = DOWNLOAD_RETRY_DELAY_SECONDS
-) -> DownloadReport:
-    """Download the files in a download.yaml, retrying only the files that failed.
-
-    Files already present are served from cache on each later attempt, so a retry only
-    re-requests what failed. Files fetched on any attempt count as downloaded in the
-    returned report. Raises RuntimeError if files still fail after the last attempt.
-    """
-    downloaded: list[Path] = []
-    for attempt in range(1, attempts + 1):
-        report = download_from_yaml(
-            yaml_file=yaml_file, output_dir=output_dir, download_options=DownloadOptions(fail_on_error=False)
-        )
-        downloaded.extend(report.downloaded)
-        if not report.failed:
-            break
-        if attempt < attempts:
-            logger.warning(
-                f"Download attempt {attempt} of {attempts} failed for {len(report.failed)} file(s); retrying: "
-                + ", ".join(path.name for path in report.failed)
-            )
-            time.sleep(retry_delay_seconds * attempt)
-    if report.failed:
-        raise RuntimeError(
-            f"Download failed after {attempts} attempt(s): " + ", ".join(str(path) for path in report.failed)
-        )
-    report.downloaded = downloaded
-    report.skipped = [path for path in report.skipped if path not in downloaded]
-    return report
+NORMALIZATION_STRICT_OVERRIDES: dict[str, bool] = {}
 
 
 def load_koza_config(source: str, pipeline_metadata: PipelineMetadata):
@@ -226,11 +178,7 @@ def download(pipeline_metadata: PipelineMetadata):
         # Download the data
         # Don't need to check if file(s) already downloaded, kg downloader handles that
         logger.info(f"Downloading source data for {pipeline_metadata.source}...")
-        attempts = DOWNLOAD_ATTEMPTS_OVERRIDES.get(pipeline_metadata.source, 1)
-        if attempts > 1:
-            report = download_with_retries(str(download_yaml_with_version), str(source_data_output_dir), attempts)
-        else:
-            report = kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
+        report = kghub_download(yaml_file=str(download_yaml_with_version), output_dir=str(source_data_output_dir))
     finally:
         # Clean up the specified download_yaml file if it exists and
         # is a temporary file with versioning resolved but is

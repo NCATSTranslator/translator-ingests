@@ -45,11 +45,11 @@ GTOPDB_INTERACTIONS_URL = "https://www.guidetopharmacology.org/DATA/interactions
 GTOPDB_VERSION_PATTERN = re.compile(r"GtoPdb Version:\s*(?P<version>\S+)")
 
 # STOPGAP, remove when NCATSTranslator/Babel#1277 is resolved: NodeNorm does not resolve
-# IUPHARobj, so complexes that exactly match a Complex Portal complex take its normalizable ID.
+# IUPHARobj, so strict normalization drops every IUPHARobj complex. Complexes that exactly match
+# a Complex Portal complex take its normalizable ID and survive; the others are dropped.
 # Once NodeNorm resolves IUPHARobj, delete this matching (the constants below,
 # _complex_portal_protein_members, _load_complex_portal_index and the complex_portal_id
-# field), the Complex Portal entries in download.yaml, and the gtopdb entries in
-# pipeline.NORMALIZATION_STRICT_OVERRIDES and pipeline.DOWNLOAD_ATTEMPTS_OVERRIDES.
+# field) and the Complex Portal entries in download.yaml.
 # Complex Portal files listed in download.yaml, one per species of a GtoPdb complex target.
 COMPLEX_PORTAL_FILE_PATTERN = "complexportal_*.tsv"
 COMPLEX_PORTAL_ID_COLUMN = "#Complex ac"
