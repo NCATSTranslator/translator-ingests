@@ -1,5 +1,10 @@
+import doctest
+import importlib
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
 import polars as pl
 import pytest
@@ -24,12 +29,18 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
     TextMiningStudyResult,
 )
 from koza.runner import KozaRunner, KozaTransformHooks
+from koza.transform import KozaTransform, Record
 
 from tests.unit.ingests import MockKozaWriter
+from translator_ingest.ingests.semmeddb import semmeddb as semmeddb_module
+from translator_ingest.ingests.semmeddb import text_locations as text_locations_module
 from translator_ingest.ingests.semmeddb.semmeddb import (
+    _STATE_DEFAULTS,
     MAX_PUBLICATIONS_PER_EDGE,
+    MIN_TEXT_LOCATION_COVERAGE,
     VERDICT_ARTIFACT_COLUMNS,
     VERDICT_ARTIFACT_FILENAME,
+    _apply_filters,
     _extract_supporting_studies,
     _has_bte_excluded_predicate,
     _make_node,
@@ -37,13 +48,29 @@ from translator_ingest.ingests.semmeddb.semmeddb import (
     load_verdicts,
     on_begin_filter_edges,
     on_end_filter_edges,
+    record_filter_reason,
     transform_semmeddb_edge,
+)
+from translator_ingest.ingests.semmeddb.text_locations import (
+    TEXT_LOCATION_ARTIFACT_FILENAME,
+    TEXT_LOCATION_ARTIFACT_SCHEMA,
+    TEXT_LOCATION_FINGERPRINT_COLUMN,
+    TEXT_LOCATION_KG2_ID_COLUMN,
+    TextSpans,
+    evidence_fingerprint,
+    load_text_locations,
 )
 
 FOUR_PUBS = ["PMID:11111111", "PMID:22222222", "PMID:33333333", "PMID:44444444"]
 
+# What a run writes: the subject and object nodes and the association.
+Entities = list[NamedThing | Association]
+VerdictRow = dict[str, str]
+TextLocationRow = dict[str, str | int]
+
 # Column order of the LLM PMID-checker results parquet the transform reads.
 VERDICT_SCHEMA: dict[str, pl.DataType] = {column: pl.String() for column in VERDICT_ARTIFACT_COLUMNS}
+TEXT_LOCATION_SORT_COLUMNS = [TEXT_LOCATION_KG2_ID_COLUMN, TEXT_LOCATION_FINGERPRINT_COLUMN]
 
 
 def _verdict(
@@ -52,7 +79,7 @@ def _verdict(
     subject: str = "CHEBI:15365",
     predicate: str = "biolink:treats_or_applied_or_studied_to_treat",
     obj: str = "MONDO:0005148",
-) -> dict[str, str]:
+) -> VerdictRow:
     """Return one verdict row, keyed like _base_record's edge by default."""
     return {
         "subject_curie": subject,
@@ -63,24 +90,88 @@ def _verdict(
     }
 
 
-def _write_verdict_artifact(directory: Path, verdicts: list[dict[str, str]]) -> None:
+def _write_verdict_artifact(directory: Path, verdicts: list[VerdictRow]) -> None:
     """Write the verdict parquet the transform loads from its input files directory."""
     pl.DataFrame(verdicts, schema=VERDICT_SCHEMA).write_parquet(directory / VERDICT_ARTIFACT_FILENAME)
 
 
-def _create_test_runner(
-    record: dict,
-    verdicts: list[dict[str, str]] | None = None,
+# A KG2 record's single kg2_ids entry, as KG2 writes it, for _base_record's edge.
+BASE_KG2_ID = "CHEBI:15365---SEMMEDDB:treats---None---None---None---MONDO:0005148---SEMMEDDB:"
+# Another kg2_id that emits the same edge key: KG2 maps SemMedDB PREVENTS to
+# preventative_for_condition, which the transform remaps to treats_or_applied_or_studied_to_treat.
+PREVENTS_KG2_ID = "CHEBI:15365---SEMMEDDB:prevents---None---None---None---MONDO:0005148---SEMMEDDB:"
+
+# Subject "Aspirin" is [0, 7] and object "diabetes" is [15, 23]: 0-based, end exclusive.
+LOCATED_SENTENCE = "Aspirin treats diabetes in adults."
+LOCATED_EVIDENCE: dict[str, str] = {
+    "sentence": LOCATED_SENTENCE,
+    "subject score": "1000",
+    "object score": "888",
+}
+SUBJECT_SPAN = (0, 7)
+OBJECT_SPAN = (15, 23)
+
+# The same claim in another sentence: "aspirin" is [11, 18] and "diabetes" is [26, 34].
+OTHER_SENTENCE = "In adults, aspirin treats diabetes."
+OTHER_EVIDENCE: dict[str, str] = {**LOCATED_EVIDENCE, "sentence": OTHER_SENTENCE}
+OTHER_SUBJECT_SPAN = (11, 18)
+OTHER_OBJECT_SPAN = (26, 34)
+
+# The first sentence with other scores, which makes it the evidence of another predication.
+RESCORED_EVIDENCE: dict[str, str] = {**LOCATED_EVIDENCE, "object score": "1000"}
+# A sentence the record does not carry, as in an artifact built from older KG2 data.
+STALE_SENTENCE = "Aspirin treats diabetes in rats."
+STALE_EVIDENCE: dict[str, str] = {**LOCATED_EVIDENCE, "sentence": STALE_SENTENCE}
+UNKNOWN_KG2_ID = "CHEBI:1---SEMMEDDB:treats---None---None---None---MONDO:1---SEMMEDDB:"
+
+
+def _location(
+    pmid: str,
+    subject_span: tuple[int, int] = SUBJECT_SPAN,
+    object_span: tuple[int, int] = OBJECT_SPAN,
+    kg2_id: str = BASE_KG2_ID,
+    evidence: Mapping[str, str] | None = None,
+) -> TextLocationRow:
+    """Return one text-location row for a PMID's evidence, LOCATED_EVIDENCE unless given."""
+    return {
+        TEXT_LOCATION_KG2_ID_COLUMN: kg2_id,
+        TEXT_LOCATION_FINGERPRINT_COLUMN: evidence_fingerprint(
+            pmid, LOCATED_EVIDENCE if evidence is None else evidence
+        ),
+        "subject_start": subject_span[0],
+        "subject_end": subject_span[1],
+        "object_start": object_span[0],
+        "object_end": object_span[1],
+    }
+
+
+def _text_location_frame(locations: list[TextLocationRow]) -> pl.DataFrame:
+    """Return the rows as a frame with the artifact's schema, in the order they were given."""
+    return pl.DataFrame(locations, schema=TEXT_LOCATION_ARTIFACT_SCHEMA)
+
+
+def _write_text_location_artifact(directory: Path, locations: list[TextLocationRow]) -> None:
+    """Write the text-location parquet the transform loads, sorted like the build writes it."""
+    _text_location_frame(locations).sort(TEXT_LOCATION_SORT_COLUMNS).write_parquet(
+        directory / TEXT_LOCATION_ARTIFACT_FILENAME
+    )
+
+
+def _run_transform(
+    record: Record,
+    verdicts: list[VerdictRow] | None = None,
     check_coverage: bool = False,
     write_artifact: bool = True,
-) -> list:
-    """Run a single record through the transform and return emitted entities.
+    text_locations: list[TextLocationRow] | None = None,
+) -> tuple[Entities, dict[str, Any]]:
+    """Run a single record through the transform, returning emitted entities and transform metadata.
 
-    The transform loads the PMID-checker verdicts in its on_data_begin hook, so every run needs
-    an artifact; with no ``verdicts`` it is empty, meaning no publication is rejected. The
-    on_data_end hook, which enforces the coverage guard, only runs when ``check_coverage`` is set.
-    ``write_artifact`` is set to False to run without an artifact at all, which is what an
-    unfiltered run does.
+    The transform loads the PMID-checker verdicts and the text locations in its on_data_begin hook,
+    so every run needs both artifacts. With no ``verdicts`` the verdict artifact is empty, meaning
+    no publication is rejected, and with no ``text_locations`` no study result gets a location.
+    The on_data_end hook, which records the metadata and enforces both coverage guards, only runs
+    when ``check_coverage`` is set. ``write_artifact`` is set to False to run without a verdict
+    artifact, which is what an unfiltered run does.
     """
     writer = MockKozaWriter()
     hooks = KozaTransformHooks(
@@ -91,6 +182,7 @@ def _create_test_runner(
     with tempfile.TemporaryDirectory() as input_files_dir:
         if write_artifact:
             _write_verdict_artifact(Path(input_files_dir), verdicts or [])
+        _write_text_location_artifact(Path(input_files_dir), text_locations or [])
         runner = KozaRunner(
             data=[record],
             writer=writer,
@@ -98,12 +190,27 @@ def _create_test_runner(
             input_files_dir=Path(input_files_dir),
         )
         runner.run()
-    return writer.items
+    return writer.items, runner.transform_metadata
 
 
-def _base_record(**overrides: object) -> dict:
+def _create_test_runner(
+    record: Record,
+    verdicts: list[VerdictRow] | None = None,
+    check_coverage: bool = False,
+    write_artifact: bool = True,
+    text_locations: list[TextLocationRow] | None = None,
+) -> Entities:
+    """Run a single record through the transform and return the emitted entities.
+
+    See _run_transform for the arguments.
+    """
+    entities, _ = _run_transform(record, verdicts, check_coverage, write_artifact, text_locations)
+    return entities
+
+
+def _base_record(**overrides: object) -> Record:
     """Return a minimal valid KG2 edge record, with optional field overrides."""
-    record: dict = {
+    record: Record = {
         "subject": "CHEBI:15365",
         "object": "MONDO:0005148",
         "predicate": "biolink:treats_or_applied_or_studied_to_treat",
@@ -226,6 +333,44 @@ def test_empty_kg2_ids_passes_through():
     entities = _create_test_runner(_base_record(kg2_ids=[]))
     associations = [e for e in entities if isinstance(e, Association)]
     assert len(associations) == 1
+
+
+# ---------------------------------------------------------------------------
+# record_filter_reason / _apply_filters (unit)
+# ---------------------------------------------------------------------------
+
+ISA_KG2_ID = "UMLS:C0---SEMMEDDB:isa---UMLS:C1"
+
+
+@pytest.mark.parametrize(
+    "overrides, reason",
+    [
+        ({"domain_range_exclusion": True}, "domain_range_exclusion_skipped"),
+        (
+            {"domain_range_exclusion": True, "publications": [], "kg2_ids": [ISA_KG2_ID]},
+            "domain_range_exclusion_skipped",
+        ),
+        ({"publications": ["PMID:1", "PMID:2", "PMID:3"]}, "low_publication_count_skipped"),
+        ({"publications": [], "kg2_ids": [ISA_KG2_ID]}, "low_publication_count_skipped"),
+        ({"kg2_ids": [ISA_KG2_ID]}, "bte_excluded_predicate_skipped"),
+        ({"kg2_ids": ["UMLS:C0---SEMMEDDB:treats---UMLS:C1"]}, None),
+        ({"kg2_ids": []}, None),
+        ({}, None),
+    ],
+)
+def test_record_filter_reason_and_apply_filters_agree(overrides: dict[str, object], reason: str | None) -> None:
+    """The first rejecting filter names the reason, and _apply_filters counts exactly that key."""
+    record = _base_record(**overrides)
+    assert record_filter_reason(record) == reason
+    state: dict[str, Any] = dict(_STATE_DEFAULTS)
+    publications = _apply_filters(record, state)
+    changed = {key: value for key, value in state.items() if value != _STATE_DEFAULTS[key]}
+    if reason is None:
+        assert publications == record["publications"]
+        assert changed == {}
+    else:
+        assert publications is None
+        assert changed == {reason: 1}
 
 
 # ---------------------------------------------------------------------------
@@ -462,7 +607,7 @@ def test_extract_supporting_studies():
             "object score": "850",
         },
     }
-    result = _extract_supporting_studies(publications_info)
+    result = _extract_supporting_studies(publications_info, {}, dict(_STATE_DEFAULTS))
     assert result is not None
     assert len(result) == 1
 
@@ -483,8 +628,8 @@ def test_extract_supporting_studies():
 
 def test_extract_supporting_studies_empty():
     """_extract_supporting_studies returns None for empty/None input."""
-    assert _extract_supporting_studies({}) is None
-    assert _extract_supporting_studies(None) is None
+    assert _extract_supporting_studies({}, {}, dict(_STATE_DEFAULTS)) is None
+    assert _extract_supporting_studies(None, {}, dict(_STATE_DEFAULTS)) is None
 
 
 def test_edge_with_publications_info():
@@ -564,8 +709,10 @@ def test_load_verdicts_marks_an_edge_without_rejections_as_covered(tmp_path):
     assert load_verdicts(tmp_path / VERDICT_ARTIFACT_FILENAME) == {BASE_EDGE_KEY: None}
 
 
-def test_unfiltered_run_keeps_rejected_publications_and_needs_no_artifact(monkeypatch):
-    """SEMMEDDB_UNFILTERED regenerates the pre-filter edge set, so nothing is dropped or required."""
+def test_unfiltered_run_keeps_rejected_publications_and_needs_no_verdict_artifact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SEMMEDDB_UNFILTERED regenerates the pre-filter edge set: nothing is dropped, no verdicts are read."""
     monkeypatch.setattr("translator_ingest.ingests.semmeddb.semmeddb.PMID_FILTER_ENABLED", False)
 
     entities = _create_test_runner(
@@ -664,6 +811,374 @@ def test_missing_verdict_artifact_raises():
 
 
 # ---------------------------------------------------------------------------
+# Text locations
+# ---------------------------------------------------------------------------
+
+def _located_record(**overrides: object) -> Record:
+    """Return _base_record with kg2_ids [BASE_KG2_ID] and LOCATED_EVIDENCE for every publication."""
+    located: Record = {
+        "kg2_ids": [BASE_KG2_ID],
+        "publications_info": {pmid: dict(LOCATED_EVIDENCE) for pmid in FOUR_PUBS},
+    }
+    return _base_record(**{**located, **overrides})
+
+
+def _study_results(entities: Entities) -> list[TextMiningStudyResult]:
+    """Return the study results of the single association among the emitted entities."""
+    association = [e for e in entities if isinstance(e, Association)][0]
+    study = list(association.has_supporting_studies.values())[0]
+    return study.has_study_results
+
+
+def _locations_by_pmid(entities: Entities) -> dict[str, tuple[list[int] | None, list[int] | None]]:
+    """Return each study result's (subject, object) location, keyed by its PMID."""
+    return {
+        result.xref[0]: (result.subject_location_in_text, result.object_location_in_text)
+        for result in _study_results(entities)
+    }
+
+
+def test_text_locations_attached_for_the_matching_evidence() -> None:
+    """Each study result gets its evidence's spans as [start, end], 0-based and end exclusive."""
+    record = _located_record(publications_info={
+        FOUR_PUBS[0]: dict(LOCATED_EVIDENCE),
+        FOUR_PUBS[1]: dict(OTHER_EVIDENCE),
+    })
+    entities = _create_test_runner(record, text_locations=[
+        _location(FOUR_PUBS[0]),
+        _location(FOUR_PUBS[1], OTHER_SUBJECT_SPAN, OTHER_OBJECT_SPAN, evidence=OTHER_EVIDENCE),
+    ])
+
+    assert _locations_by_pmid(entities) == {
+        FOUR_PUBS[0]: (list(SUBJECT_SPAN), list(OBJECT_SPAN)),
+        FOUR_PUBS[1]: (list(OTHER_SUBJECT_SPAN), list(OTHER_OBJECT_SPAN)),
+    }
+    for result in _study_results(entities):
+        sentence = result.supporting_text[0]
+        subject_start, subject_end = result.subject_location_in_text
+        object_start, object_end = result.object_location_in_text
+        assert sentence[subject_start:subject_end].lower() == "aspirin"
+        assert sentence[object_start:object_end] == "diabetes"
+
+
+@pytest.mark.parametrize(
+    "text_locations",
+    [
+        [],
+        [_location(pmid, kg2_id=PREVENTS_KG2_ID) for pmid in FOUR_PUBS],
+        [_location("PMID:99999999")],
+        # a stale artifact: the spans were found in a sentence the record no longer carries
+        [_location(pmid, evidence=STALE_EVIDENCE) for pmid in FOUR_PUBS],
+    ],
+    ids=["no rows", "rows for another kg2_id", "rows for another PMID", "rows for an old sentence"],
+)
+def test_study_result_without_a_location_row_gets_none(text_locations: list[TextLocationRow]) -> None:
+    """A study result whose (kg2_id, evidence) has no row in the artifact gets no location."""
+    entities = _create_test_runner(_located_record(), text_locations=text_locations)
+
+    assert _locations_by_pmid(entities) == {pmid: (None, None) for pmid in FOUR_PUBS}
+
+
+@pytest.mark.parametrize(
+    "predicate,kg2_id,subject_span",
+    [
+        ("biolink:treats_or_applied_or_studied_to_treat", BASE_KG2_ID, SUBJECT_SPAN),
+        ("biolink:preventative_for_condition", PREVENTS_KG2_ID, (0, 3)),
+    ],
+    ids=["treats record", "prevents record"],
+)
+def test_records_with_the_same_edge_key_get_the_spans_of_their_own_kg2_id(
+    predicate: str, kg2_id: str, subject_span: tuple[int, int]
+) -> None:
+    """Both records emit the same edge with the same PMID and sentence, but keep their own spans."""
+    text_locations = [_location(pmid, kg2_id=BASE_KG2_ID) for pmid in FOUR_PUBS] + [
+        _location(pmid, subject_span=(0, 3), kg2_id=PREVENTS_KG2_ID) for pmid in FOUR_PUBS
+    ]
+    record = _located_record(predicate=predicate, kg2_ids=[kg2_id])
+
+    entities = _create_test_runner(record, text_locations=text_locations)
+
+    association = [e for e in entities if isinstance(e, Association)][0]
+    assert association.predicate == "biolink:treats_or_applied_or_studied_to_treat"
+    assert _locations_by_pmid(entities) == {
+        pmid: (list(subject_span), list(OBJECT_SPAN)) for pmid in FOUR_PUBS
+    }
+
+
+@pytest.mark.parametrize(
+    "evidence,subject_span,object_span",
+    [
+        (LOCATED_EVIDENCE, SUBJECT_SPAN, OBJECT_SPAN),
+        (OTHER_EVIDENCE, OTHER_SUBJECT_SPAN, OTHER_OBJECT_SPAN),
+        (RESCORED_EVIDENCE, SUBJECT_SPAN, (15, 20)),
+    ],
+    ids=["first evidence", "another sentence", "same sentence, other scores"],
+)
+def test_records_sharing_a_kg2_id_get_the_spans_of_their_own_evidence(
+    evidence: dict[str, str], subject_span: tuple[int, int], object_span: tuple[int, int]
+) -> None:
+    """Records sharing one kg2_id each get the spans of their own evidence for a PMID."""
+    text_locations = [
+        _location(FOUR_PUBS[0]),
+        _location(FOUR_PUBS[0], OTHER_SUBJECT_SPAN, OTHER_OBJECT_SPAN, evidence=OTHER_EVIDENCE),
+        _location(FOUR_PUBS[0], SUBJECT_SPAN, (15, 20), evidence=RESCORED_EVIDENCE),
+    ]
+    record = _located_record(publications_info={FOUR_PUBS[0]: dict(evidence)})
+
+    entities = _create_test_runner(record, text_locations=text_locations)
+
+    assert _locations_by_pmid(entities) == {FOUR_PUBS[0]: (list(subject_span), list(object_span))}
+
+
+def test_null_evidence_score_emits_the_study_without_a_location() -> None:
+    """A null score does not stop the transform; that evidence just finds no span."""
+    text_locations = [_location(pmid) for pmid in FOUR_PUBS]
+    unscored: dict[str, str | None] = {**LOCATED_EVIDENCE, "subject score": None}
+    publications_info: dict[str, dict[str, str | None]] = {
+        pmid: dict(LOCATED_EVIDENCE) for pmid in FOUR_PUBS
+    }
+    publications_info[FOUR_PUBS[0]] = unscored
+
+    entities = _create_test_runner(
+        _located_record(publications_info=publications_info), text_locations=text_locations
+    )
+
+    located = (list(SUBJECT_SPAN), list(OBJECT_SPAN))
+    assert _locations_by_pmid(entities) == {
+        FOUR_PUBS[0]: (None, None),
+        **{pmid: located for pmid in FOUR_PUBS[1:]},
+    }
+
+
+@pytest.mark.parametrize(
+    "kg2_ids",
+    [None, 1, [], [None], [BASE_KG2_ID, PREVENTS_KG2_ID]],
+    ids=["null kg2_ids", "scalar kg2_ids", "no kg2_id", "null kg2_id entry", "two kg2_ids"],
+)
+def test_record_without_exactly_one_kg2_id_gets_no_location(kg2_ids: list[str | None] | int | None) -> None:
+    """Spans are keyed by the record's single kg2_id, so a record with none or several gets none."""
+    text_locations = [
+        _location(pmid, kg2_id=kg2_id)
+        for pmid in FOUR_PUBS
+        for kg2_id in (kg2_ids if isinstance(kg2_ids, list) else [])
+        if kg2_id is not None
+    ]
+
+    entities = _create_test_runner(_located_record(kg2_ids=kg2_ids), text_locations=text_locations)
+
+    assert _locations_by_pmid(entities) == {pmid: (None, None) for pmid in FOUR_PUBS}
+
+
+@pytest.mark.parametrize(
+    "subject_span,object_span",
+    [
+        ((0, len(LOCATED_SENTENCE) + 1), OBJECT_SPAN),
+        (SUBJECT_SPAN, (-1, OBJECT_SPAN[1])),
+        ((SUBJECT_SPAN[1], SUBJECT_SPAN[1]), OBJECT_SPAN),
+        (SUBJECT_SPAN, (OBJECT_SPAN[1], OBJECT_SPAN[0])),
+    ],
+    ids=["end past the sentence", "negative start", "empty span", "start after end"],
+)
+def test_out_of_bounds_span_is_skipped_and_counted(
+    subject_span: tuple[int, int], object_span: tuple[int, int]
+) -> None:
+    """A span outside the sentence attaches neither location, and only that result is counted."""
+    state: dict[str, Any] = dict(_STATE_DEFAULTS)
+    publications_info = {pmid: dict(LOCATED_EVIDENCE) for pmid in FOUR_PUBS[:2]}
+    first, second = (evidence_fingerprint(pmid, LOCATED_EVIDENCE) for pmid in FOUR_PUBS[:2])
+    text_spans = {
+        first: TextSpans(*subject_span, *object_span),
+        second: TextSpans(*SUBJECT_SPAN, *OBJECT_SPAN),
+    }
+
+    studies = _extract_supporting_studies(publications_info, text_spans, state)
+
+    assert studies is not None
+    results = {result.xref[0]: result for result in list(studies.values())[0].has_study_results}
+    assert results[FOUR_PUBS[0]].subject_location_in_text is None
+    assert results[FOUR_PUBS[0]].object_location_in_text is None
+    assert results[FOUR_PUBS[1]].subject_location_in_text == list(SUBJECT_SPAN)
+    assert results[FOUR_PUBS[1]].object_location_in_text == list(OBJECT_SPAN)
+    assert state["text_mining_results_emitted"] == 2
+    assert state["text_mining_results_with_locations"] == 1
+    assert state["text_locations_out_of_bounds"] == 1
+
+
+def test_pmid_rejected_by_the_verdicts_gets_no_study_result_despite_a_location() -> None:
+    """A rejected PMID builds no study result, so it gets no location and is not counted."""
+    entities, metadata = _run_transform(
+        _located_record(),
+        verdicts=[_verdict(FOUR_PUBS[0], "no")],
+        text_locations=[_location(pmid) for pmid in FOUR_PUBS],
+        check_coverage=True,
+    )
+
+    assert _locations_by_pmid(entities) == {
+        pmid: (list(SUBJECT_SPAN), list(OBJECT_SPAN)) for pmid in FOUR_PUBS[1:]
+    }
+    assert metadata["text_locations"]["text_mining_results_emitted"] == len(FOUR_PUBS) - 1
+    assert metadata["text_locations"]["text_mining_results_with_locations"] == len(FOUR_PUBS) - 1
+
+
+OUT_OF_BOUNDS_OBJECT_SPAN = (0, len(LOCATED_SENTENCE) + 1)
+
+
+@pytest.mark.parametrize(
+    "text_locations,error",
+    [
+        ([_location(pmid, kg2_id=PREVENTS_KG2_ID) for pmid in FOUR_PUBS], "only 0 of 4"),
+        (
+            [_location(pmid, object_span=OUT_OF_BOUNDS_OBJECT_SPAN) for pmid in FOUR_PUBS],
+            "4 had a span outside",
+        ),
+    ],
+    ids=["keys do not match", "every span out of bounds"],
+)
+def test_text_location_coverage_guard_raises_when_no_study_result_is_located(
+    text_locations: list[TextLocationRow], error: str
+) -> None:
+    """An artifact whose keys or spans do not fit the emitted results must fail, not pass."""
+    with pytest.raises(RuntimeError, match=f"Text-location coverage.*{error}"):
+        _create_test_runner(
+            _located_record(),
+            verdicts=[_verdict(FOUR_PUBS[0], "yes")],
+            text_locations=text_locations,
+            check_coverage=True,
+        )
+
+
+def test_both_coverage_guards_report_together() -> None:
+    """When both artifacts stop matching, one error names both guards, so neither hides the other."""
+    with pytest.raises(RuntimeError) as raised:
+        _create_test_runner(
+            _located_record(),
+            verdicts=[_verdict(FOUR_PUBS[0], "no", subject="CHEBI:999999")],
+            text_locations=[],
+            check_coverage=True,
+        )
+
+    assert "Text-location coverage" in str(raised.value)
+    assert "PMID-checker verdict coverage" in str(raised.value)
+
+
+def test_text_location_coverage_guard_passes_and_records_the_counts() -> None:
+    """With every study result located the guard passes, and the counts land in the metadata."""
+    _, metadata = _run_transform(
+        _located_record(),
+        verdicts=[_verdict(FOUR_PUBS[0], "yes")],
+        text_locations=[_location(pmid) for pmid in FOUR_PUBS],
+        check_coverage=True,
+    )
+
+    assert metadata["text_locations"] == {
+        "text_mining_results_emitted": len(FOUR_PUBS),
+        "text_mining_results_with_locations": len(FOUR_PUBS),
+        "text_locations_out_of_bounds": 0,
+        "location_coverage": 1.0,
+        "min_location_coverage": MIN_TEXT_LOCATION_COVERAGE,
+    }
+
+
+@pytest.mark.parametrize("pmid_filter_enabled", [True, False], ids=["filtered", "unfiltered"])
+def test_missing_text_location_artifact_raises(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, pmid_filter_enabled: bool
+) -> None:
+    """Locations are loaded with or without the PMID filter, and the transform needs them."""
+    monkeypatch.setattr(
+        "translator_ingest.ingests.semmeddb.semmeddb.PMID_FILTER_ENABLED", pmid_filter_enabled
+    )
+    _write_verdict_artifact(tmp_path, [])
+    transform = KozaTransform(
+        extra_fields={}, writer=MockKozaWriter(), mappings={}, input_files_dir=tmp_path
+    )
+
+    with pytest.raises(FileNotFoundError, match=TEXT_LOCATION_ARTIFACT_FILENAME):
+        on_begin_filter_edges(transform)
+
+
+def test_load_text_locations_maps_each_kg2_id_to_its_evidence_spans(tmp_path: Path) -> None:
+    """Each kg2_id maps to the spans of its own rows, keyed by evidence fingerprint."""
+    _write_text_location_artifact(tmp_path, [
+        _location(FOUR_PUBS[1], subject_span=(1, 2), object_span=(3, 4)),
+        _location(FOUR_PUBS[0], kg2_id=PREVENTS_KG2_ID),
+        _location(FOUR_PUBS[0]),
+    ])
+
+    index = load_text_locations(tmp_path / TEXT_LOCATION_ARTIFACT_FILENAME)
+
+    located = TextSpans(*SUBJECT_SPAN, *OBJECT_SPAN)
+    first, second = (evidence_fingerprint(pmid, LOCATED_EVIDENCE) for pmid in FOUR_PUBS[:2])
+    assert len(index) == 2
+    assert index.spans_for(BASE_KG2_ID) == {first: located, second: TextSpans(1, 2, 3, 4)}
+    assert index.spans_for(PREVENTS_KG2_ID) == {first: located}
+    assert index.spans_for(UNKNOWN_KG2_ID) == {}
+
+
+def test_loaders_read_the_exact_path_not_a_glob_match(tmp_path: Path) -> None:
+    """A bracketed directory name is read literally, never as a glob that matches a decoy sibling."""
+    literal, decoy = tmp_path / "in[1]", tmp_path / "in1"
+    literal.mkdir()
+    decoy.mkdir()
+    _write_text_location_artifact(literal, [_location(FOUR_PUBS[0])])
+    _write_text_location_artifact(decoy, [_location(FOUR_PUBS[0], kg2_id=PREVENTS_KG2_ID)])
+    _write_verdict_artifact(literal, [_verdict(FOUR_PUBS[0], "yes")])
+    _write_verdict_artifact(decoy, [_verdict(FOUR_PUBS[0], "no")])
+
+    index = load_text_locations(literal / TEXT_LOCATION_ARTIFACT_FILENAME)
+
+    assert index.spans_for(BASE_KG2_ID) != {}
+    assert index.spans_for(PREVENTS_KG2_ID) == {}
+    assert load_verdicts(literal / VERDICT_ARTIFACT_FILENAME) == {BASE_EDGE_KEY: None}
+
+
+ONE_LOCATION = [_location(FOUR_PUBS[0])]
+INT64_SPAN_SCHEMA = {**TEXT_LOCATION_ARTIFACT_SCHEMA, "subject_start": pl.Int64()}
+# Rows that break the (kg2_id, evidence_fingerprint) order: by kg2_id, then by fingerprint.
+KG2_IDS_OUT_OF_ORDER = sorted(
+    (_location(FOUR_PUBS[0], kg2_id=kg2_id) for kg2_id in (BASE_KG2_ID, PREVENTS_KG2_ID)),
+    key=lambda row: row[TEXT_LOCATION_KG2_ID_COLUMN],
+    reverse=True,
+)
+FINGERPRINTS_OUT_OF_ORDER = sorted(
+    (_location(pmid) for pmid in FOUR_PUBS[:2]),
+    key=lambda row: row[TEXT_LOCATION_FINGERPRINT_COLUMN],
+    reverse=True,
+)
+
+
+@pytest.mark.parametrize(
+    "artifact,error",
+    [
+        (_text_location_frame(ONE_LOCATION * 2), "more than one row"),
+        (_text_location_frame(KG2_IDS_OUT_OF_ORDER), "not sorted"),
+        (_text_location_frame(FINGERPRINTS_OUT_OF_ORDER), "not sorted"),
+        (pl.DataFrame(ONE_LOCATION, schema=INT64_SPAN_SCHEMA), "has columns"),
+        (_text_location_frame(ONE_LOCATION).drop("object_end"), "has columns"),
+        (
+            _text_location_frame(ONE_LOCATION).with_columns(subject_end=pl.lit(None, pl.Int32)),
+            "null values",
+        ),
+    ],
+    ids=[
+        "duplicate (kg2_id, fingerprint)",
+        "kg2_ids out of order",
+        "fingerprints out of order",
+        "wrong dtype",
+        "missing column",
+        "null span",
+    ],
+)
+def test_load_text_locations_rejects_an_artifact_that_breaks_its_contract(
+    tmp_path: Path, artifact: pl.DataFrame, error: str
+) -> None:
+    """The loader fails fast instead of attaching locations from a malformed artifact."""
+    artifact.write_parquet(tmp_path / TEXT_LOCATION_ARTIFACT_FILENAME)
+
+    with pytest.raises(ValueError, match=error):
+        load_text_locations(tmp_path / TEXT_LOCATION_ARTIFACT_FILENAME)
+
+
+# ---------------------------------------------------------------------------
 # Publication capping
 # ---------------------------------------------------------------------------
 
@@ -707,20 +1222,19 @@ def test_capped_publications_drop_their_supporting_studies():
 def test_uncapped_mode_skips_capping(monkeypatch: pytest.MonkeyPatch):
     """Setting SEMMEDDB_UNCAPPED=1 disables publication capping entirely."""
     monkeypatch.setenv("SEMMEDDB_UNCAPPED", "1")
-    import importlib
-    import translator_ingest.ingests.semmeddb.semmeddb as semmeddb_mod
-    importlib.reload(semmeddb_mod)
+    importlib.reload(semmeddb_module)
 
     pubs = [f"PMID:{i}" for i in range(1, MAX_PUBLICATIONS_PER_EDGE + 101)]
     writer = MockKozaWriter()
     with tempfile.TemporaryDirectory() as input_files_dir:
         _write_verdict_artifact(Path(input_files_dir), [])
+        _write_text_location_artifact(Path(input_files_dir), [])
         runner = KozaRunner(
             data=[_base_record(publications=pubs)],
             writer=writer,
             hooks=KozaTransformHooks(
-                on_data_begin=[semmeddb_mod.on_begin_filter_edges],
-                transform_record=[semmeddb_mod.transform_semmeddb_edge],
+                on_data_begin=[semmeddb_module.on_begin_filter_edges],
+                transform_record=[semmeddb_module.transform_semmeddb_edge],
             ),
             input_files_dir=Path(input_files_dir),
         )
@@ -729,7 +1243,7 @@ def test_uncapped_mode_skips_capping(monkeypatch: pytest.MonkeyPatch):
     assert association.publications == pubs
 
     monkeypatch.delenv("SEMMEDDB_UNCAPPED")
-    importlib.reload(semmeddb_mod)
+    importlib.reload(semmeddb_module)
 
 
 # ---------------------------------------------------------------------------
@@ -907,3 +1421,12 @@ def test_pydantic_roundtrip(fixture):
     dumped = obj.model_dump()
     restored = cls.model_validate(dumped)
     assert restored == obj
+
+
+@pytest.mark.parametrize("module", [semmeddb_module, text_locations_module])
+def test_module_doctests_pass(module: ModuleType) -> None:
+    """The doctests of the transform and of the artifact contract pass, including the pinned
+    evidence fingerprint that the built artifact is keyed by."""
+    results = doctest.testmod(module)
+    assert results.failed == 0
+    assert results.attempted > 0

@@ -18,9 +18,32 @@ change. The artifact is re-keyed from the checker's normalized ids to raw ids by
 Because a non-matching key silently means "keep", a coverage guard backstops the join: the
 fraction of checked edges that have any verdict row must be at least ``MIN_EDGE_COVERAGE``, or
 the transform fails instead of quietly passing everything through.
+
+A supporting ``TextMiningStudyResult`` also gets ``subject_location_in_text`` and
+``object_location_in_text`` when a second artifact has a span for its evidence
+(``TEXT_LOCATION_ARTIFACT_FILENAME``, built by ``analysis/build_text_locations.py``). Each span is
+``[start, end]``: 0-based, end-exclusive character offsets into that publication's sentence,
+already oriented to the record's subject and object. This is the convention TMKP uses. The artifact
+is keyed by the record's own ``kg2_id`` and by ``evidence_fingerprint`` of the PMID and the
+evidence KG2 stored for it, not by the edge key the verdicts use: several records can emit the same
+edge key (a ``stimulates`` and an ``affects`` record both emit ``biolink:affects``), and the same
+kg2_id can appear on more than one record of the input file. The fingerprint pins every span to the
+exact sentence and scores it was found for, so a span never lands on another record's evidence, and
+a sentence or score the artifact has not seen finds no span. It cannot tell apart two raw SemMedDB
+groups that give one kg2_id the same sentence and scores, so the artifact must be rebuilt whenever
+the KG2 input changes. A record with no kg2_id or with several gets no locations. A location is
+attached only when both spans lie inside the sentence; otherwise the study result is emitted
+without one and counted. The artifact is loaded whether or not the PMID filter is on. A key the
+artifact does not cover just means "no location", so a second coverage guard fails the transform
+when fewer than ``MIN_TEXT_LOCATION_COVERAGE`` of the emitted study results got one. The artifact
+only covers records that pass ``record_filter_reason`` (the build imports it), which keeps it, and
+the index loaded from it, small. If those filters change, rebuild the artifact: newly admitted
+records would have no locations, and the coverage guard only fails once they are more than
+``1 - MIN_TEXT_LOCATION_COVERAGE`` of the emitted study results.
 """
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +75,14 @@ from biolink_model.datamodel.pydanticmodel_v2 import (
 from translator_ingest.util.biolink import build_association_knowledge_sources
 from translator_ingest.util.transform_utils import entity_id
 from translator_ingest.util.biolink import INFORES_SEMMEDDB
+from translator_ingest.ingests.semmeddb.text_locations import (
+    TEXT_LOCATION_ARTIFACT_FILENAME,
+    TextLocationIndex,
+    TextSpans,
+    evidence_fingerprint,
+    load_text_locations,
+    spans_in_bounds,
+)
 
 SEMMEDDB_SOURCES = build_association_knowledge_sources(primary=INFORES_SEMMEDDB)
 
@@ -93,6 +124,20 @@ DROP_SUPPORT_VALUES = frozenset({"no", "maybe"})
 # threshold catches a broken or drifted join with a wide margin on both sides.
 MIN_EDGE_COVERAGE = 0.95
 
+# minimum fraction of emitted TextMiningStudyResults that must carry a text location. A key the
+# location artifact does not cover just leaves the result without one, so a broken join would
+# silently drop every location; this guard turns that into a loud error. Measured on a full
+# kg2.10.3 transform with the PMID filter and the cap on: 16,829,420 of 16,835,013 emitted
+# results got a location (99.97%), and none had a span outside its sentence. The misses are
+# evidence whose spans failed the build's text check, and xref edges, which have a KG2 sentence
+# but no non-xref SemMedDB predication to match. 0.95 leaves a wide margin on both sides, like
+# MIN_EDGE_COVERAGE.
+MIN_TEXT_LOCATION_COVERAGE = 0.95
+
+# records with this many publications or fewer are skipped; only the KG2 domain/range exclusion is
+# checked before this (see record_filter_reason).
+MAX_SKIPPED_PUBLICATION_COUNT = 3
+
 # edges left with more than this many publications after verdict filtering are trimmed to the
 # most recent ones (highest PMID number, since PMIDs are assigned chronologically). This bounds
 # the small tail of very large edges (some have 60k+ PMIDs) without touching the vast majority.
@@ -109,7 +154,8 @@ PUBLICATIONS_CAP_ENABLED: bool = (
 # the filter is on by default. Set SEMMEDDB_UNFILTERED=1 (or true/yes) to keep every publication
 # the checker rejected, which is how the pre-filter edge set is regenerated for a new checker run
 # (the planned second pass over the "maybe" bucket needs exactly that input). The verdict artifact
-# is then not read at all and the coverage guard does not apply. get_latest_version() reports a
+# is then not read at all and the verdict coverage guard does not apply; the text-location artifact
+# is still required and its coverage guard still applies. get_latest_version() reports a
 # distinct source version when it is set, so filtered and unfiltered builds never share a
 # directory or a build version.
 PMID_FILTER_ENABLED: bool = (
@@ -232,11 +278,12 @@ def _aspect_target_is_valid(
     )
 
 
-def _has_bte_excluded_predicate(kg2_ids: list[str]) -> bool:
+def _has_bte_excluded_predicate(kg2_ids: list[object]) -> bool:
     """Check whether any kg2_id encodes an original SemMedDB predicate that BTE removes.
 
     Each ``kg2_id`` string is formatted as ``SUBJECT---PREDICATE---OBJECT``.
-    The predicate portion may carry a ``SEMMEDDB:`` prefix.
+    The predicate portion may carry a ``SEMMEDDB:`` prefix. An entry that is not a string, such
+    as a null, carries no predicate and is skipped.
 
     >>> _has_bte_excluded_predicate(["UMLS:C0---SEMMEDDB:isa---UMLS:C1"])
     True
@@ -244,8 +291,12 @@ def _has_bte_excluded_predicate(kg2_ids: list[str]) -> bool:
     False
     >>> _has_bte_excluded_predicate([])
     False
+    >>> _has_bte_excluded_predicate([None])
+    False
     """
     for kid in kg2_ids:
+        if not isinstance(kid, str):
+            continue
         parts = kid.split("---")
         if len(parts) < 2:
             continue
@@ -263,7 +314,8 @@ def load_verdicts(artifact_file: Path) -> VerdictIndex:
     Support values are lowercased and stripped before they are compared, and a row with a null
     support counts as covered without rejecting anything.
     """
-    verdicts = pl.read_parquet(artifact_file, columns=VERDICT_ARTIFACT_COLUMNS).with_columns(
+    # glob=False: polars would otherwise read a path with brackets as a glob pattern.
+    verdicts = pl.read_parquet(artifact_file, columns=VERDICT_ARTIFACT_COLUMNS, glob=False).with_columns(
         pl.col("support").cast(pl.String).str.to_lowercase().str.strip_chars()
     )
 
@@ -335,13 +387,48 @@ def _filter_publications(
     return kept_publications, kept_info
 
 
+def record_kg2_ids(record: dict[str, Any]) -> list[object]:
+    """Return the record's ``kg2_ids`` list, or an empty list when it is missing or not a list.
+
+    >>> record_kg2_ids({"kg2_ids": ["UMLS:C0---SEMMEDDB:treats---UMLS:C1"]})
+    ['UMLS:C0---SEMMEDDB:treats---UMLS:C1']
+    >>> record_kg2_ids({"kg2_ids": 1}), record_kg2_ids({"kg2_ids": None}), record_kg2_ids({})
+    ([], [], [])
+    """
+    kg2_ids = record.get("kg2_ids")
+    return kg2_ids if isinstance(kg2_ids, list) else []
+
+
+def _record_text_spans(
+    record: dict[str, Any], text_location_index: TextLocationIndex
+) -> dict[int, TextSpans]:
+    """Return the spans of the record's evidence, keyed by evidence fingerprint.
+
+    The artifact is keyed by kg2_id, and a KG2 record carries exactly one. A record with none or
+    with several cannot be tied to one set of spans, so it gets none. A missing or null
+    ``kg2_ids``, or a single entry that is not a string, counts as none.
+    """
+    kg2_ids = record_kg2_ids(record)
+    if len(kg2_ids) != 1 or not isinstance(kg2_ids[0], str):
+        return {}
+    return text_location_index.spans_for(kg2_ids[0])
+
+
 def _extract_supporting_studies(
     publications_info: dict[str, dict[str, str]],
+    text_spans: Mapping[int, TextSpans],
+    state: dict[str, Any],
 ) -> dict[str, Study] | None:
     """Extract supporting text from publications_info and create Study objects.
 
     ``publications_info`` maps PMIDs to dicts with keys like ``sentence``,
-    ``publication date``, ``subject score``, and ``object score``.
+    ``publication date``, ``subject score``, and ``object score``. ``text_spans`` maps the
+    ``evidence_fingerprint`` of a PMID and its evidence to the subject and object spans found in
+    that evidence's sentence. The fingerprint covers the PMID, the sentence and both scores, so a
+    span only attaches to the exact sentence and scores it was found for; evidence the artifact does
+    not know finds no span. Spans become ``subject_location_in_text`` and
+    ``object_location_in_text`` only when both lie inside the sentence; evidence whose spans do not
+    is emitted without a location and counted in ``state``.
     """
     if not publications_info:
         return None
@@ -361,6 +448,15 @@ def _extract_supporting_studies(
         if pmid:
             tm_result.xref = [pmid]
 
+        spans = text_spans.get(evidence_fingerprint(pmid, info))
+        if spans is not None and spans_in_bounds(spans, len(sentence)):
+            tm_result.subject_location_in_text = [spans.subject_start, spans.subject_end]
+            tm_result.object_location_in_text = [spans.object_start, spans.object_end]
+            state["text_mining_results_with_locations"] += 1
+        elif spans is not None:
+            state["text_locations_out_of_bounds"] += 1
+
+        state["text_mining_results_emitted"] += 1
         text_mining_results.append(tm_result)
 
     if not text_mining_results:
@@ -402,29 +498,94 @@ _STATE_DEFAULTS: dict[str, int] = {
     "edges_with_verdicts": 0,
     "publications_rejected": 0,
     "edges_rejected_by_verdicts": 0,
+    "text_mining_results_emitted": 0,
+    "text_mining_results_with_locations": 0,
+    "text_locations_out_of_bounds": 0,
 }
+
+
+def _require_artifact(input_files_dir: Path | None, filename: str, description: str) -> Path:
+    """Return an artifact's path in the input files directory, failing fast when it is missing."""
+    if input_files_dir is None:
+        raise ValueError(f"No input_files_dir; the semmeddb transform needs the {description}.")
+    artifact_file = Path(input_files_dir) / filename
+    if not artifact_file.exists():
+        raise FileNotFoundError(f"{description} not found: {artifact_file}")
+    return artifact_file
 
 
 @koza.on_data_begin(tag="filter_edges")
 def on_begin_filter_edges(koza: koza.KozaTransform) -> None:
-    """Initialize counters and load the PMID-checker verdicts."""
+    """Initialize counters and load the PMID-checker verdicts and the text locations."""
     koza.state["seen_node_ids"] = set()
     for key, default in _STATE_DEFAULTS.items():
         koza.state[key] = default
 
-    if not PMID_FILTER_ENABLED:
-        koza.log("SEMMEDDB_UNFILTERED is set, keeping every publication the checker rejected.", level="WARNING")
+    if PMID_FILTER_ENABLED:
+        verdict_file = _require_artifact(
+            koza.input_files_dir, VERDICT_ARTIFACT_FILENAME, "PMID-checker verdict artifact"
+        )
+        koza.log(f"Loading PMID-checker verdicts from {verdict_file}...", level="INFO")
+        koza.state["verdict_index"] = load_verdicts(verdict_file)
+        koza.log(f"  Edges covered by a verdict: {len(koza.state['verdict_index'])}", level="INFO")
+    else:
+        koza.log(
+            "SEMMEDDB_UNFILTERED is set, keeping every publication the checker rejected.",
+            level="WARNING",
+        )
         koza.state["verdict_index"] = {}
-        return
 
-    if koza.input_files_dir is None:
-        raise ValueError("No input_files_dir; the semmeddb transform needs the PMID-checker verdicts.")
-    artifact_file = Path(koza.input_files_dir) / VERDICT_ARTIFACT_FILENAME
-    if not artifact_file.exists():
-        raise FileNotFoundError(f"PMID-checker verdict artifact not found: {artifact_file}")
-    koza.log(f"Loading PMID-checker verdicts from {artifact_file}...", level="INFO")
-    koza.state["verdict_index"] = load_verdicts(artifact_file)
-    koza.log(f"  Edges covered by a verdict: {len(koza.state['verdict_index'])}", level="INFO")
+    # Text locations do not depend on the PMID filter, so they are loaded in both modes.
+    location_file = _require_artifact(
+        koza.input_files_dir, TEXT_LOCATION_ARTIFACT_FILENAME, "text-location artifact"
+    )
+    koza.log(f"Loading text locations from {location_file}...", level="INFO")
+    koza.state["text_location_index"] = load_text_locations(location_file)
+    koza.log(
+        f"  kg2_ids with text locations: {len(koza.state['text_location_index'])}", level="INFO"
+    )
+
+
+def _report_text_locations(transform: koza.KozaTransform) -> str | None:
+    """Log and record the text-location counts; return the guard's failure message, or None.
+
+    The guard only applies once a study result was emitted: with none, nothing needed a location.
+    It returns its message instead of raising, so the end hook can report it together with the
+    verdict guard and a source change that breaks both artifacts shows both errors at once.
+    """
+    emitted = transform.state["text_mining_results_emitted"]
+    located = transform.state["text_mining_results_with_locations"]
+    out_of_bounds = transform.state["text_locations_out_of_bounds"]
+    location_coverage = located / emitted if emitted else 0.0
+    transform.log(
+        f"  TextMiningStudyResults with a text location: {located} of {emitted} "
+        f"({location_coverage:.2%})",
+        level="INFO",
+    )
+    if out_of_bounds:
+        transform.log(
+            f"  Text locations skipped (span outside the sentence): {out_of_bounds}",
+            level="WARNING",
+        )
+    transform.transform_metadata["text_locations"] = {
+        "text_mining_results_emitted": emitted,
+        "text_mining_results_with_locations": located,
+        "text_locations_out_of_bounds": out_of_bounds,
+        "location_coverage": location_coverage,
+        "min_location_coverage": MIN_TEXT_LOCATION_COVERAGE,
+    }
+
+    if emitted and location_coverage < MIN_TEXT_LOCATION_COVERAGE:
+        return (
+            f"Text-location coverage is {location_coverage:.4f}, below the required "
+            f"{MIN_TEXT_LOCATION_COVERAGE}: only {located} of {emitted} emitted "
+            f"TextMiningStudyResults got a text location ({out_of_bounds} had a span outside the "
+            f"sentence). The text-location artifact ({TEXT_LOCATION_ARTIFACT_FILENAME}) keys or "
+            f"spans no longer match the records this transform emits, most likely an artifact "
+            f"mismatch or a source version change."
+        )
+    return None
+
 
 @koza.on_data_end(tag="filter_edges")
 def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
@@ -478,13 +639,13 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
         "pmid_filter_enabled": PMID_FILTER_ENABLED,
     }
 
-    if not PMID_FILTER_ENABLED:
-        return
+    text_location_failure = _report_text_locations(koza)
+    guard_failures = [text_location_failure] if text_location_failure else []
 
     # An edge key the verdicts do not cover keeps all of its publications, so a join that stops
     # matching would disable the filter silently rather than fail. Make that loud instead.
-    if edge_coverage < MIN_EDGE_COVERAGE:
-        raise RuntimeError(
+    if PMID_FILTER_ENABLED and edge_coverage < MIN_EDGE_COVERAGE:
+        guard_failures.append(
             f"PMID-checker verdict coverage is {edge_coverage:.4f}, below the required "
             f"{MIN_EDGE_COVERAGE}: only {s['edges_with_verdicts']} of {s['edges_verdict_checked']} "
             f"checked edges have any verdict row. The verdict artifact "
@@ -492,6 +653,8 @@ def on_end_filter_edges(koza: koza.KozaTransform) -> None:  # noqa: PLR0912
             f"most likely an artifact mismatch or a source version change. Uncovered edges keep "
             f"every publication, so this would silently disable the filter."
         )
+    if guard_failures:
+        raise RuntimeError("\n".join(guard_failures))
 
 def _pick_affects_class(
     subject_id: str,
@@ -516,25 +679,44 @@ def _pick_affects_class(
     return ChemicalAffectsBiologicalEntityAssociation
 
 
+def record_filter_reason(record: dict[str, Any]) -> str | None:
+    """Return why the record-level filters reject a KG2 record, or None when it passes.
+
+    The reason is the state counter key the transform increments. The filters run in this order
+    and the first that rejects wins: KG2 domain/range exclusion, at most
+    ``MAX_SKIPPED_PUBLICATION_COUNT`` publications, a BTE-excluded original SemMedDB predicate.
+    ``analysis/build_text_locations.py`` uses the same function to scope its artifact.
+
+    >>> four = ["PMID:1", "PMID:2", "PMID:3", "PMID:4"]
+    >>> record_filter_reason({"domain_range_exclusion": True, "publications": four})
+    'domain_range_exclusion_skipped'
+    >>> record_filter_reason({"publications": four[:3]})
+    'low_publication_count_skipped'
+    >>> record_filter_reason({"publications": four, "kg2_ids": ["UMLS:C0---SEMMEDDB:isa---UMLS:C1"]})
+    'bte_excluded_predicate_skipped'
+    >>> print(record_filter_reason({"publications": four, "kg2_ids": ["UMLS:C0---SEMMEDDB:treats---UMLS:C1"]}))
+    None
+    """
+    if record.get("domain_range_exclusion"):
+        return "domain_range_exclusion_skipped"
+    if len(record.get("publications", [])) <= MAX_SKIPPED_PUBLICATION_COUNT:
+        return "low_publication_count_skipped"
+    kg2_ids = record_kg2_ids(record)
+    if kg2_ids and _has_bte_excluded_predicate(kg2_ids):
+        return "bte_excluded_predicate_skipped"
+    return None
+
+
 def _apply_filters(
     record: dict[str, Any],
     state: dict[str, Any],
 ) -> list[str] | None:
     """Run all record-level filters, returning publications on pass or None on reject."""
-    if record.get("domain_range_exclusion"):
-        state["domain_range_exclusion_skipped"] += 1
+    reason = record_filter_reason(record)
+    if reason is not None:
+        state[reason] += 1
         return None
-
     publications: list[str] = record.get("publications", [])
-    if len(publications) <= 3:
-        state["low_publication_count_skipped"] += 1
-        return None
-
-    kg2_ids: list[str] = record.get("kg2_ids", [])
-    if kg2_ids and _has_bte_excluded_predicate(kg2_ids):
-        state["bte_excluded_predicate_skipped"] += 1
-        return None
-
     return publications
 
 
@@ -680,7 +862,9 @@ def transform_semmeddb_edge(
         association_kwargs, record, subject_id, object_id, predicate, koza.state,
     )
 
-    supporting_studies = _extract_supporting_studies(publications_info)
+    # Looked up only for emitted records, so rows of dropped records never become python objects.
+    text_spans = _record_text_spans(record, koza.state["text_location_index"])
+    supporting_studies = _extract_supporting_studies(publications_info, text_spans, koza.state)
     if supporting_studies:
         association.has_supporting_studies = supporting_studies
 

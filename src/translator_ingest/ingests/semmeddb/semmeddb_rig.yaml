@@ -90,6 +90,20 @@ ingest_info:
         the join does not drift with Babel releases. Re-keyed from the checker's normalized-id
         output by analysis/rekey_pmid_verdicts.py. Downloaded via semmeddb/download.yaml and read
         once at the start of the transform; it is not a Koza reader input.
+    - file_name: "semmeddb_text_locations_raw_keyed.parquet (subject/object locations in the supporting sentence)"
+      location: "https://rtx-kg2-public.s3.us-west-2.amazonaws.com/semmeddb_text_locations_raw_keyed.parquet"
+      description: >-
+        One row per (kg2_id, evidence_fingerprint), sorted by that pair: the KG2 record's single
+        kg2_ids entry and a fingerprint of a PMID with the sentence and subject/object scores KG2
+        stored for it. Each row has subject_start, subject_end, object_start and object_end: 0-based,
+        end-exclusive character offsets into that sentence, already oriented to the record's subject
+        and object. It is not keyed like the verdict artifact because several KG2 records can emit
+        the same edge and can even share a kg2_id; the fingerprint ties each span to the evidence it
+        was found for. Built offline by analysis/build_text_locations.py from the KG2 file above, an
+        export of the SemMedDB VER43 2023 MySQL tables PREDICATION, PREDICATION_AUX and SENTENCE
+        (analysis/export_semmeddb_predications.sh), and UMLS 2023AA MRCUI.RRF for retired CUIs.
+        Downloaded via semmeddb/download.yaml and read once at the start of the transform, whether
+        or not the PMID filter is on; it is not a Koza reader input.
 
   included_content:
     - file_name: "kg2.10.3-semmeddb-edges.jsonl"
@@ -470,7 +484,14 @@ target_info:
         - >-
           Supporting text snippets are retained under has_supporting_studies, then has_study_results,
           then supporting_text, as TextMiningStudyResult objects. There is no top-level
-          supporting_text edge property.
+          supporting_text edge property. A TextMiningStudyResult can also carry
+          subject_location_in_text and object_location_in_text as [start, end] character offsets into
+          its supporting_text (0-based, end exclusive, the same convention as TMKP), taken from the
+          text-location artifact. They are left out when the record does not carry exactly one
+          kg2_id, when the artifact has no row for that kg2_id and evidence (the fingerprint ties a
+          span to the exact sentence it was found in), or when either span falls outside the
+          sentence. The transform fails if fewer than 95% of emitted TextMiningStudyResults get a
+          location (99.97% did on kg2.10.3).
 
   # Node types emitted by this ingest, as assigned by the transform (PREFIX_TO_CLASS).
   # Downstream node normalization commonly reassigns these to more specific categories
