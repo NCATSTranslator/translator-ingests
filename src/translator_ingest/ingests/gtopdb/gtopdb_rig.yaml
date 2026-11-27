@@ -115,8 +115,7 @@ ingest_info:
         Used only for identifier mapping: for a ligand without a real PubChem CID, its ChEMBL compound ID, or
         failing that its ChEBI ID. DrugBank IDs are not used because NodeNorm groups most biologic DrugBank IDs
         with their UniProt protein, which puts them outside the chemical association classes. CAS numbers are
-        not used because most of those available here do not resolve in NodeNorm and, under this source's
-        non-strict normalization, would pass through as unnormalized nodes
+        not used because most of those available here (106 of 156 in 2026.3.1) do not resolve in NodeNorm
         (https://github.com/NCATSTranslator/translator-ingests/issues/582).
       fields_used: "Ligand id, ChEMBl ID, Chebi ID"
 
